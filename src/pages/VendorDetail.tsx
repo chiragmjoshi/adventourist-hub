@@ -46,7 +46,11 @@ const VendorDetail = () => {
   const { data: trips = [] } = useQuery({
     queryKey: ["vendor_trips", id],
     queryFn: async () => {
-      const { data } = await supabase.from("trip_cashflow").select("*").eq("vendor_id", id!).order("created_at", { ascending: false });
+      // Get cashflow IDs where this vendor has lines
+      const { data: vendorLines } = await supabase.from("trip_cashflow_vendors").select("cashflow_id").eq("vendor_id", id!);
+      if (!vendorLines || vendorLines.length === 0) return [];
+      const cashflowIds = [...new Set(vendorLines.map((v: any) => v.cashflow_id))];
+      const { data } = await supabase.from("trip_cashflow").select("*").in("id", cashflowIds).order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!id,

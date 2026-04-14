@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Map, Layout, DollarSign, Truck, BarChart3,
-  Database, UserCheck, Shield, ChevronDown,
+  Database, UserCheck, Shield, ChevronDown, Settings,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -28,6 +28,7 @@ const dbSubItems = [
 ];
 
 const bottomItems = [
+  { title: "Settings", url: "/settings", icon: Settings },
   { title: "User Management", url: "/user-management", icon: UserCheck },
   { title: "Role Management", url: "/role-management", icon: Shield },
 ];

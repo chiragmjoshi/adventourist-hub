@@ -16,7 +16,11 @@ import MasterValues from "./pages/MasterValues";
 import VendorList from "./pages/VendorList";
 import VendorEdit from "./pages/VendorEdit";
 import VendorDetail from "./pages/VendorDetail";
-import { LandingPages, TripCashflow, Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
+import TripCashflowList from "./pages/TripCashflowList";
+import TripCashflowEdit from "./pages/TripCashflowEdit";
+import TripCashflowDetail from "./pages/TripCashflowDetail";
+import Settings from "./pages/Settings";
+import { LandingPages, Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,11 +41,15 @@ const App = () => (
             <Route path="/itineraries/new" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
             <Route path="/itineraries/edit/:id" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
             <Route path="/landing-pages" element={<ProtectedRoute><LandingPages /></ProtectedRoute>} />
-            <Route path="/trip-cashflow" element={<ProtectedRoute><TripCashflow /></ProtectedRoute>} />
+            <Route path="/trip-cashflow" element={<ProtectedRoute><TripCashflowList /></ProtectedRoute>} />
+            <Route path="/trip-cashflow/new" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
+            <Route path="/trip-cashflow/edit/:id" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
+            <Route path="/trip-cashflow/:id" element={<ProtectedRoute><TripCashflowDetail /></ProtectedRoute>} />
             <Route path="/vendors" element={<ProtectedRoute><VendorList /></ProtectedRoute>} />
             <Route path="/vendors/new" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
             <Route path="/vendors/edit/:id" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
             <Route path="/vendors/:id" element={<ProtectedRoute><VendorDetail /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/db/destinations" element={<ProtectedRoute><Destinations /></ProtectedRoute>} />
             <Route path="/db/master-values" element={<ProtectedRoute><MasterValues /></ProtectedRoute>} />

@@ -61,6 +61,21 @@ export type Database = {
           },
         ]
       }
+      cashflow_code_sequence: {
+        Row: {
+          last_sequence: number
+          year_prefix: string
+        }
+        Insert: {
+          last_sequence?: number
+          year_prefix: string
+        }
+        Update: {
+          last_sequence?: number
+          year_prefix?: string
+        }
+        Relationships: []
+      }
       destinations: {
         Row: {
           about: string | null
@@ -499,6 +514,30 @@ export type Database = {
         }
         Relationships: []
       }
+      settings: {
+        Row: {
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       traveller_code_sequence: {
         Row: {
           last_sequence: number
@@ -518,85 +557,83 @@ export type Database = {
         Row: {
           assigned_to: string | null
           booking_date: string | null
+          cashflow_code: string
           created_at: string | null
+          created_by: string | null
           destination_id: string | null
+          gst_billing: boolean | null
           id: string
           itinerary_id: string | null
           lead_id: string | null
-          margin: number | null
+          margin_percent: number | null
           notes: string | null
           pan_card_url: string | null
           pax_count: number | null
-          payment_status: string | null
-          selling_price_per_pax: number | null
           status: string | null
-          total_selling_price: number | null
-          total_vendor_cost: number | null
           travel_end_date: string | null
           travel_start_date: string | null
-          traveller_code: string | null
-          traveller_name: string | null
+          traveller_code: string
+          traveller_name: string
           updated_at: string | null
-          vendor_cost_per_pax: number | null
-          vendor_id: string | null
           zoho_invoice_ref: string | null
         }
         Insert: {
           assigned_to?: string | null
           booking_date?: string | null
+          cashflow_code?: string
           created_at?: string | null
+          created_by?: string | null
           destination_id?: string | null
+          gst_billing?: boolean | null
           id?: string
           itinerary_id?: string | null
           lead_id?: string | null
-          margin?: number | null
+          margin_percent?: number | null
           notes?: string | null
           pan_card_url?: string | null
           pax_count?: number | null
-          payment_status?: string | null
-          selling_price_per_pax?: number | null
           status?: string | null
-          total_selling_price?: number | null
-          total_vendor_cost?: number | null
           travel_end_date?: string | null
           travel_start_date?: string | null
-          traveller_code?: string | null
-          traveller_name?: string | null
+          traveller_code: string
+          traveller_name: string
           updated_at?: string | null
-          vendor_cost_per_pax?: number | null
-          vendor_id?: string | null
           zoho_invoice_ref?: string | null
         }
         Update: {
           assigned_to?: string | null
           booking_date?: string | null
+          cashflow_code?: string
           created_at?: string | null
+          created_by?: string | null
           destination_id?: string | null
+          gst_billing?: boolean | null
           id?: string
           itinerary_id?: string | null
           lead_id?: string | null
-          margin?: number | null
+          margin_percent?: number | null
           notes?: string | null
           pan_card_url?: string | null
           pax_count?: number | null
-          payment_status?: string | null
-          selling_price_per_pax?: number | null
           status?: string | null
-          total_selling_price?: number | null
-          total_vendor_cost?: number | null
           travel_end_date?: string | null
           travel_start_date?: string | null
-          traveller_code?: string | null
-          traveller_name?: string | null
+          traveller_code?: string
+          traveller_name?: string
           updated_at?: string | null
-          vendor_cost_per_pax?: number | null
-          vendor_id?: string | null
           zoho_invoice_ref?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "trip_cashflow_assigned_to_fkey"
             columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_cashflow_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -622,8 +659,52 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      trip_cashflow_vendors: {
+        Row: {
+          cashflow_id: string
+          cost_per_pax_incl_gst: number
+          created_at: string | null
+          description: string | null
+          id: string
+          invoice_url: string | null
+          service_type: string
+          sort_order: number | null
+          vendor_id: string | null
+        }
+        Insert: {
+          cashflow_id: string
+          cost_per_pax_incl_gst?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_url?: string | null
+          service_type: string
+          sort_order?: number | null
+          vendor_id?: string | null
+        }
+        Update: {
+          cashflow_id?: string
+          cost_per_pax_incl_gst?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_url?: string | null
+          service_type?: string
+          sort_order?: number | null
+          vendor_id?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "trip_cashflow_vendor_id_fkey"
+            foreignKeyName: "trip_cashflow_vendors_cashflow_id_fkey"
+            columns: ["cashflow_id"]
+            isOneToOne: false
+            referencedRelation: "trip_cashflow"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_cashflow_vendors_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendors"
