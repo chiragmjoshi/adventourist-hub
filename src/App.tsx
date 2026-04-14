@@ -79,6 +79,7 @@ const App = () => (
             <Route path="/db/master-values" element={<ProtectedRoute><MasterValues /></ProtectedRoute>} />
             <Route path="/user-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="User Management"><UserManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/role-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="Role Management"><RoleManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/automations" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Automations"><Automations /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/l/:slug" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />

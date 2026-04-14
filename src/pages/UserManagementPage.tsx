@@ -39,7 +39,7 @@ const UserManagementPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "sales" });
+  const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "sales", mobile: "" });
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
 
   const fetchUsers = async () => {
