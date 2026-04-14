@@ -10,6 +10,7 @@ interface UserProfile {
   role: string;
   is_active: boolean;
   avatar_url: string | null;
+  mobile: string | null;
 }
 
 interface AuthContextType {

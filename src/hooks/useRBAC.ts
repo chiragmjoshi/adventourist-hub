@@ -10,7 +10,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "leads", "itineraries", "landing_pages", "trip_cashflow", "vendors",
     "reports", "reports_sales", "reports_revenue", "reports_conversion",
     "reports_destinations", "reports_platform_roi", "reports_team",
-    "db_management", "settings",
+    "db_management", "settings", "automations",
   ],
   sales: [
     "leads", "itineraries", "landing_pages", "reports", "reports_sales",
@@ -51,4 +51,5 @@ export const ROUTE_PERMISSIONS: Record<string, Role[]> = {
   "/role-management": ["super_admin"],
   "/settings": ["super_admin"],
   "/trip-cashflow": ["operations", "admin", "super_admin", "finance"],
+  "/automations": ["admin", "super_admin"],
 };

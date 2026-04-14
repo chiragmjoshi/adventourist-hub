@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_settings: {
+        Row: {
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value?: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       automations_log: {
         Row: {
           channel: string
@@ -818,6 +842,7 @@ export type Database = {
           email: string
           id: string
           is_active: boolean | null
+          mobile: string | null
           name: string
           role: string
         }
@@ -827,6 +852,7 @@ export type Database = {
           email: string
           id?: string
           is_active?: boolean | null
+          mobile?: string | null
           name: string
           role: string
         }
@@ -836,6 +862,7 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean | null
+          mobile?: string | null
           name?: string
           role?: string
         }

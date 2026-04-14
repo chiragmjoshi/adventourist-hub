@@ -39,7 +39,7 @@ const UserManagementPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "sales" });
+  const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "sales", mobile: "" });
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
 
   const fetchUsers = async () => {
@@ -68,11 +68,11 @@ const UserManagementPage = () => {
 
   const handleInvite = async () => {
     if (!inviteForm.name || !inviteForm.email) { toast.error("Name and email are required"); return; }
-    const { error } = await supabase.from("users").insert({ name: inviteForm.name, email: inviteForm.email, role: inviteForm.role, is_active: false });
+    const { error } = await supabase.from("users").insert({ name: inviteForm.name, email: inviteForm.email, role: inviteForm.role, is_active: false, mobile: inviteForm.mobile || null } as any);
     if (error) { toast.error(error.message); return; }
     toast.success(`Invitation created for ${inviteForm.email}`);
     setInviteOpen(false);
-    setInviteForm({ name: "", email: "", role: "sales" });
+    setInviteForm({ name: "", email: "", role: "sales", mobile: "" });
     fetchUsers();
   };
 
@@ -98,6 +98,7 @@ const UserManagementPage = () => {
             <div className="space-y-4 mt-6">
               <div><Label>Full Name*</Label><Input value={inviteForm.name} onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))} /></div>
               <div><Label>Email Address*</Label><Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))} /><p className="text-xs text-muted-foreground mt-1">An invitation will be sent to this email</p></div>
+              <div><Label>Mobile Number</Label><Input value={inviteForm.mobile} onChange={(e) => setInviteForm((f) => ({ ...f, mobile: e.target.value }))} placeholder="+91-XXXXX-XXXXX" /></div>
               <div>
                 <Label>Role*</Label>
                 <Select value={inviteForm.role} onValueChange={(v) => setInviteForm((f) => ({ ...f, role: v }))}>

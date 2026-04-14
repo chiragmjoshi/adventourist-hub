@@ -17,7 +17,9 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [mobile, setMobile] = useState(profile?.mobile || "");
   const [saving, setSaving] = useState(false);
+  const [savingMobile, setSavingMobile] = useState(false);
 
   const initials = profile?.name
     ? profile.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -34,6 +36,15 @@ const ProfilePage = () => {
     toast.success("Password updated successfully");
     setNewPassword("");
     setConfirmPassword("");
+  };
+
+  const handleSaveMobile = async () => {
+    if (!profile?.id) return;
+    setSavingMobile(true);
+    const { error } = await supabase.from("users").update({ mobile } as any).eq("id", profile.id);
+    setSavingMobile(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Mobile number updated");
   };
 
   const handleLogout = async () => {
@@ -57,6 +68,14 @@ const ProfilePage = () => {
                 <p className="text-xs text-muted-foreground mt-2">Member since {format(new Date(user.created_at), "MMM yyyy")}</p>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border shadow-sm">
+          <CardHeader><CardTitle className="text-base">Mobile Number</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <Input placeholder="+91-XXXXX-XXXXX" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+            <Button size="sm" onClick={handleSaveMobile} disabled={savingMobile}>{savingMobile ? "Saving..." : "Save Mobile"}</Button>
           </CardContent>
         </Card>
 
