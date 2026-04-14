@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -37,10 +38,16 @@ import RoleManagementPage from "./pages/RoleManagementPage";
 import ProfilePage from "./pages/ProfilePage";
 import Automations from "./pages/Automations";
 import NotFound from "./pages/NotFound";
+import { processAutomationQueue } from "./services/queueProcessor";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    processAutomationQueue();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -88,6 +95,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
