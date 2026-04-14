@@ -1,12 +1,16 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Pencil } from "lucide-react";
+import { ArrowLeft, ChevronRight, Pencil, Send, Zap } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
+import { formatLabel } from "@/lib/formatLabel";
+import { format } from "date-fns";
+import { sendWhatsAppMessage } from "@/services/aisensy";
+import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "text-muted-foreground bg-muted/40",
