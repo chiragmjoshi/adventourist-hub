@@ -55,8 +55,8 @@ const ItineraryEdit = () => {
     meals_included: false, breakfast_included: false, sightseeing_included: false,
     support_247: false, hero_image: "", gallery: [] as string[],
     highlights: [] as string[], inclusions: "", exclusions: "",
-    itinerary_days: [] as DayPlan[],
-    seo_title: "", seo_description: "", seo_keywords: "",
+    itinerary_days: [] as DayPlan[], important_notes: "",
+    seo_title: "", seo_description: "", seo_keywords: "", _galleryInput: "",
   });
 
   const [highlightInput, setHighlightInput] = useState("");
