@@ -24,6 +24,7 @@ export type Database = {
           last_attempted_at: string | null
           lead_id: string | null
           recipient_mobile: string
+          recipient_name: string | null
           scheduled_for: string
           status: string | null
           template_id: string | null
@@ -39,6 +40,7 @@ export type Database = {
           last_attempted_at?: string | null
           lead_id?: string | null
           recipient_mobile: string
+          recipient_name?: string | null
           scheduled_for: string
           status?: string | null
           template_id?: string | null
@@ -54,6 +56,7 @@ export type Database = {
           last_attempted_at?: string | null
           lead_id?: string | null
           recipient_mobile?: string
+          recipient_name?: string | null
           scheduled_for?: string
           status?: string | null
           template_id?: string | null
@@ -143,47 +146,73 @@ export type Database = {
       }
       automations_log: {
         Row: {
+          cashflow_id: string | null
           channel: string
           fired_at: string | null
           id: string
           lead_id: string | null
           recipient_email: string | null
           recipient_mobile: string | null
+          recipient_name: string | null
           response_payload: Json | null
           status: string | null
+          template_id: string | null
           template_name: string | null
           trigger_event: string
+          variables: Json | null
         }
         Insert: {
+          cashflow_id?: string | null
           channel: string
           fired_at?: string | null
           id?: string
           lead_id?: string | null
           recipient_email?: string | null
           recipient_mobile?: string | null
+          recipient_name?: string | null
           response_payload?: Json | null
           status?: string | null
+          template_id?: string | null
           template_name?: string | null
           trigger_event: string
+          variables?: Json | null
         }
         Update: {
+          cashflow_id?: string | null
           channel?: string
           fired_at?: string | null
           id?: string
           lead_id?: string | null
           recipient_email?: string | null
           recipient_mobile?: string | null
+          recipient_name?: string | null
           response_payload?: Json | null
           status?: string | null
+          template_id?: string | null
           template_name?: string | null
           trigger_event?: string
+          variables?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "automations_log_cashflow_id_fkey"
+            columns: ["cashflow_id"]
+            isOneToOne: false
+            referencedRelation: "trip_cashflow"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "automations_log_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automations_log_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "automation_templates"
             referencedColumns: ["id"]
           },
         ]
