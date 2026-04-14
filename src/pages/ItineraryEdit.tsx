@@ -55,8 +55,8 @@ const ItineraryEdit = () => {
     meals_included: false, breakfast_included: false, sightseeing_included: false,
     support_247: false, hero_image: "", gallery: [] as string[],
     highlights: [] as string[], inclusions: "", exclusions: "",
-    itinerary_days: [] as DayPlan[],
-    seo_title: "", seo_description: "", seo_keywords: "",
+    itinerary_days: [] as DayPlan[], important_notes: "",
+    seo_title: "", seo_description: "", seo_keywords: "", _galleryInput: "",
   });
 
   const [highlightInput, setHighlightInput] = useState("");
@@ -420,27 +420,54 @@ const ItineraryEdit = () => {
             </CardContent>
           </Card>
           <Card className="border-border/50 shadow-none">
-            <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Gallery</CardTitle></CardHeader>
-            <CardContent className="px-5 pb-5">
-              <div className="grid grid-cols-4 gap-3">
-                {(form.gallery as string[]).map((url, idx) => (
-                  <div key={idx} className="relative group">
-                    <img src={url} alt="" className="w-full h-24 object-cover rounded-md" />
-                    <button onClick={() => setField("gallery", (form.gallery as string[]).filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-                <div className="border-2 border-dashed border-border/60 rounded-md h-24 flex items-center justify-center">
-                  <Input placeholder="Image URL" className="text-xs border-0 text-center" onKeyDown={e => {
-                    if (e.key === "Enter" && (e.target as HTMLInputElement).value) {
-                      setField("gallery", [...(form.gallery as string[]), (e.target as HTMLInputElement).value]);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }} />
-                </div>
+            <CardHeader className="px-5 pt-4 pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Gallery</CardTitle>
+                <span className="text-xs text-muted-foreground">{(form.gallery as string[]).length}/10 images</span>
               </div>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 space-y-3">
+              {(form.gallery as string[]).length > 0 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {(form.gallery as string[]).map((url, idx) => (
+                    <div key={idx} className="relative group">
+                      <img src={url} alt="" className="w-full h-24 object-cover rounded-md border border-border/40" />
+                      <button onClick={() => setField("gallery", (form.gallery as string[]).filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive">
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(form.gallery as string[]).length < 10 && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Paste image URL and press Enter or click Add"
+                    className="rounded-md text-xs"
+                    value={form._galleryInput || ""}
+                    onChange={e => setField("_galleryInput", e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && form._galleryInput?.trim()) {
+                        e.preventDefault();
+                        setField("gallery", [...(form.gallery as string[]), form._galleryInput.trim()]);
+                        setField("_galleryInput", "");
+                      }
+                    }}
+                  />
+                  <Button variant="outline" size="sm" className="rounded-md text-xs shrink-0" onClick={() => {
+                    if (form._galleryInput?.trim()) {
+                      setField("gallery", [...(form.gallery as string[]), form._galleryInput.trim()]);
+                      setField("_galleryInput", "");
+                    }
+                  }}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />Add Image
+                  </Button>
+                </div>
+              )}
+              {(form.gallery as string[]).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">No gallery images yet. Add up to 10 image URLs.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -477,6 +504,10 @@ const ItineraryEdit = () => {
               <div>
                 <Label className="text-xs text-muted-foreground">Exclusions</Label>
                 <Textarea value={form.exclusions} onChange={e => setField("exclusions", e.target.value)} rows={4} className="mt-1 rounded-md" placeholder="What's not included..." />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Important Notes</Label>
+                <Textarea value={form.important_notes || ""} onChange={e => setField("important_notes", e.target.value)} rows={4} className="mt-1 rounded-md" placeholder="Visa requirements, health advisories, what to pack, local customs..." />
               </div>
             </CardContent>
           </Card>
