@@ -8,6 +8,8 @@ import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
 
+import { formatLabel } from "@/lib/formatLabel";
+
 const STATUSES = ["new_lead", "contacted", "quote_sent", "file_closed"] as const;
 const STATUS_LABELS: Record<string, string> = { new_lead: "New Leads", contacted: "Contacted", quote_sent: "Quote Sent", file_closed: "Files Closed" };
 const FUNNEL_COLORS = ["hsl(var(--blaze))", "hsl(var(--horizon))", "hsl(var(--lagoon))", "hsl(var(--ridge))"];
@@ -54,7 +56,7 @@ const SalesReport = () => {
     acc[d] = (acc[d] || 0) + 1;
     return acc;
   }, {});
-  const dispData = Object.entries(dispositions).map(([name, count]) => ({ name, count: count as number })).sort((a, b) => b.count - a.count);
+  const dispData = Object.entries(dispositions).map(([name, count]) => ({ name: formatLabel(name), count: count as number })).sort((a, b) => b.count - a.count);
 
   const pctChange = (curr: number, prev: number) => {
     if (prev === 0) return curr > 0 ? 100 : 0;
