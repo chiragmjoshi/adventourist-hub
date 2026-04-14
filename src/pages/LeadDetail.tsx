@@ -587,13 +587,13 @@ const LeadDetail = () => {
                 </Button>
               </CardHeader>
               <CardContent className="px-5 pb-5">
-                {timeline.filter((e: any) => e.event_type !== "comment").length === 0 ? (
+                {timeline.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">No timeline events yet</p>
                 ) : (
                   <div className="relative">
                     <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/60" />
                     <div className="space-y-4">
-                      {timeline.filter((e: any) => e.event_type !== "comment").map((event: any) => (
+                      {timeline.map((event: any) => (
                         <div key={event.id} className="flex gap-3 relative">
                           <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${EVENT_COLORS[event.event_type] || "bg-gray-400"}`}>
                             {event.event_type === "lead_created" ? <User className="h-3 w-3 text-white" /> :
