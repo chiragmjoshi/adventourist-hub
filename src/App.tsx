@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import LeadManagement from "./pages/LeadManagement";
+import LeadDetail from "./pages/LeadDetail";
 import Destinations from "./pages/Destinations";
 import MasterValues from "./pages/MasterValues";
 import { Itineraries, LandingPages, TripCashflow, Vendors, Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
+            <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
             <Route path="/itineraries" element={<ProtectedRoute><Itineraries /></ProtectedRoute>} />
             <Route path="/landing-pages" element={<ProtectedRoute><LandingPages /></ProtectedRoute>} />
             <Route path="/trip-cashflow" element={<ProtectedRoute><TripCashflow /></ProtectedRoute>} />

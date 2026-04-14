@@ -112,7 +112,7 @@ const LeadDetail = () => {
     mutationFn: async (updates: Record<string, any>) => {
       const oldLead = lead as any;
 
-      const { error } = await supabase.from("leads").update(updates).eq("id", id!);
+      const { error } = await supabase.from("leads").update(updates as any).eq("id", id!);
       if (error) throw error;
 
       // Log timeline events for status changes
