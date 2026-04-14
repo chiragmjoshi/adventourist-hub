@@ -1,10 +1,11 @@
-import { Bell, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import NotificationsDropdown from "@/components/NotificationsDropdown";
 
 interface TopBarProps {
   title: string;
@@ -32,21 +33,16 @@ const TopBar = ({ title }: TopBarProps) => {
         <h1 className="text-lg font-semibold text-foreground">{title}</h1>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-            3
-          </span>
-        </Button>
-        <div className="flex items-center gap-2">
+        <NotificationsDropdown />
+        <button onClick={() => navigate("/profile")} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
           </Avatar>
-          <div className="hidden md:block">
+          <div className="hidden md:block text-left">
             <p className="text-sm font-medium leading-none">{profile?.name ?? "User"}</p>
             <Badge variant="secondary" className="mt-0.5 text-[10px] capitalize px-1.5 py-0">{roleLabel}</Badge>
           </div>
-        </div>
+        </button>
         <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
           <LogOut className="h-4 w-4" />
         </Button>

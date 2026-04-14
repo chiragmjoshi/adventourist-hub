@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import LeadManagement from "./pages/LeadManagement";
@@ -23,8 +24,17 @@ import Settings from "./pages/Settings";
 import LandingPageList from "./pages/LandingPageList";
 import LandingPageEdit from "./pages/LandingPageEdit";
 import LandingPageDetail from "./pages/LandingPageDetail";
-import { Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
 import LandingPage from "./pages/LandingPage";
+import ReportsHub from "./pages/ReportsHub";
+import SalesReport from "./pages/reports/SalesReport";
+import RevenueReport from "./pages/reports/RevenueReport";
+import ConversionReport from "./pages/reports/ConversionReport";
+import DestinationReport from "./pages/reports/DestinationReport";
+import PlatformROI from "./pages/reports/PlatformROI";
+import TeamPerformance from "./pages/reports/TeamPerformance";
+import UserManagementPage from "./pages/UserManagementPage";
+import RoleManagementPage from "./pages/RoleManagementPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,7 +58,7 @@ const App = () => (
             <Route path="/landing-pages/new" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
             <Route path="/landing-pages/edit/:id" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
             <Route path="/landing-pages/:id" element={<ProtectedRoute><LandingPageDetail /></ProtectedRoute>} />
-            <Route path="/trip-cashflow" element={<ProtectedRoute><TripCashflowList /></ProtectedRoute>} />
+            <Route path="/trip-cashflow" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["operations", "admin", "super_admin", "finance"]} pageName="Trip Cashflow"><TripCashflowList /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/trip-cashflow/new" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
             <Route path="/trip-cashflow/edit/:id" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
             <Route path="/trip-cashflow/:id" element={<ProtectedRoute><TripCashflowDetail /></ProtectedRoute>} />
@@ -56,12 +66,19 @@ const App = () => (
             <Route path="/vendors/new" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
             <Route path="/vendors/edit/:id" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
             <Route path="/vendors/:id" element={<ProtectedRoute><VendorDetail /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="Settings"><Settings /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><ReportsHub /></ProtectedRoute>} />
+            <Route path="/reports/sales" element={<ProtectedRoute><SalesReport /></ProtectedRoute>} />
+            <Route path="/reports/revenue" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["finance", "admin", "super_admin"]} pageName="Revenue Report"><RevenueReport /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/reports/conversion" element={<ProtectedRoute><ConversionReport /></ProtectedRoute>} />
+            <Route path="/reports/destinations" element={<ProtectedRoute><DestinationReport /></ProtectedRoute>} />
+            <Route path="/reports/platform-roi" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Platform ROI"><PlatformROI /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/reports/team" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Team Performance"><TeamPerformance /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/db/destinations" element={<ProtectedRoute><Destinations /></ProtectedRoute>} />
             <Route path="/db/master-values" element={<ProtectedRoute><MasterValues /></ProtectedRoute>} />
-            <Route path="/user-management" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
-            <Route path="/role-management" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
+            <Route path="/user-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="User Management"><UserManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/role-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="Role Management"><RoleManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/l/:slug" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
