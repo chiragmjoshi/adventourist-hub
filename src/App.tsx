@@ -24,6 +24,7 @@ import LandingPageList from "./pages/LandingPageList";
 import LandingPageEdit from "./pages/LandingPageEdit";
 import LandingPageDetail from "./pages/LandingPageDetail";
 import { Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
