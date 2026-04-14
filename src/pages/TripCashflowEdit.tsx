@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ArrowLeft, ChevronRight, Save, Plus, Trash2, Upload, GripVertical, Check } from "lucide-react";
 import { toast } from "sonner";
 import { formatINR } from "@/lib/formatINR";
+import { queueTripAutomations } from "@/services/automationTriggers";
 
 interface VendorLine {
   id?: string;
@@ -228,6 +229,12 @@ const TripCashflowEdit = () => {
       queryClient.invalidateQueries({ queryKey: ["trip_cashflow"] });
       setLastSaved(new Date());
       toast.success("Cashflow saved");
+      // Queue automations if travel dates present
+      if (cfId && form.travel_start_date && form.travel_end_date && form.lead_id) {
+        queueTripAutomations(cfId).then((count) => {
+          if (count && count > 0) toast.success(`${count} WhatsApp automations scheduled for this trip`);
+        });
+      }
       if (isNew && cfId) navigate(`/trip-cashflow/edit/${cfId}`, { replace: true });
     },
     onError: (e: any) => toast.error(e.message || "Failed to save"),
