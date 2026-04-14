@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import AdventouristLogo from "@/components/AdventouristLogo";
+import logoMain from "@/assets/logo-main.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -31,7 +31,7 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-abyss">
       <Card className="w-full max-w-md border-sidebar-border bg-sidebar-accent">
         <CardHeader className="items-center space-y-4 pb-2">
-          <AdventouristLogo size={56} />
+          <img src={logoMain} alt="Adventourist" className="h-16 w-auto" />
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-sidebar-foreground">Welcome back</h1>
             <p className="text-sm text-muted-foreground mt-1">Sign in to Adventourist CMS</p>
