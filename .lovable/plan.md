@@ -1,23 +1,20 @@
 
 
-## Plan: Execute Day-wise Itinerary Updates
+## Plan: Re-enable Trigger & Delete Bulk-SQL Function
 
-### What this does
-Runs 3 uploaded SQL batch files against the database to update `itinerary_days` (JSONB) for all remaining itineraries with rich day-by-day content.
+### Steps
 
-### How it works
+1. **Create a migration** to re-enable the `generate_traveller_code` trigger on the `leads` table:
+   ```sql
+   CREATE TRIGGER generate_traveller_code_trigger
+     BEFORE INSERT ON public.leads
+     FOR EACH ROW
+     WHEN (NEW.traveller_code IS NULL OR NEW.traveller_code = '')
+     EXECUTE FUNCTION public.generate_traveller_code();
+   ```
 
-1. **Copy the 3 SQL files** to the sandbox filesystem
-2. **Execute each batch** via the existing `bulk-sql` edge function (already deployed) — each file is a single UPDATE statement joining on slug
-3. **Verify** by querying the database for itineraries where `itinerary_days` is still empty
+2. **Delete the `bulk-sql` edge function** — remove `supabase/functions/bulk-sql/index.ts` from codebase and call the delete tool to remove the deployed function.
 
-### Why this will work
-- The `generate_traveller_code` trigger is already disabled (from previous migration)
-- The `bulk-sql` edge function is already deployed and tested
-- Each file is a self-contained UPDATE...FROM (VALUES ...) statement matching by slug
-
-### Technical details
-- 3 batch files, ~20 itineraries each
-- Each uses `UPDATE itineraries SET itinerary_days = v.days_data::jsonb FROM (VALUES (...)) AS v(slug, days_data) WHERE itineraries.slug = v.slug`
-- No schema changes needed
+### Why the WHEN clause
+Historical leads already have `traveller_code` values. The trigger should only fire for new leads where the code is missing, preserving existing data.
 
