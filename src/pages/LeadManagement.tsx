@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X } from "lucide-react";
 import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, subDays } from "date-fns";
