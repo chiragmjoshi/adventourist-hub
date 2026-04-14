@@ -52,6 +52,7 @@ const TripCashflowEdit = () => {
   });
 
   const [vendorLines, setVendorLines] = useState<VendorLine[]>([]);
+  const [additionalDocs, setAdditionalDocs] = useState<string[]>([]);
 
   // Queries
   const { data: existing } = useQuery({
@@ -420,6 +421,34 @@ const TripCashflowEdit = () => {
                     className="mt-1 rounded-md" />
                   <p className="text-[10px] text-muted-foreground mt-1">× {form.pax_count} pax = {formatINR(line.cost_per_pax_incl_gst * form.pax_count)}</p>
                 </div>
+                <div className="mt-3">
+                  {line.invoice_url ? (
+                    <div className="flex items-center gap-2 text-xs bg-muted/20 rounded-md p-2 border border-border/30">
+                      <span className="truncate flex-1 font-mono">{line.invoice_url.split("/").pop()}</span>
+                      <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/cashflow-docs/${line.invoice_url}`} target="_blank" rel="noreferrer"
+                        className="text-primary hover:underline text-xs shrink-0">View</a>
+                      <button onClick={() => updateLine(idx, { invoice_url: "" })} className="text-destructive hover:underline text-xs shrink-0">Remove</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" id={`invoice-upload-${idx}`}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) { toast.error("File must be under 5MB"); return; }
+                          const code = existing?.cashflow_code || "new";
+                          const path = `${code}/invoices/${Date.now()}_${file.name}`;
+                          const { error } = await supabase.storage.from("cashflow-docs").upload(path, file);
+                          if (error) { toast.error("Upload failed"); return; }
+                          updateLine(idx, { invoice_url: path });
+                          toast.success("Invoice uploaded");
+                        }} />
+                      <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => document.getElementById(`invoice-upload-${idx}`)?.click()}>
+                        <Upload className="h-3.5 w-3.5 mr-1" />Upload Invoice
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -527,6 +556,74 @@ const TripCashflowEdit = () => {
 
         {/* Tab 4: Documents & Notes */}
         <TabsContent value="docs" className="space-y-5">
+          {/* PAN Card Upload */}
+          <Card className="border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Documents</CardTitle></CardHeader>
+            <CardContent className="px-5 pb-4 space-y-4">
+              <div>
+                <Label className="text-xs text-muted-foreground">Customer PAN Card</Label>
+                <p className="text-[10px] text-muted-foreground mb-1.5">PDF, JPG, or PNG — max 5MB</p>
+                {form.pan_card_url ? (
+                  <div className="flex items-center gap-2 text-xs bg-muted/20 rounded-md p-2.5 border border-border/30">
+                    <span className="truncate flex-1 font-mono">{form.pan_card_url.split("/").pop()}</span>
+                    <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/cashflow-docs/${form.pan_card_url}`} target="_blank" rel="noreferrer"
+                      className="text-primary hover:underline text-xs shrink-0">View</a>
+                    <button onClick={() => setField("pan_card_url", "")} className="text-destructive hover:underline text-xs shrink-0">Remove</button>
+                  </div>
+                ) : (
+                  <div>
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" id="pan-upload"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 5 * 1024 * 1024) { toast.error("File must be under 5MB"); return; }
+                        const code = existing?.cashflow_code || "new";
+                        const path = `${code}/pan/${Date.now()}_${file.name}`;
+                        const { error } = await supabase.storage.from("cashflow-docs").upload(path, file);
+                        if (error) { toast.error("Upload failed"); return; }
+                        setField("pan_card_url", path);
+                        toast.success("PAN card uploaded");
+                      }} />
+                    <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => document.getElementById("pan-upload")?.click()}>
+                      <Upload className="h-3.5 w-3.5 mr-1" />Upload PAN Card
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Documents */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Other Documents</Label>
+                <p className="text-[10px] text-muted-foreground mb-1.5">Passport copies, visa docs, etc.</p>
+                {additionalDocs.map((doc, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs bg-muted/20 rounded-md p-2.5 border border-border/30 mb-2">
+                    <span className="truncate flex-1 font-mono">{doc.split("/").pop()}</span>
+                    <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/cashflow-docs/${doc}`} target="_blank" rel="noreferrer"
+                      className="text-primary hover:underline text-xs shrink-0">View</a>
+                    <button onClick={() => setAdditionalDocs(prev => prev.filter((_, j) => j !== i))} className="text-destructive hover:underline text-xs shrink-0">Remove</button>
+                  </div>
+                ))}
+                <div>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" id="addl-doc-upload"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 5 * 1024 * 1024) { toast.error("File must be under 5MB"); return; }
+                      const code = existing?.cashflow_code || "new";
+                      const path = `${code}/docs/${Date.now()}_${file.name}`;
+                      const { error } = await supabase.storage.from("cashflow-docs").upload(path, file);
+                      if (error) { toast.error("Upload failed"); return; }
+                      setAdditionalDocs(prev => [...prev, path]);
+                      toast.success("Document uploaded");
+                    }} />
+                  <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => document.getElementById("addl-doc-upload")?.click()}>
+                    <Upload className="h-3.5 w-3.5 mr-1" />Upload Document
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-border/50 shadow-none">
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Internal Notes</CardTitle></CardHeader>
             <CardContent className="px-5 pb-4">

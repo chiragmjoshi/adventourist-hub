@@ -28,7 +28,6 @@ const dbSubItems = [
 ];
 
 const bottomItems = [
-  { title: "Settings", url: "/settings", icon: Settings },
   { title: "User Management", url: "/user-management", icon: UserCheck },
   { title: "Role Management", url: "/role-management", icon: Shield },
 ];
@@ -120,6 +119,17 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Divider + Settings */}
+              <div className="my-2 mx-3 border-t border-border/30" />
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/settings" className={({ isActive }) => linkClasses(isActive)}>
+                    <Settings className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>Settings</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
