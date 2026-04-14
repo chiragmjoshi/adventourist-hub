@@ -1,55 +1,23 @@
 
 
-## Plan: Update All Itineraries with Production Data
+## Plan: Execute Day-wise Itinerary Updates
 
 ### What this does
-Updates all 72 existing itineraries in the database with rich content from the production MariaDB dump, including:
-- **Inclusions & Exclusions** (HTML stripped to plain text)
-- **Day-by-day itinerary** (parsed from `days_data` JSON into `itinerary_days` JSONB)
-- **SEO fields** (`seo_title`, `seo_description`)
-- **Important things / highlights** (mapped to `highlights` array)
-- **Inclusion flags** corrected (`transfers_included`, `meals_included`, `stay_included`, etc.)
+Runs 3 uploaded SQL batch files against the database to update `itinerary_days` (JSONB) for all remaining itineraries with rich day-by-day content.
 
 ### How it works
 
-**Step 1: Parse the uploaded SQL file**
-Write a Python script that:
-1. Reads the MariaDB SQL dump
-2. Extracts all 72 itinerary records with their slugs
-3. For each record, parses:
-   - `important_things` HTML → plain text array for `highlights`
-   - `inclusion` HTML → plain text for `inclusions`
-   - `exclusion` HTML → plain text for `exclusions`
-   - `days_data` JSON → `itinerary_days` JSONB (mapping `title`/`detail` to the app's day plan format with meals/activities/accommodation defaults)
-   - `meta_title` → `seo_title`
-   - `meta_description` → `seo_description`
-   - Boolean flags: `transfers_included`, `all_meals_included` → `meals_included`, `stay_included`, `breakfast_included`, `sightseeing_included`, `support_24x7` → `support_247`
-4. Generates UPDATE SQL statements matched by `slug`
+1. **Copy the 3 SQL files** to the sandbox filesystem
+2. **Execute each batch** via the existing `bulk-sql` edge function (already deployed) — each file is a single UPDATE statement joining on slug
+3. **Verify** by querying the database for itineraries where `itinerary_days` is still empty
 
-**Step 2: Execute updates via the insert tool**
-Run the generated UPDATE statements in batches against the database, updating each itinerary by slug.
+### Why this will work
+- The `generate_traveller_code` trigger is already disabled (from previous migration)
+- The `bulk-sql` edge function is already deployed and tested
+- Each file is a self-contained UPDATE...FROM (VALUES ...) statement matching by slug
 
-### Data mapping
-
-```text
-Old MariaDB Column        → New Supabase Column
-─────────────────────────────────────────────────
-important_things (HTML)    → highlights (text[])
-inclusion (HTML)           → inclusions (text)
-exclusion (HTML)           → exclusions (text)
-days_data (JSON)           → itinerary_days (JSONB)
-meta_title                 → seo_title
-meta_description           → seo_description
-all_meals_included         → meals_included
-support_24x7_included      → support_247
-flights_included           → flights_included
-transfers_included         → transfers_included
-stay_included              → stay_included
-breakfast_included         → breakfast_included
-sightseeing_included       → sightseeing_included
-```
-
-### What won't change
-- Existing `price_per_person`, `nights`, `days`, `destination_id` remain as-is (already seeded correctly)
-- No schema changes needed — all target columns already exist
+### Technical details
+- 3 batch files, ~20 itineraries each
+- Each uses `UPDATE itineraries SET itinerary_days = v.days_data::jsonb FROM (VALUES (...)) AS v(slug, days_data) WHERE itineraries.slug = v.slug`
+- No schema changes needed
 
