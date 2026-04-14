@@ -241,18 +241,35 @@ export type Database = {
           campaign_type: string | null
           channel: string | null
           created_at: string | null
+          custom_exclusions: string | null
+          custom_inclusions: string | null
           destination_id: string | null
+          destination_type: string[] | null
+          form_after_submit_message: string | null
+          form_submit_text: string | null
+          form_subtitle: string | null
+          form_terms_label: string | null
+          form_title: string | null
+          gallery: string[] | null
           hero_headline: string | null
+          hero_image: string | null
           hero_subtext: string | null
           id: string
           is_active: boolean | null
+          itinerary_id: string | null
           name: string
           platform: string | null
           published_at: string | null
+          seo_description: string | null
+          seo_title: string | null
           slug: string
+          stay_days: string | null
           suitable_for: string[] | null
           template: string | null
+          testimonial_ids: string[] | null
           time_to_visit: string[] | null
+          updated_at: string | null
+          why_adventourist: string | null
         }
         Insert: {
           ad_group?: string | null
@@ -260,18 +277,35 @@ export type Database = {
           campaign_type?: string | null
           channel?: string | null
           created_at?: string | null
+          custom_exclusions?: string | null
+          custom_inclusions?: string | null
           destination_id?: string | null
+          destination_type?: string[] | null
+          form_after_submit_message?: string | null
+          form_submit_text?: string | null
+          form_subtitle?: string | null
+          form_terms_label?: string | null
+          form_title?: string | null
+          gallery?: string[] | null
           hero_headline?: string | null
+          hero_image?: string | null
           hero_subtext?: string | null
           id?: string
           is_active?: boolean | null
+          itinerary_id?: string | null
           name: string
           platform?: string | null
           published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug: string
+          stay_days?: string | null
           suitable_for?: string[] | null
           template?: string | null
+          testimonial_ids?: string[] | null
           time_to_visit?: string[] | null
+          updated_at?: string | null
+          why_adventourist?: string | null
         }
         Update: {
           ad_group?: string | null
@@ -279,18 +313,35 @@ export type Database = {
           campaign_type?: string | null
           channel?: string | null
           created_at?: string | null
+          custom_exclusions?: string | null
+          custom_inclusions?: string | null
           destination_id?: string | null
+          destination_type?: string[] | null
+          form_after_submit_message?: string | null
+          form_submit_text?: string | null
+          form_subtitle?: string | null
+          form_terms_label?: string | null
+          form_title?: string | null
+          gallery?: string[] | null
           hero_headline?: string | null
+          hero_image?: string | null
           hero_subtext?: string | null
           id?: string
           is_active?: boolean | null
+          itinerary_id?: string | null
           name?: string
           platform?: string | null
           published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string
+          stay_days?: string | null
           suitable_for?: string[] | null
           template?: string | null
+          testimonial_ids?: string[] | null
           time_to_visit?: string[] | null
+          updated_at?: string | null
+          why_adventourist?: string | null
         }
         Relationships: [
           {
@@ -298,6 +349,13 @@ export type Database = {
             columns: ["destination_id"]
             isOneToOne: false
             referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_itinerary_id_fkey"
+            columns: ["itinerary_id"]
+            isOneToOne: false
+            referencedRelation: "itineraries"
             referencedColumns: ["id"]
           },
         ]
