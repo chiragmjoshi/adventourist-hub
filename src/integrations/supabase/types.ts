@@ -460,6 +460,21 @@ export type Database = {
         }
         Relationships: []
       }
+      traveller_code_sequence: {
+        Row: {
+          last_sequence: number
+          year_prefix: string
+        }
+        Insert: {
+          last_sequence?: number
+          year_prefix: string
+        }
+        Update: {
+          last_sequence?: number
+          year_prefix?: string
+        }
+        Relationships: []
+      }
       trip_cashflow: {
         Row: {
           assigned_to: string | null
