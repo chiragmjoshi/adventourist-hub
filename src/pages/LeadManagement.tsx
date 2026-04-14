@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X } from "lucide-react";
+import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, subDays } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -491,15 +492,15 @@ const LeadManagement = () => {
                     {/* Disposition */}
                     <TableCell className="py-3">
                       <div className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[lead.disposition] || "bg-gray-300"}`} />
-                        <span className="text-[12px] text-foreground/70">{lead.disposition || "—"}</span>
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[lead.disposition] || DISP_DOT[formatLabel(lead.disposition)] || "bg-gray-300"}`} />
+                        <span className="text-[12px] text-foreground/70">{lead.disposition ? formatLabel(lead.disposition) : "—"}</span>
                       </div>
                     </TableCell>
 
                     {/* Sales Status */}
                     <TableCell className="py-3">
-                      <Badge variant="outline" className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${STATUS_BADGE[lead.sales_status] || "bg-gray-50 text-gray-600 border-gray-200"}`}>
-                        {lead.sales_status || "—"}
+                      <Badge variant="outline" className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${STATUS_BADGE[lead.sales_status] || STATUS_BADGE[formatLabel(lead.sales_status)] || "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                        {lead.sales_status ? formatLabel(lead.sales_status) : "—"}
                       </Badge>
                     </TableCell>
 
