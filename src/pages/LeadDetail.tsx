@@ -339,7 +339,21 @@ const LeadDetail = () => {
                   style={{ backgroundColor: "hsl(var(--blaze))" }}>{initials}</div>
                 <h2 className="text-lg font-semibold flex items-center gap-1.5">
                   {l.name}
-                  {l.customer_tag === "hot" && <Flame className="h-4 w-4 text-orange-500" />}
+                  <button
+                    onClick={() => {
+                      const newVal = !l.is_hot;
+                      supabase.from("leads").update({ is_hot: newVal } as any).eq("id", id!).then(({ error }) => {
+                        if (error) { toast.error("Failed to update"); return; }
+                        queryClient.invalidateQueries({ queryKey: ["lead", id] });
+                        queryClient.invalidateQueries({ queryKey: ["leads"] });
+                        toast.success(newVal ? "Marked as hot lead 🔥" : "Removed hot lead tag");
+                      });
+                    }}
+                    className="hover:scale-110 transition-transform"
+                    title={`${l.is_hot ? "Remove" : "Mark as"} hot lead`}
+                  >
+                    <Flame className={`h-4 w-4 ${l.is_hot ? "text-orange-500 fill-orange-500" : "text-gray-300 hover:text-orange-300"}`} />
+                  </button>
                 </h2>
                 <span className="font-mono text-xs text-muted-foreground mt-0.5" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>
               </div>
