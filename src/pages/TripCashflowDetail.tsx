@@ -22,10 +22,24 @@ const STATUS_COLORS: Record<string, string> = {
 const TripCashflowDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: cf, isLoading } = useQuery({
     queryKey: ["cashflow", id],
     queryFn: async () => { const { data, error } = await supabase.from("trip_cashflow").select("*").eq("id", id!).single(); if (error) throw error; return data; },
+  });
+
+  const { data: automationQueue = [] } = useQuery({
+    queryKey: ["cashflow_automations", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("automation_queue" as any)
+        .select("*, automation_templates(name, aisensy_template_name)")
+        .eq("cashflow_id", id!)
+        .order("scheduled_for");
+      return (data || []) as any[];
+    },
+    enabled: !!id,
   });
 
   const { data: vendorLines = [] } = useQuery({
