@@ -40,7 +40,7 @@ export async function processAutomationQueue(): Promise<void> {
       const result = await sendWhatsAppMessage(
         templateName,
         item.recipient_mobile,
-        Array.isArray(item.variables) ? item.variables : [],
+        Array.isArray(item.variables) ? (item.variables as any[]).map(String) : [],
         (item as any).recipient_name || "Customer"
       );
 
