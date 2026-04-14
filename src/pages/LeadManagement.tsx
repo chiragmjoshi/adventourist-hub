@@ -293,57 +293,46 @@ const LeadManagement = () => {
         </Button>
       </div>
 
-      {/* ── Smart Filter Bar ── */}
-      <Card className="mb-5 border-border/50 shadow-none">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 text-xs w-[130px] rounded-md border-border/60" />
-            <span className="text-xs text-muted-foreground">to</span>
-            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-8 text-xs w-[130px] rounded-md border-border/60" />
-            <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
-              options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
-            <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
-              options={mvByType("channel").map((v: any) => ({ value: v.value, label: v.value }))} />
-            <SmallSelect label="Platform" value={filterPlatform} onChange={setFilterPlatform}
-              options={mvByType("platform").map((v: any) => ({ value: v.value, label: v.value }))} />
-            <SmallSelect label="Campaign" value={filterCampaign} onChange={setFilterCampaign}
-              options={mvByType("campaign_type").map((v: any) => ({ value: v.value, label: v.value }))} />
+      {/* ── Smart Filter Bar — single compact row ── */}
+      <div className="flex items-center gap-2 mb-4 px-3 py-2 border border-border/50 rounded-lg bg-background h-12">
+        <div className="flex items-center gap-1 border border-border/60 rounded-md h-8 px-2 min-w-[200px]">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-6 text-[11px] border-0 p-0 shadow-none w-[90px]" />
+          <span className="text-[10px] text-muted-foreground">to</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-6 text-[11px] border-0 p-0 shadow-none w-[90px]" />
+        </div>
+        <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
+          options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
+        <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
+          options={mvByType("channel").map((v: any) => ({ value: v.value, label: v.value }))} />
+        <SmallSelect label="Platform" value={filterPlatform} onChange={setFilterPlatform}
+          options={mvByType("platform").map((v: any) => ({ value: v.value, label: v.value }))} />
+        <SmallSelect label="Campaign" value={filterCampaign} onChange={setFilterCampaign}
+          options={mvByType("campaign_type").map((v: any) => ({ value: v.value, label: v.value }))} />
 
-            <Collapsible open={moreFilters} onOpenChange={setMoreFilters}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs gap-1">
-                  More <ChevronDown className={`h-3 w-3 transition-transform ${moreFilters ? "rotate-180" : ""}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
-                  options={mvByType("ad_group").map((v: any) => ({ value: v.value, label: v.value }))} />
-              </CollapsibleContent>
-            </Collapsible>
+        {moreFilters && (
+          <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
+            options={mvByType("ad_group").map((v: any) => ({ value: v.value, label: v.value }))} />
+        )}
+        <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 px-2" onClick={() => setMoreFilters(!moreFilters)}>
+          {moreFilters ? "Less" : "More"} <ChevronDown className={`h-3 w-3 transition-transform ${moreFilters ? "rotate-180" : ""}`} />
+        </Button>
 
-            <Button size="sm" className="h-8 text-xs rounded-md" onClick={() => { setFiltersApplied(true); setCurrentPage(1); }}>
-              Apply
-            </Button>
+        <Button size="sm" className="h-8 text-xs rounded-md px-3 bg-[hsl(var(--blaze))] hover:bg-[hsl(var(--blaze))]/90" onClick={() => { setFiltersApplied(true); setCurrentPage(1); }}>
+          Apply
+        </Button>
 
-            {anyFiltersActive && (
-              <div className="flex items-center gap-1.5 ml-1">
-                {activeFilterCount > 0 && (
-                  <span className="text-xs text-muted-foreground">{activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} active</span>
-                )}
-                <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5">
-                  <RotateCcw className="h-3 w-3" />Reset
-                </button>
-              </div>
-            )}
+        {anyFiltersActive && (
+          <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 whitespace-nowrap">
+            <RotateCcw className="h-3 w-3" />Reset
+          </button>
+        )}
 
-            <div className="ml-auto">
-              <Button variant="outline" size="sm" className="h-8 text-xs rounded-md gap-1.5" onClick={handleExport}>
-                <Download className="h-3.5 w-3.5" />Export
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="ml-auto flex-shrink-0">
+          <Button variant="outline" size="sm" className="h-8 text-xs rounded-md gap-1.5" onClick={handleExport}>
+            <Download className="h-3.5 w-3.5" />Export
+          </Button>
+        </div>
+      </div>
 
       {/* ── Disposition Chips ── */}
       <div className="mb-3">
