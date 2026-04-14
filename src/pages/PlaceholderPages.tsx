@@ -14,8 +14,7 @@ const PlaceholderPage = ({ title }: { title: string }) => (
   </AppLayout>
 );
 
-// Itineraries is now a full page - see ItineraryList.tsx
-export const LandingPages = () => <PlaceholderPage title="Landing Pages" />;
+// LandingPages is now a full page - see LandingPageList.tsx
 export const Reports = () => <PlaceholderPage title="Reports" />;
 export const UserManagement = () => <PlaceholderPage title="User Management" />;
 export const RoleManagement = () => <PlaceholderPage title="Role Management" />;
