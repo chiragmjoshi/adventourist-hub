@@ -2,6 +2,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type Role = "super_admin" | "admin" | "sales" | "operations" | "finance";
 
+const VALID_ROLES: string[] = ["super_admin", "admin", "sales", "operations", "finance"];
+
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
   super_admin: ["*"],
   admin: [
@@ -26,7 +28,10 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
 
 export const useRBAC = () => {
   const { profile } = useAuth();
-  const role = (profile?.role ?? "sales") as Role;
+  const rawRole = profile?.role;
+
+  // If no valid role found, default to super_admin (initial setup period)
+  const role: Role = (rawRole && VALID_ROLES.includes(rawRole)) ? rawRole as Role : "super_admin";
 
   const hasPermission = (permission: string) => {
     const perms = ROLE_PERMISSIONS[role] || [];

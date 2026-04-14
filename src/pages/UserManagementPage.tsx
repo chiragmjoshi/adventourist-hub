@@ -171,7 +171,13 @@ const UserManagementPage = () => {
                     </div>
                   </TableCell>
                   <TableCell><Badge className={`capitalize text-[10px] ${ROLE_COLORS[u.role] || ""}`}>{u.role.replace("_", " ")}</Badge></TableCell>
-                  <TableCell><Badge variant={u.is_active ? "default" : "secondary"} className={`text-[10px] ${u.is_active ? "bg-ridge/20 text-ridge" : ""}`}>{u.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                  <TableCell>
+                    {!u.is_active ? (
+                      <Badge variant="secondary" className="text-[10px] bg-yellow-100 text-yellow-700">Pending Invite</Badge>
+                    ) : (
+                      <Badge variant="default" className="text-[10px] bg-ridge/20 text-ridge">Active</Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">{leadCounts[u.id] || 0}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => handleDeactivate(u.id)}>{u.is_active ? "Deactivate" : "Activate"}</Button>
