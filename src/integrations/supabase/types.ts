@@ -348,6 +348,7 @@ export type Database = {
           created_at: string | null
           days: number | null
           destination_id: string | null
+          destination_slug: string | null
           destination_type: string | null
           exclusions: string | null
           flights_included: boolean | null
@@ -382,6 +383,7 @@ export type Database = {
           created_at?: string | null
           days?: number | null
           destination_id?: string | null
+          destination_slug?: string | null
           destination_type?: string | null
           exclusions?: string | null
           flights_included?: boolean | null
@@ -416,6 +418,7 @@ export type Database = {
           created_at?: string | null
           days?: number | null
           destination_id?: string | null
+          destination_slug?: string | null
           destination_type?: string | null
           exclusions?: string | null
           flights_included?: boolean | null
