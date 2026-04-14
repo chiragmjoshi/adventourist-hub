@@ -37,6 +37,7 @@ async function addTimelineEvent(leadId: string, note: string) {
 
 /**
  * TRIGGER 1: File Closed — send trip confirmation to customer
+ * Variables: {{1}}=first name, {{2}}=destination, {{3}}=travel date, {{4}}=agent name
  */
 export async function triggerFileClosedAutomation(leadId: string) {
   try {
@@ -51,7 +52,6 @@ export async function triggerFileClosedAutomation(leadId: string) {
     const template = await getTemplate("file_closed");
     if (!template?.is_active) return;
 
-    // Get cashflow for travel date
     const { data: cashflow } = await supabase
       .from("trip_cashflow")
       .select("travel_start_date")
@@ -61,10 +61,10 @@ export async function triggerFileClosedAutomation(leadId: string) {
       .single();
 
     const variables = [
-      lead.name.split(" ")[0],
-      (lead.destinations as any)?.name || "your destination",
-      cashflow?.travel_start_date ? fmtDate(cashflow.travel_start_date) : "as planned",
-      (lead.users as any)?.name || "our team",
+      lead.name.split(" ")[0],                                       // {{1}} customer first name
+      (lead.destinations as any)?.name || "your destination",        // {{2}} destination name
+      cashflow?.travel_start_date ? fmtDate(cashflow.travel_start_date) : "as planned", // {{3}} travel date
+      (lead.users as any)?.name || "our team",                       // {{4}} agent name
     ];
 
     const result = await sendWhatsAppMessage(
@@ -93,6 +93,7 @@ export async function triggerFileClosedAutomation(leadId: string) {
 
 /**
  * TRIGGER 5: Follow-up Reminder — send to assigned agent
+ * Variables: {{1}}=agent first name, {{2}}=customer full name, {{3}}=traveller code, {{4}}=destination
  */
 export async function triggerFollowUpReminder(leadId: string) {
   try {
@@ -109,10 +110,10 @@ export async function triggerFollowUpReminder(leadId: string) {
     if (!template?.is_active) return;
 
     const variables = [
-      agent.name.split(" ")[0],
-      lead!.name,
-      lead!.traveller_code,
-      (lead!.destinations as any)?.name || "their destination",
+      agent.name.split(" ")[0],                                      // {{1}} agent first name
+      lead!.name,                                                    // {{2}} customer full name
+      lead!.traveller_code,                                          // {{3}} traveller code
+      (lead!.destinations as any)?.name || "their destination",      // {{4}} destination name
     ];
 
     const result = await sendWhatsAppMessage(
@@ -137,6 +138,10 @@ export async function triggerFollowUpReminder(leadId: string) {
 
 /**
  * Queue time-based automations when a cashflow is saved with travel dates.
+ * Variables per template:
+ *   pre_trip_3days: {{1}}=first name, {{2}}=destination, {{3}}=travel date
+ *   safe_journey:   {{1}}=first name, {{2}}=destination
+ *   review_request: {{1}}=first name, {{2}}=destination, {{3}}=review link
  */
 export async function queueTripAutomations(cashflowId: string) {
   try {
@@ -196,7 +201,7 @@ export async function queueTripAutomations(cashflowId: string) {
         trigger_event: "pre_trip_3days",
         scheduled_for: preTripDate.toISOString(),
         recipient_mobile: lead.mobile,
-        variables: [lead.name.split(" ")[0], destName, fmtDate(cf.travel_start_date)],
+        variables: [lead.name.split(" ")[0], destName, fmtDate(cf.travel_start_date)], // {{1}}, {{2}}, {{3}}
         status: "pending",
       },
       {
@@ -206,7 +211,7 @@ export async function queueTripAutomations(cashflowId: string) {
         trigger_event: "safe_journey",
         scheduled_for: safeJourneyDate.toISOString(),
         recipient_mobile: lead.mobile,
-        variables: [lead.name.split(" ")[0], destName],
+        variables: [lead.name.split(" ")[0], destName], // {{1}}, {{2}}
         status: "pending",
       },
       {
@@ -216,7 +221,7 @@ export async function queueTripAutomations(cashflowId: string) {
         trigger_event: "review_request",
         scheduled_for: reviewDate.toISOString(),
         recipient_mobile: lead.mobile,
-        variables: [lead.name.split(" ")[0], destName, reviewLink || ""],
+        variables: [lead.name.split(" ")[0], destName, reviewLink || ""], // {{1}}, {{2}}, {{3}}
         status: "pending",
       },
     ];
