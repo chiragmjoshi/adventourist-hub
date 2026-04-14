@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -8,75 +8,95 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Download, RotateCcw, Filter } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X } from "lucide-react";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, formatDistanceToNow, subDays } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 
-const DISPOSITION_COLORS: Record<string, string> = {
-  "Not Contacted": "bg-gray-100 text-gray-700 border-gray-300",
-  "Wrong Number / Invalid Lead": "bg-red-100 text-red-700 border-red-300",
-  "Busy Call Back": "bg-yellow-100 text-yellow-700 border-yellow-300",
-  "Not Reachable Call Back": "bg-orange-100 text-orange-700 border-orange-300",
-  "Query Closed": "bg-blue-100 text-blue-700 border-blue-300",
-  "Follow Up Needed": "bg-purple-100 text-purple-700 border-purple-300",
-  "Destination Changed": "bg-teal-100 text-teal-700 border-teal-300",
-  "Plan Dropped": "bg-pink-100 text-pink-700 border-pink-300",
-  "Booked Outside": "bg-gray-200 text-gray-800 border-gray-400",
-  "Ongoing Discussions": "bg-green-100 text-green-700 border-green-300",
-  "Not Interested": "bg-red-50 text-red-500 border-red-200",
-  "Ghosted": "bg-gray-50 text-gray-500 border-gray-200",
-  "Refund Issued": "bg-orange-100 text-orange-600 border-orange-300",
+/* ────── Disposition dot colors ────── */
+const DISP_DOT: Record<string, string> = {
+  "Not Contacted": "bg-gray-400",
+  "Wrong Number / Invalid Lead": "bg-red-500",
+  "Busy Call Back": "bg-amber-400",
+  "Not Reachable Call Back": "bg-orange-400",
+  "Query Closed": "bg-blue-500",
+  "Follow Up Needed": "bg-purple-500",
+  "Destination Changed": "bg-teal-500",
+  "Plan Dropped": "bg-pink-500",
+  "Booked Outside": "bg-gray-700",
+  "Ongoing Discussions": "bg-green-500",
+  "Not Interested": "bg-slate-400",
+  "Ghosted": "bg-gray-300",
+  "Refund Issued": "bg-orange-600",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  "File Closed": "bg-green-100 text-green-700 border-green-300",
-  "File Lost": "bg-red-100 text-red-700 border-red-300",
-  "Quote Sent": "bg-blue-100 text-blue-700 border-blue-300",
-  "New Lead": "bg-gray-100 text-gray-700 border-gray-300",
-  "Contacted": "bg-yellow-100 text-yellow-700 border-yellow-300",
-  "Refund Issued": "bg-orange-100 text-orange-600 border-orange-300",
-  "Invalid Lead": "bg-red-50 text-red-500 border-red-200",
-  "Follow Up Needed": "bg-purple-100 text-purple-700 border-purple-300",
-  "Ongoing Discussions": "bg-green-50 text-green-600 border-green-200",
-  "Booked Outside": "bg-gray-200 text-gray-800 border-gray-400",
+/* ────── Sales Status dot / badge colors ────── */
+const STATUS_DOT: Record<string, string> = {
+  "File Closed": "bg-[hsl(var(--ridge))]",
+  "File Lost": "bg-red-500",
+  "Quote Sent": "bg-[hsl(var(--horizon))]",
+  "New Lead": "bg-[hsl(var(--abyss))]",
+  "Contacted": "bg-[hsl(var(--lagoon))]",
+  "Follow Up Needed": "bg-[hsl(var(--blaze))]",
+  "Ongoing Discussions": "bg-blue-500",
+  "Refund Issued": "bg-orange-500",
+  "Invalid Lead": "bg-gray-400",
+  "Booked Outside": "bg-gray-700",
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  "File Closed": "bg-[hsl(var(--ridge))]/10 text-[hsl(var(--ridge))] border-[hsl(var(--ridge))]/20",
+  "File Lost": "bg-red-50 text-red-600 border-red-200",
+  "Quote Sent": "bg-[hsl(var(--horizon))]/10 text-[hsl(var(--horizon))] border-[hsl(var(--horizon))]/20",
+  "New Lead": "bg-[hsl(var(--abyss))]/10 text-[hsl(var(--abyss))] border-[hsl(var(--abyss))]/20",
+  "Contacted": "bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-[hsl(var(--lagoon))]/20",
+  "Follow Up Needed": "bg-[hsl(var(--blaze))]/10 text-[hsl(var(--blaze))] border-[hsl(var(--blaze))]/20",
+  "Ongoing Discussions": "bg-blue-50 text-blue-600 border-blue-200",
+  "Refund Issued": "bg-orange-50 text-orange-600 border-orange-200",
+  "Invalid Lead": "bg-gray-100 text-gray-500 border-gray-200",
+  "Booked Outside": "bg-gray-100 text-gray-700 border-gray-300",
 };
 
 const LeadManagement = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const now = new Date();
+  const { profile } = useAuth();
 
-  // Master filters
-  const [dateFrom, setDateFrom] = useState(format(startOfMonth(now), "yyyy-MM-dd"));
-  const [dateTo, setDateTo] = useState(format(endOfMonth(now), "yyyy-MM-dd"));
+  /* ── Filters ── */
+  const [dateFrom, setDateFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+  const [dateTo, setDateTo] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filterChannel, setFilterChannel] = useState("all");
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [filterCampaign, setFilterCampaign] = useState("all");
   const [filterAdGroup, setFilterAdGroup] = useState("all");
   const [filterDestination, setFilterDestination] = useState("all");
   const [filtersApplied, setFiltersApplied] = useState(false);
+  const [moreFilters, setMoreFilters] = useState(false);
 
-  // Quick filters
-  const [activeDisposition, setActiveDisposition] = useState<string | null>(null);
-  const [activeStatus, setActiveStatus] = useState<string | null>(null);
+  /* ── Quick filters (multi-select) ── */
+  const [activeDispositions, setActiveDispositions] = useState<Set<string>>(new Set());
+  const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
 
-  // Table controls
+  /* ── Table ── */
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
+  /* ── Form ── */
   const [form, setForm] = useState({
-    name: "", email: "", mobile: "", notes: "", destination_id: "", channel: "", platform: "", campaign_type: "", ad_group: "",
+    name: "", email: "", mobile: "", travel_date: "",
+    destination_id: "", itinerary_id: "", assigned_to: "",
+    channel: "", platform: "", campaign_type: "", ad_group: "", notes: "",
   });
 
-  // Fetch master values for filter dropdowns
+  /* ── Data queries ── */
   const { data: masterValues = [] } = useQuery({
     queryKey: ["master_values"],
     queryFn: async () => {
@@ -87,9 +107,29 @@ const LeadManagement = () => {
   });
 
   const { data: destinations = [] } = useQuery({
-    queryKey: ["destinations"],
+    queryKey: ["destinations_active"],
     queryFn: async () => {
       const { data, error } = await supabase.from("destinations").select("id, name").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: itineraries = [] } = useQuery({
+    queryKey: ["itineraries_by_dest", form.destination_id],
+    queryFn: async () => {
+      let q = supabase.from("itineraries").select("id, headline, destination_id");
+      if (form.destination_id) q = q.eq("destination_id", form.destination_id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users_active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("users").select("id, name").eq("is_active", true);
       if (error) throw error;
       return data;
     },
@@ -107,46 +147,64 @@ const LeadManagement = () => {
     },
   });
 
-  const mvByType = (type: string) => masterValues.filter((v: any) => v.type === type);
+  const mvByType = useCallback((type: string) => masterValues.filter((v: any) => v.type === type), [masterValues]);
 
+  /* ── Create lead ── */
   const createLead = useMutation({
-    mutationFn: async (newLead: typeof form) => {
-      const { error } = await supabase.from("leads").insert({
-        traveller_code: "TEMP", // trigger will overwrite
-        name: newLead.name,
-        email: newLead.email || null,
-        mobile: newLead.mobile || null,
-        notes: newLead.notes || null,
-        destination_id: newLead.destination_id || null,
-        channel: newLead.channel || null,
-        platform: newLead.platform || null,
-        campaign_type: newLead.campaign_type || null,
-        ad_group: newLead.ad_group || null,
-      });
+    mutationFn: async (f: typeof form) => {
+      const { data, error } = await supabase.from("leads").insert({
+        traveller_code: "TEMP",
+        name: f.name,
+        email: f.email || null,
+        mobile: f.mobile || null,
+        travel_date: f.travel_date || null,
+        destination_id: f.destination_id || null,
+        itinerary_id: f.itinerary_id || null,
+        assigned_to: f.assigned_to || null,
+        channel: f.channel || null,
+        platform: f.platform || null,
+        campaign_type: f.campaign_type || null,
+        ad_group: f.ad_group || null,
+        notes: f.notes || null,
+        sales_status: "New Lead",
+        disposition: "Not Contacted",
+      }).select("id, traveller_code").single();
       if (error) throw error;
+
+      // Log timeline
+      await supabase.from("lead_timeline").insert({
+        lead_id: data.id,
+        actor_id: profile?.id || null,
+        event_type: "lead_created",
+        note: `Lead ${data.traveller_code} created`,
+      });
+
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-      setDialogOpen(false);
-      setForm({ name: "", email: "", mobile: "", notes: "", destination_id: "", channel: "", platform: "", campaign_type: "", ad_group: "" });
-      toast.success("Lead created");
+      setSheetOpen(false);
+      setForm({ name: "", email: "", mobile: "", travel_date: "", destination_id: "", itinerary_id: "", assigned_to: "", channel: "", platform: "", campaign_type: "", ad_group: "", notes: "" });
+      toast.success(`Lead ${data.traveller_code} created successfully`);
     },
     onError: (e: any) => toast.error(e.message || "Failed to create lead"),
   });
 
-  // Apply all filters
+  /* ── Filter logic ── */
+  const activeFilterCount = useMemo(() => {
+    let c = 0;
+    if (filterChannel !== "all") c++;
+    if (filterPlatform !== "all") c++;
+    if (filterCampaign !== "all") c++;
+    if (filterAdGroup !== "all") c++;
+    if (filterDestination !== "all") c++;
+    return c;
+  }, [filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination]);
+
   const filtered = useMemo(() => {
     return leads.filter((l: any) => {
-      // Search
       const q = search.toLowerCase();
-      if (q && !(
-        l.name?.toLowerCase().includes(q) ||
-        l.traveller_code?.toLowerCase().includes(q) ||
-        l.email?.toLowerCase().includes(q) ||
-        l.mobile?.includes(q)
-      )) return false;
-
-      // Master filters (only when applied)
+      if (q && !(l.name?.toLowerCase().includes(q) || l.traveller_code?.toLowerCase().includes(q) || l.email?.toLowerCase().includes(q) || l.mobile?.includes(q))) return false;
       if (filtersApplied) {
         if (dateFrom && l.created_at && l.created_at < dateFrom) return false;
         if (dateTo && l.created_at && l.created_at > dateTo + "T23:59:59") return false;
@@ -156,38 +214,49 @@ const LeadManagement = () => {
         if (filterAdGroup !== "all" && l.ad_group !== filterAdGroup) return false;
         if (filterDestination !== "all" && l.destination_id !== filterDestination) return false;
       }
-
-      // Quick filters
-      if (activeDisposition && l.disposition !== activeDisposition) return false;
-      if (activeStatus && l.sales_status !== activeStatus) return false;
-
+      if (activeDispositions.size > 0 && !activeDispositions.has(l.disposition)) return false;
+      if (activeStatuses.size > 0 && !activeStatuses.has(l.sales_status)) return false;
       return true;
     });
-  }, [leads, search, filtersApplied, dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDisposition, activeStatus]);
+  }, [leads, search, filtersApplied, dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses]);
 
-  // Counts for pills
   const dispositionCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    leads.forEach((l: any) => { counts[l.disposition] = (counts[l.disposition] || 0) + 1; });
-    return counts;
+    const c: Record<string, number> = {};
+    leads.forEach((l: any) => { if (l.disposition) c[l.disposition] = (c[l.disposition] || 0) + 1; });
+    return c;
   }, [leads]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    leads.forEach((l: any) => { counts[l.sales_status] = (counts[l.sales_status] || 0) + 1; });
-    return counts;
+    const c: Record<string, number> = {};
+    leads.forEach((l: any) => { if (l.sales_status) c[l.sales_status] = (c[l.sales_status] || 0) + 1; });
+    return c;
   }, [leads]);
 
-  // Pagination
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  const resetFilters = () => {
+    setDateFrom(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+    setDateTo(format(new Date(), "yyyy-MM-dd"));
+    setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
+    setFilterAdGroup("all"); setFilterDestination("all"); setFiltersApplied(false);
+    setActiveDispositions(new Set()); setActiveStatuses(new Set()); setCurrentPage(1);
+  };
+
+  const toggleChip = (set: Set<string>, setFn: (s: Set<string>) => void, val: string) => {
+    const next = new Set(set);
+    next.has(val) ? next.delete(val) : next.add(val);
+    setFn(next);
+    setCurrentPage(1);
+  };
+
   const handleExport = () => {
     if (filtered.length === 0) { toast.error("No data to export"); return; }
-    const headers = ["Traveller Code", "Name", "Email", "Mobile", "Destination", "Disposition", "Sales Status", "Created"];
+    const headers = ["Traveller Code", "Name", "Email", "Mobile", "Destination", "Itinerary", "Disposition", "Sales Status", "Date"];
     const rows = filtered.map((l: any) => [
       l.traveller_code, l.name, l.email || "", l.mobile || "",
-      l.destinations?.name || "", l.disposition || "", l.sales_status || "",
+      l.destinations?.name || "", (l as any).itineraries?.headline || "",
+      l.disposition || "", l.sales_status || "",
       l.created_at ? format(new Date(l.created_at), "dd/MM/yyyy") : "",
     ]);
     const csv = [headers, ...rows].map(r => r.map((c: string) => `"${c}"`).join(",")).join("\n");
@@ -197,304 +266,396 @@ const LeadManagement = () => {
     toast.success("Exported to CSV");
   };
 
-  const resetFilters = () => {
-    setDateFrom(format(startOfMonth(now), "yyyy-MM-dd"));
-    setDateTo(format(endOfMonth(now), "yyyy-MM-dd"));
-    setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
-    setFilterAdGroup("all"); setFilterDestination("all");
-    setFiltersApplied(false);
-    setActiveDisposition(null); setActiveStatus(null);
-    setCurrentPage(1);
-  };
+  const anyFiltersActive = filtersApplied || activeDispositions.size > 0 || activeStatuses.size > 0;
 
-  const toggleAll = () => {
-    if (selectedIds.size === paginated.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(paginated.map((l: any) => l.id)));
-  };
+  const SmallSelect = ({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-8 text-xs rounded-md border-border/60 min-w-[120px]">
+        <SelectValue placeholder={label} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All {label}</SelectItem>
+        {options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
 
   return (
     <AppLayout title="Lead Management">
-      {/* Master Filters */}
-      <Card className="mb-4 border shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filters</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">From</Label>
-              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 text-xs" />
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Lead Management</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} leads</p>
+        </div>
+        <Button onClick={() => setSheetOpen(true)} className="rounded-md">
+          <Plus className="h-4 w-4 mr-1.5" />Add Lead
+        </Button>
+      </div>
+
+      {/* ── Smart Filter Bar ── */}
+      <Card className="mb-5 border-border/50 shadow-none">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 text-xs w-[130px] rounded-md border-border/60" />
+            <span className="text-xs text-muted-foreground">to</span>
+            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-8 text-xs w-[130px] rounded-md border-border/60" />
+            <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
+              options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
+            <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
+              options={mvByType("channel").map((v: any) => ({ value: v.value, label: v.value }))} />
+            <SmallSelect label="Platform" value={filterPlatform} onChange={setFilterPlatform}
+              options={mvByType("platform").map((v: any) => ({ value: v.value, label: v.value }))} />
+            <SmallSelect label="Campaign" value={filterCampaign} onChange={setFilterCampaign}
+              options={mvByType("campaign_type").map((v: any) => ({ value: v.value, label: v.value }))} />
+
+            <Collapsible open={moreFilters} onOpenChange={setMoreFilters}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 text-xs gap-1">
+                  More <ChevronDown className={`h-3 w-3 transition-transform ${moreFilters ? "rotate-180" : ""}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
+                  options={mvByType("ad_group").map((v: any) => ({ value: v.value, label: v.value }))} />
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Button size="sm" className="h-8 text-xs rounded-md" onClick={() => { setFiltersApplied(true); setCurrentPage(1); }}>
+              Apply
+            </Button>
+
+            {anyFiltersActive && (
+              <div className="flex items-center gap-1.5 ml-1">
+                {activeFilterCount > 0 && (
+                  <span className="text-xs text-muted-foreground">{activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} active</span>
+                )}
+                <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5">
+                  <RotateCcw className="h-3 w-3" />Reset
+                </button>
+              </div>
+            )}
+
+            <div className="ml-auto">
+              <Button variant="outline" size="sm" className="h-8 text-xs rounded-md gap-1.5" onClick={handleExport}>
+                <Download className="h-3.5 w-3.5" />Export
+              </Button>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">To</Label>
-              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 text-xs" />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Channel</Label>
-              <Select value={filterChannel} onValueChange={setFilterChannel}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {mvByType("channel").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Platform</Label>
-              <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {mvByType("platform").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Campaign Type</Label>
-              <Select value={filterCampaign} onValueChange={setFilterCampaign}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {mvByType("campaign_type").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Ad Group</Label>
-              <Select value={filterAdGroup} onValueChange={setFilterAdGroup}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {mvByType("ad_group").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Destination</Label>
-              <Select value={filterDestination} onValueChange={setFilterDestination}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {destinations.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-3">
-            <Button size="sm" onClick={() => { setFiltersApplied(true); setCurrentPage(1); }}>Apply Filter</Button>
-            <Button size="sm" variant="outline" onClick={resetFilters}><RotateCcw className="h-3 w-3 mr-1" />Reset</Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Disposition Quick Filter */}
+      {/* ── Disposition Chips ── */}
       <div className="mb-3">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Disposition</p>
+        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Disposition</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("disposition").map((d: any) => {
-            const isActive = activeDisposition === d.value;
-            const colorClass = DISPOSITION_COLORS[d.value] || "bg-gray-100 text-gray-600 border-gray-200";
+            const active = activeDispositions.has(d.value);
+            const dotColor = DISP_DOT[d.value] || "bg-gray-400";
             return (
               <button
                 key={d.id}
-                onClick={() => { setActiveDisposition(isActive ? null : d.value); setCurrentPage(1); }}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${colorClass} ${isActive ? "ring-2 ring-offset-1 ring-primary" : "opacity-80 hover:opacity-100"}`}
+                onClick={() => toggleChip(activeDispositions, setActiveDispositions, d.value)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
+                  active ? "bg-foreground/5 border-foreground/20 shadow-sm" : "border-border/40 hover:border-border hover:bg-muted/30"
+                }`}
               >
-                {d.value}
-                <span className="bg-white/60 rounded-full px-1.5 text-[10px] font-semibold">{dispositionCounts[d.value] || 0}</span>
+                <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                <span className="text-foreground/80">{d.value}</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">·</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">{dispositionCounts[d.value] || 0}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Sales Status Quick Filter */}
-      <div className="mb-4">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Sales Status</p>
+      {/* ── Sales Status Chips ── */}
+      <div className="mb-5">
+        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Sales Status</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("sales_status").map((s: any) => {
-            const isActive = activeStatus === s.value;
-            const colorClass = STATUS_COLORS[s.value] || "bg-gray-100 text-gray-600 border-gray-200";
+            const active = activeStatuses.has(s.value);
+            const dotColor = STATUS_DOT[s.value] || "bg-gray-400";
             return (
               <button
                 key={s.id}
-                onClick={() => { setActiveStatus(isActive ? null : s.value); setCurrentPage(1); }}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${colorClass} ${isActive ? "ring-2 ring-offset-1 ring-primary" : "opacity-80 hover:opacity-100"}`}
+                onClick={() => toggleChip(activeStatuses, setActiveStatuses, s.value)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
+                  active ? "bg-foreground/5 border-foreground/20 shadow-sm" : "border-border/40 hover:border-border hover:bg-muted/30"
+                }`}
               >
-                {s.value}
-                <span className="bg-white/60 rounded-full px-1.5 text-[10px] font-semibold">{statusCounts[s.value] || 0}</span>
+                <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                <span className="text-foreground/80">{s.value}</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">·</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">{statusCounts[s.value] || 0}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Table toolbar */}
-      <div className="flex items-center justify-between mb-3 gap-3">
+      {/* ── Table toolbar ── */}
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={handleExport}>
-            <Download className="h-3.5 w-3.5 mr-1" />Export
-          </Button>
           <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setCurrentPage(1); }}>
-            <SelectTrigger className="w-20 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[72px] h-8 text-xs rounded-md"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[10, 25, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
             </SelectContent>
           </Select>
-          <span className="text-xs text-muted-foreground">{filtered.length} leads</span>
+          <span className="text-xs text-muted-foreground">entries</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search leads..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} className="pl-8 h-8 w-60 text-xs" />
-          </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="h-3.5 w-3.5 mr-1" />Add Lead</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>Create New Lead</DialogTitle></DialogHeader>
-              <form onSubmit={e => { e.preventDefault(); createLead.mutate(form); }} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1"><Label className="text-xs">Name *</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
-                  <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
-                  <div className="space-y-1"><Label className="text-xs">Mobile</Label><Input value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} /></div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Destination</Label>
-                    <Select value={form.destination_id} onValueChange={v => setForm({...form, destination_id: v})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{destinations.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Channel</Label>
-                    <Select value={form.channel} onValueChange={v => setForm({...form, channel: v})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{mvByType("channel").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Platform</Label>
-                    <Select value={form.platform} onValueChange={v => setForm({...form, platform: v})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{mvByType("platform").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-1"><Label className="text-xs">Notes</Label><Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={2} /></div>
-                <Button type="submit" className="w-full" disabled={createLead.isPending}>{createLead.isPending ? "Creating..." : "Create Lead"}</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input placeholder="Search leads..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+            className="pl-8 h-8 w-64 text-xs rounded-md border-border/60" />
         </div>
       </div>
 
-      {/* Lead Table */}
-      <Card className="border shadow-sm">
-        <CardContent className="p-0">
+      {/* ── Data Table ── */}
+      {paginated.length === 0 && !isLoading ? (
+        /* Empty State */
+        <Card className="border-border/50 shadow-none">
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Compass className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">No leads yet</h3>
+            <p className="text-sm text-muted-foreground mb-4">Add your first lead to get started</p>
+            <Button onClick={() => setSheetOpen(true)}><Plus className="h-4 w-4 mr-1.5" />Add Lead</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-border/50 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-10 text-table">#</TableHead>
-                <TableHead className="w-10"><Checkbox checked={selectedIds.size === paginated.length && paginated.length > 0} onCheckedChange={toggleAll} /></TableHead>
-                <TableHead className="text-table">Traveller Code</TableHead>
-                <TableHead className="text-table">Lead Date</TableHead>
-                <TableHead className="text-table">Name</TableHead>
-                <TableHead className="text-table">Email / Mobile</TableHead>
-                <TableHead className="text-table">Itinerary</TableHead>
-                <TableHead className="text-table">Destination</TableHead>
-                <TableHead className="text-table">Disposition</TableHead>
-                <TableHead className="text-table">Sales Status</TableHead>
-                <TableHead className="text-table">Actions</TableHead>
+              <TableRow className="hover:bg-transparent border-b border-border/50">
+                <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Name</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Destination</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Itinerary</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Source</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Disposition</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Status</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium text-right">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-              ) : paginated.length === 0 ? (
-                <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No leads found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
               ) : (
-                paginated.map((lead: any, idx: number) => (
-                  <TableRow key={lead.id} className="hover:bg-muted/30">
-                    <TableCell className="text-table text-muted-foreground">{(currentPage - 1) * pageSize + idx + 1}</TableCell>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.has(lead.id)}
-                        onCheckedChange={v => {
-                          const next = new Set(selectedIds);
-                          v ? next.add(lead.id) : next.delete(lead.id);
-                          setSelectedIds(next);
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        onClick={() => navigate(`/leads/${lead.id}`)}
-                        className="font-mono font-semibold text-[13px] hover:underline"
-                        style={{ color: "hsl(var(--blaze))" }}
-                      >
+                paginated.map((lead: any) => (
+                  <TableRow
+                    key={lead.id}
+                    className="cursor-pointer hover:bg-[#F9FAFB] transition-colors duration-150 border-b border-border/30"
+                    onClick={() => navigate(`/leads/${lead.id}`)}
+                  >
+                    {/* Name + Mobile + Code */}
+                    <TableCell className="py-3">
+                      <div className="font-medium text-[13px] text-foreground">{lead.name}</div>
+                      <div className="text-[12px] text-muted-foreground mt-0.5">
+                        {lead.mobile || lead.email || "—"}
+                      </div>
+                      <div className="font-mono text-[11px] text-muted-foreground/60 mt-0.5" style={{ color: "hsl(var(--blaze))" }}>
                         {lead.traveller_code}
-                      </button>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-table text-muted-foreground">
-                      {lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy") : "—"}
-                    </TableCell>
-                    <TableCell className="text-table font-medium">{lead.name}</TableCell>
-                    <TableCell className="text-table">
-                      <div className="text-[12px]">{lead.email || "—"}</div>
-                      <div className="text-[11px] text-muted-foreground">{lead.mobile || ""}</div>
-                    </TableCell>
-                    <TableCell className="text-table text-[12px]">{(lead as any).itineraries?.headline || "—"}</TableCell>
-                    <TableCell>
+
+                    {/* Destination */}
+                    <TableCell className="py-3">
                       {lead.destinations?.name ? (
-                        <Badge variant="secondary" className="text-[11px]">{lead.destinations.name}</Badge>
-                      ) : "—"}
+                        <Badge variant="secondary" className="text-[11px] font-medium bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0 rounded-md">
+                          {lead.destinations.name}
+                        </Badge>
+                      ) : <span className="text-[13px] text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${DISPOSITION_COLORS[lead.disposition] || ""}`}>
-                        {lead.disposition || "—"}
-                      </Badge>
+
+                    {/* Itinerary */}
+                    <TableCell className="py-3 max-w-[180px]">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[13px] text-muted-foreground truncate block">
+                            {(lead as any).itineraries?.headline
+                              ? ((lead as any).itineraries.headline.length > 30
+                                ? (lead as any).itineraries.headline.slice(0, 30) + "..."
+                                : (lead as any).itineraries.headline)
+                              : "—"}
+                          </span>
+                        </TooltipTrigger>
+                        {(lead as any).itineraries?.headline && (
+                          <TooltipContent>{(lead as any).itineraries.headline}</TooltipContent>
+                        )}
+                      </Tooltip>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${STATUS_COLORS[lead.sales_status] || ""}`}>
+
+                    {/* Source */}
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5">
+                        {lead.platform && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border/50 rounded">
+                            {lead.platform}
+                          </Badge>
+                        )}
+                        <span className="text-[12px] text-muted-foreground">{lead.channel || ""}</span>
+                      </div>
+                    </TableCell>
+
+                    {/* Disposition */}
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[lead.disposition] || "bg-gray-300"}`} />
+                        <span className="text-[12px] text-foreground/70">{lead.disposition || "—"}</span>
+                      </div>
+                    </TableCell>
+
+                    {/* Sales Status */}
+                    <TableCell className="py-3">
+                      <Badge variant="outline" className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${STATUS_BADGE[lead.sales_status] || "bg-gray-50 text-gray-600 border-gray-200"}`}>
                         {lead.sales_status || "—"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => navigate(`/leads/${lead.id}`)}>
-                        View
-                      </Button>
+
+                    {/* Date */}
+                    <TableCell className="py-3 text-right">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[12px] text-muted-foreground">
+                            {lead.created_at ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true }) : "—"}
+                          </span>
+                        </TooltipTrigger>
+                        {lead.created_at && (
+                          <TooltipContent>{format(new Date(lead.created_at), "dd MMM yyyy, hh:mm a")}</TooltipContent>
+                        )}
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </Card>
+      )}
 
-      {/* Pagination */}
+      {/* ── Pagination ── */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <span className="text-xs text-muted-foreground">
-            Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
+            {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
           </span>
           <div className="flex gap-1">
-            <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="h-7 text-xs">Prev</Button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              const page = currentPage <= 3 ? i + 1 : currentPage + i - 2;
+            <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="h-7 text-xs rounded-md">Prev</Button>
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              let page: number;
+              if (totalPages <= 7) page = i + 1;
+              else if (currentPage <= 4) page = i + 1;
+              else if (currentPage >= totalPages - 3) page = totalPages - 6 + i;
+              else page = currentPage - 3 + i;
               if (page < 1 || page > totalPages) return null;
               return (
-                <Button key={page} size="sm" variant={page === currentPage ? "default" : "outline"} onClick={() => setCurrentPage(page)} className="h-7 w-7 text-xs p-0">
+                <Button key={page} size="sm" variant={page === currentPage ? "default" : "outline"} onClick={() => setCurrentPage(page)} className="h-7 w-7 text-xs p-0 rounded-md">
                   {page}
                 </Button>
               );
             })}
-            <Button size="sm" variant="outline" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="h-7 text-xs">Next</Button>
+            <Button size="sm" variant="outline" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="h-7 text-xs rounded-md">Next</Button>
           </div>
         </div>
       )}
+
+      {/* ── Add Lead Slide-over ── */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-[480px] sm:max-w-[480px] overflow-y-auto p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-border/50">
+            <SheetTitle className="text-lg font-semibold">New Lead</SheetTitle>
+          </SheetHeader>
+
+          <form onSubmit={e => { e.preventDefault(); createLead.mutate(form); }} className="flex-1 flex flex-col">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+              {/* Section 1 */}
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Traveller Info</h3>
+                <div className="space-y-3">
+                  <div><Label className="text-xs mb-1 block">Full Name <span className="text-destructive">*</span></Label>
+                    <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required className="rounded-md" /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs mb-1 block">Email</Label>
+                      <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="rounded-md" /></div>
+                    <div><Label className="text-xs mb-1 block">Mobile</Label>
+                      <Input value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} className="rounded-md" /></div>
+                  </div>
+                  <div><Label className="text-xs mb-1 block">Travel Date</Label>
+                    <Input type="date" value={form.travel_date} onChange={e => setForm({...form, travel_date: e.target.value})} className="rounded-md" /></div>
+                </div>
+              </div>
+
+              {/* Section 2 */}
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Trip Interest</h3>
+                <div className="space-y-3">
+                  <div><Label className="text-xs mb-1 block">Destination</Label>
+                    <Select value={form.destination_id} onValueChange={v => setForm({...form, destination_id: v, itinerary_id: ""})}>
+                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select destination" /></SelectTrigger>
+                      <SelectContent>{destinations.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                  <div><Label className="text-xs mb-1 block">Itinerary</Label>
+                    <Select value={form.itinerary_id} onValueChange={v => setForm({...form, itinerary_id: v})}>
+                      <SelectTrigger className="rounded-md"><SelectValue placeholder={form.destination_id ? "Select itinerary" : "Select destination first"} /></SelectTrigger>
+                      <SelectContent>{itineraries.map((it: any) => <SelectItem key={it.id} value={it.id}>{it.headline}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                  <div><Label className="text-xs mb-1 block">Assigned To</Label>
+                    <Select value={form.assigned_to} onValueChange={v => setForm({...form, assigned_to: v})}>
+                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select team member" /></SelectTrigger>
+                      <SelectContent>{users.map((u: any) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                </div>
+              </div>
+
+              {/* Section 3 */}
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Lead Source</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs mb-1 block">Channel</Label>
+                    <Select value={form.channel} onValueChange={v => setForm({...form, channel: v})}>
+                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{mvByType("channel").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                  <div><Label className="text-xs mb-1 block">Platform</Label>
+                    <Select value={form.platform} onValueChange={v => setForm({...form, platform: v})}>
+                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{mvByType("platform").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                  <div><Label className="text-xs mb-1 block">Campaign Type</Label>
+                    <Select value={form.campaign_type} onValueChange={v => setForm({...form, campaign_type: v})}>
+                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{mvByType("campaign_type").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                  <div><Label className="text-xs mb-1 block">Ad Group</Label>
+                    <Select value={form.ad_group} onValueChange={v => setForm({...form, ad_group: v})}>
+                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{mvByType("ad_group").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">Source data helps track ROI across campaigns</p>
+              </div>
+
+              {/* Section 4 */}
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Notes</h3>
+                <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={3}
+                  placeholder="Any initial notes..." className="rounded-md" />
+              </div>
+            </div>
+
+            {/* Sticky footer */}
+            <div className="sticky bottom-0 bg-background border-t border-border/50 px-6 py-4 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="rounded-md">Cancel</Button>
+              <Button type="submit" disabled={createLead.isPending} className="rounded-md">
+                {createLead.isPending ? "Creating..." : "Create Lead"}
+              </Button>
+            </div>
+          </form>
+        </SheetContent>
+      </Sheet>
     </AppLayout>
   );
 };

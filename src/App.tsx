@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,9 +9,11 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import LeadManagement from "./pages/LeadManagement";
 import LeadDetail from "./pages/LeadDetail";
+import ItineraryList from "./pages/ItineraryList";
+import ItineraryEdit from "./pages/ItineraryEdit";
 import Destinations from "./pages/Destinations";
 import MasterValues from "./pages/MasterValues";
-import { Itineraries, LandingPages, TripCashflow, Vendors, Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
+import { LandingPages, TripCashflow, Vendors, Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +30,9 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
             <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
-            <Route path="/itineraries" element={<ProtectedRoute><Itineraries /></ProtectedRoute>} />
+            <Route path="/itineraries" element={<ProtectedRoute><ItineraryList /></ProtectedRoute>} />
+            <Route path="/itineraries/new" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
+            <Route path="/itineraries/edit/:id" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
             <Route path="/landing-pages" element={<ProtectedRoute><LandingPages /></ProtectedRoute>} />
             <Route path="/trip-cashflow" element={<ProtectedRoute><TripCashflow /></ProtectedRoute>} />
             <Route path="/vendors" element={<ProtectedRoute><Vendors /></ProtectedRoute>} />
