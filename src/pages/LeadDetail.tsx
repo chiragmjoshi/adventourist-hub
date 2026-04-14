@@ -261,7 +261,7 @@ const LeadDetail = () => {
 
   const l = lead as any;
   const initials = l.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-  const comments = timeline.filter((e: any) => e.event_type === "comment");
+  // comments now from lead_comments query above
 
   return (
     <AppLayout title="Lead Detail">
