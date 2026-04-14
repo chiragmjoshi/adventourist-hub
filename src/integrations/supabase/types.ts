@@ -87,6 +87,69 @@ export type Database = {
           },
         ]
       }
+      automation_rules: {
+        Row: {
+          channel: string
+          created_at: string | null
+          delay_days: number | null
+          delay_hours: number | null
+          description: string | null
+          email_body: string | null
+          email_subject: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          recipient_type: string
+          scheduled_time: string | null
+          sms_body: string | null
+          sort_order: number | null
+          template_name: string | null
+          trigger_condition: Json | null
+          trigger_event: string
+          updated_at: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          delay_days?: number | null
+          delay_hours?: number | null
+          description?: string | null
+          email_body?: string | null
+          email_subject?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          recipient_type?: string
+          scheduled_time?: string | null
+          sms_body?: string | null
+          sort_order?: number | null
+          template_name?: string | null
+          trigger_condition?: Json | null
+          trigger_event: string
+          updated_at?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          delay_days?: number | null
+          delay_hours?: number | null
+          description?: string | null
+          email_body?: string | null
+          email_subject?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          recipient_type?: string
+          scheduled_time?: string | null
+          sms_body?: string | null
+          sort_order?: number | null
+          template_name?: string | null
+          trigger_condition?: Json | null
+          trigger_event?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       automation_settings: {
         Row: {
           description: string | null
@@ -768,6 +831,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          permission: string
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          permission: string
+          role: string
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          permission?: string
+          role?: string
+        }
+        Relationships: []
       }
       settings: {
         Row: {

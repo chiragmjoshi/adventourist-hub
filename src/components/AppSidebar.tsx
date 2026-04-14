@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Map, Layout, DollarSign, Truck, BarChart3,
-  Database, UserCheck, Shield, ChevronDown, Settings, Zap,
+  Database, UserCheck, Shield, ChevronDown, Settings, Zap, Crown, LogOut,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -9,15 +9,29 @@ import {
   SidebarMenuSubItem, SidebarMenuSubButton, useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRBAC } from "@/hooks/useRBAC";
+import { useAuth } from "@/contexts/AuthContext";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import logoMain from "@/assets/logo-main.png";
+
+const ROLE_COLORS: Record<string, string> = {
+  super_admin: "bg-abyss text-white",
+  admin: "bg-primary text-primary-foreground",
+  sales: "bg-lagoon/20 text-lagoon",
+  operations: "bg-purple-100 text-purple-700",
+  finance: "bg-ridge/20 text-ridge",
+};
+
+const formatRole = (r: string) => r.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { hasPermission, hasRole } = useRBAC();
+  const { hasPermission, hasRole, role } = useRBAC();
+  const { profile, signOut } = useAuth();
   const isDbActive = location.pathname.startsWith("/db");
 
   const linkClasses = (isActive: boolean) =>
@@ -47,9 +61,13 @@ export function AppSidebar() {
     { title: "Master Values", url: "/db/master-values" },
   ];
 
+  const initials = profile?.name
+    ? profile.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+    : "?";
+
   return (
     <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarContent className="bg-sidebar pt-4">
+      <SidebarContent className="bg-sidebar pt-4 flex flex-col h-full">
         <div className="flex items-center justify-center px-4 mb-6">
           {collapsed
             ? <img src={logoMain} alt="Adventourist" className="h-8 w-auto" />
@@ -57,7 +75,7 @@ export function AppSidebar() {
           }
         </div>
 
-        <SidebarGroup>
+        <SidebarGroup className="flex-1">
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -146,6 +164,60 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* User info at bottom */}
+        {profile && (
+          <div className="mt-auto border-t border-border/30 px-3 py-3">
+            {collapsed ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
+                        {initials}
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{profile.name}</p>
+                    <p className="text-muted-foreground text-xs">{formatRole(role)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium shrink-0">
+                  {initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs font-medium text-sidebar-foreground truncate">{profile.name}</p>
+                    {role === "super_admin" && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Crown className="h-3 w-3 text-horizon shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent><p>System Owner</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                  <Badge className={`text-[9px] px-1.5 py-0 ${ROLE_COLORS[role] || "bg-muted"}`}>
+                    {formatRole(role)}
+                  </Badge>
+                </div>
+                <button
+                  onClick={() => signOut()}
+                  className="text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors"
+                  title="Sign out"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </SidebarContent>
     </Sidebar>
   );
