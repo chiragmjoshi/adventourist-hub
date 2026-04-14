@@ -121,7 +121,12 @@ const ItineraryEdit = () => {
         highlights: existing.highlights || [],
         inclusions: existing.inclusions || "",
         exclusions: existing.exclusions || "",
-        itinerary_days: (existing.itinerary_days as unknown as DayPlan[]) || [],
+        itinerary_days: ((existing.itinerary_days as unknown as DayPlan[]) || []).map(d => ({
+          ...d,
+          meals: d.meals || { breakfast: false, lunch: false, dinner: false },
+          activities: d.activities || [],
+          accommodation: d.accommodation || "",
+        })),
         seo_title: existing.seo_title || "",
         seo_description: existing.seo_description || "",
         seo_keywords: existing.seo_keywords || "",
