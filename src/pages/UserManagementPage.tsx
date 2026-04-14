@@ -98,6 +98,7 @@ const UserManagementPage = () => {
             <div className="space-y-4 mt-6">
               <div><Label>Full Name*</Label><Input value={inviteForm.name} onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))} /></div>
               <div><Label>Email Address*</Label><Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))} /><p className="text-xs text-muted-foreground mt-1">An invitation will be sent to this email</p></div>
+              <div><Label>Mobile Number</Label><Input value={inviteForm.mobile} onChange={(e) => setInviteForm((f) => ({ ...f, mobile: e.target.value }))} placeholder="+91-XXXXX-XXXXX" /></div>
               <div>
                 <Label>Role*</Label>
                 <Select value={inviteForm.role} onValueChange={(v) => setInviteForm((f) => ({ ...f, role: v }))}>
