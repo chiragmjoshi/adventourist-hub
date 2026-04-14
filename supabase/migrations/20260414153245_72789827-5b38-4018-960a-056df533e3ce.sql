@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS generate_traveller_code_trigger ON public.leads;
