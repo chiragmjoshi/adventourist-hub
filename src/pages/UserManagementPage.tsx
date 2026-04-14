@@ -68,11 +68,11 @@ const UserManagementPage = () => {
 
   const handleInvite = async () => {
     if (!inviteForm.name || !inviteForm.email) { toast.error("Name and email are required"); return; }
-    const { error } = await supabase.from("users").insert({ name: inviteForm.name, email: inviteForm.email, role: inviteForm.role, is_active: false });
+    const { error } = await supabase.from("users").insert({ name: inviteForm.name, email: inviteForm.email, role: inviteForm.role, is_active: false, mobile: inviteForm.mobile || null } as any);
     if (error) { toast.error(error.message); return; }
     toast.success(`Invitation created for ${inviteForm.email}`);
     setInviteOpen(false);
-    setInviteForm({ name: "", email: "", role: "sales" });
+    setInviteForm({ name: "", email: "", role: "sales", mobile: "" });
     fetchUsers();
   };
 
