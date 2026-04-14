@@ -271,10 +271,10 @@ const TripCashflowEdit = () => {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.traveller_name}>
+          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => saveMutation.mutate(form.status)} disabled={saveMutation.isPending || !form.traveller_name}>
             <Save className="h-3.5 w-3.5 mr-1" />Save Draft
           </Button>
-          <Button size="sm" className="rounded-md text-xs" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.traveller_name}>
+          <Button size="sm" className="rounded-md text-xs" onClick={() => saveMutation.mutate(form.status)} disabled={saveMutation.isPending || !form.traveller_name}>
             <Save className="h-3.5 w-3.5 mr-1" />Save
           </Button>
         </div>
