@@ -1,35 +1,25 @@
 
 
-## Plan: Insert Dummy Test Data for Landing Page
+## Plan: Fix Issues Found in UX Audit
 
-Since the database has no destinations or itineraries yet, I need to create seed data in this order:
+### Issues to fix
 
-### Step 1: Insert a dummy destination
-- **Name**: "Rajasthan" / **Slug**: "rajasthan"
-- Themes: Adventure, Culture, Heritage
-- Best months: Oct, Nov, Dec, Jan, Feb
-- Suitable for: Couples, Family
+**1. Lead Management table — format snake_case labels**
+In `src/pages/LeadManagement.tsx`, the Disposition and Status columns display raw values like `not_contacted` and `new_lead`. Apply the existing `formatLabel()` utility to these columns.
 
-### Step 2: Insert a dummy itinerary linked to that destination
-- **Headline**: "Royal Rajasthan Explorer"
-- 5 days / 4 nights, ₹18,500 per person
-- Day-by-day plan with 5 days of content
-- Inclusions & exclusions text
+**2. Lead Detail — Disposition/Status dropdowns not showing selected value**  
+In `src/pages/LeadDetail.tsx`, the top-right disposition and sales status dropdowns appear to have empty/invisible selected values. Need to check the select components are properly showing the current value.
 
-### Step 3: Insert a dummy landing page
-- **Name**: "City of Palaces: A Royal Rajasthan Story"
-- **Slug**: "city-of-palaces-a-royal-rajasthan-story"
-- Hero headline, subtext, budget ₹18,500
-- Attribution: Platform=Meta, Channel=Paid Social, Campaign=Conversion, Ad Group=Couples
-- Stay days: "5 Days & 4 Nights"
-- Best time, suitable for, destination type filled
-- SEO title and description
-- Status: active, published
-
-All three inserts will use the Supabase insert tool. No schema changes needed.
+**3. Automation template seed values**
+Run a migration to update `automation_templates` rows where `aisensy_template_name = 'REPLACE_WITH_YOUR_TEMPLATE_NAME'` to the correct placeholder names (`adventourist_trip_confirmed`, `adventourist_pre_trip_reminder`, etc.) as specified in the Sprint 7 spec.
 
 ### Technical details
-- Destination ID will be referenced by itinerary and landing page
-- Itinerary ID will be referenced by landing page
-- `itinerary_days` JSONB will contain 5 day objects with title, description, meals, accommodation
+
+- **File 1**: `src/pages/LeadManagement.tsx` — wrap disposition and status column renders with `formatLabel()`
+- **File 2**: `src/pages/LeadDetail.tsx` — inspect the disposition/status select components for missing value display
+- **File 3**: Migration SQL to update template names
+
+### Out of scope
+- Mobile header cramping is minor and cosmetic
+- Template names will be updated by admin in production — the seed fix is just for better defaults
 
