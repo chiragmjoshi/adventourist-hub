@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X } from "lucide-react";
+import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X, Flame } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, subDays } from "date-fns";
@@ -441,12 +441,31 @@ const LeadManagement = () => {
                   >
                     {/* Name + Mobile + Code */}
                     <TableCell className="py-3">
-                      <div className="font-medium text-[13px] text-foreground">{lead.name}</div>
-                      <div className="text-[12px] text-muted-foreground mt-0.5">
-                        {lead.mobile || lead.email || "—"}
-                      </div>
-                      <div className="font-mono text-[11px] text-muted-foreground/60 mt-0.5" style={{ color: "hsl(var(--blaze))" }}>
-                        {lead.traveller_code}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newVal = !(lead as any).is_hot;
+                            supabase.from("leads").update({ is_hot: newVal } as any).eq("id", lead.id).then(({ error }) => {
+                              if (error) { toast.error("Failed to update"); return; }
+                              queryClient.invalidateQueries({ queryKey: ["leads"] });
+                              toast.success(newVal ? "Marked as hot lead 🔥" : "Removed hot lead tag");
+                            });
+                          }}
+                          className="flex-shrink-0 hover:scale-110 transition-transform"
+                          title={`${(lead as any).is_hot ? "Remove" : "Mark as"} hot lead`}
+                        >
+                          <Flame className={`h-4 w-4 ${(lead as any).is_hot ? "text-orange-500 fill-orange-500" : "text-gray-300 hover:text-orange-300"}`} />
+                        </button>
+                        <div>
+                          <div className="font-medium text-[13px] text-foreground">{lead.name}</div>
+                          <div className="text-[12px] text-muted-foreground mt-0.5">
+                            {lead.mobile || lead.email || "—"}
+                          </div>
+                          <div className="font-mono text-[11px] text-muted-foreground/60 mt-0.5" style={{ color: "hsl(var(--blaze))" }}>
+                            {lead.traveller_code}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
 
