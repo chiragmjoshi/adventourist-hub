@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send } from "lucide-react";
+import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { triggerFileClosedAutomation, triggerFollowUpReminder } from "@/services/automationTriggers";
@@ -292,9 +293,9 @@ const LeadDetail = () => {
         <div className="flex items-center gap-2">
           <Select value={getField("disposition") || l.disposition || ""} onValueChange={v => handleStatusChange("disposition", v)}>
             <SelectTrigger className="h-8 text-xs rounded-md w-48 border-border/60">
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${DISP_DOT[getField("disposition") || l.disposition] || "bg-gray-300"}`} />
-                <SelectValue placeholder="Disposition" />
+              <div className="flex items-center gap-1.5 truncate">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[getField("disposition") || l.disposition] || DISP_DOT[formatLabel(getField("disposition") || l.disposition)] || "bg-gray-300"}`} />
+                <span className="truncate">{formatLabel(getField("disposition") || l.disposition) || "Disposition"}</span>
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -310,9 +311,9 @@ const LeadDetail = () => {
           </Select>
           <Select value={getField("sales_status") || l.sales_status || ""} onValueChange={v => handleStatusChange("sales_status", v)}>
             <SelectTrigger className="h-8 text-xs rounded-md w-40 border-border/60">
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${STATUS_DOT[getField("sales_status") || l.sales_status] || "bg-gray-300"}`} />
-                <SelectValue placeholder="Status" />
+              <div className="flex items-center gap-1.5 truncate">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[getField("sales_status") || l.sales_status] || STATUS_DOT[formatLabel(getField("sales_status") || l.sales_status)] || "bg-gray-300"}`} />
+                <span className="truncate">{formatLabel(getField("sales_status") || l.sales_status) || "Status"}</span>
               </div>
             </SelectTrigger>
             <SelectContent>
