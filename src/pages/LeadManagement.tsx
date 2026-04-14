@@ -168,12 +168,12 @@ const LeadManagement = () => {
         notes: f.notes || null,
         sales_status: "New Lead",
         disposition: "Not Contacted",
-      }).select("traveller_code").single();
+      }).select("id, traveller_code").single();
       if (error) throw error;
 
       // Log timeline
       await supabase.from("lead_timeline").insert({
-        lead_id: data.id ?? undefined,
+        lead_id: data.id,
         actor_id: profile?.id || null,
         event_type: "lead_created",
         note: `Lead ${data.traveller_code} created`,

@@ -121,7 +121,7 @@ const ItineraryEdit = () => {
         highlights: existing.highlights || [],
         inclusions: existing.inclusions || "",
         exclusions: existing.exclusions || "",
-        itinerary_days: (existing.itinerary_days as DayPlan[]) || [],
+        itinerary_days: (existing.itinerary_days as unknown as DayPlan[]) || [],
         seo_title: existing.seo_title || "",
         seo_description: existing.seo_description || "",
         seo_keywords: existing.seo_keywords || "",
