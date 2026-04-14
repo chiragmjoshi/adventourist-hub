@@ -537,34 +537,40 @@ const LeadDetail = () => {
             <TabsContent value="comments" className="mt-5">
               <Card className="border-border/50 shadow-none">
                 <CardContent className="p-5">
-                  <div className="flex gap-2 mb-5">
-                    <Textarea value={commentText} onChange={e => setCommentText(e.target.value)} rows={2}
-                      className="rounded-md flex-1" placeholder="Add a comment..." />
-                    <Button size="sm" className="self-end rounded-md" disabled={!commentText.trim() || addComment.isPending}
-                      onClick={() => addComment.mutate(commentText.trim())}>
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="mb-5">
+                    <Textarea value={commentText} onChange={e => setCommentText(e.target.value)} rows={3}
+                      className="rounded-md mb-2" placeholder="Add an internal comment..." />
+                    <div className="flex justify-end">
+                      <Button size="sm" className="rounded-md bg-[hsl(var(--blaze))] hover:bg-[hsl(var(--blaze))]/90" disabled={!commentText.trim() || addComment.isPending}
+                        onClick={() => addComment.mutate(commentText.trim())}>
+                        Post Comment
+                      </Button>
+                    </div>
                   </div>
                   {comments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No comments yet</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Add the first comment.</p>
                   ) : (
                     <div className="space-y-4">
-                      {comments.map((c: any) => (
-                        <div key={c.id} className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium flex-shrink-0">
-                            {(c as any).users?.name?.[0]?.toUpperCase() || "?"}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">{(c as any).users?.name || "Unknown"}</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ""}
-                              </span>
+                      {comments.map((c: any) => {
+                        const userName = c.users?.name || "Unknown";
+                        const userInitial = userName[0]?.toUpperCase() || "?";
+                        return (
+                          <div key={c.id} className="flex gap-3">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 text-white" style={{ backgroundColor: "hsl(var(--blaze))" }}>
+                              {userInitial}
                             </div>
-                            <p className="text-sm text-foreground/80 mt-0.5">{c.note}</p>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold">{userName}</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ""}
+                                </span>
+                              </div>
+                              <p className="text-sm text-foreground/80 mt-0.5">{c.comment}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
