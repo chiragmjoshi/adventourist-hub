@@ -59,7 +59,7 @@ const RevenueReport = () => {
     acc[destName].trips += 1;
     return acc;
   }, {});
-  const destData = Object.values(byDest).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+  const destData = Object.values(byDest).sort((a: any, b: any) => b.revenue - a.revenue).slice(0, 10);
 
   // Monthly trend (last 12 months)
   const trendData = Array.from({ length: 12 }, (_, i) => {
