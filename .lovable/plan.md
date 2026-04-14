@@ -1,57 +1,35 @@
 
 
-## Adventourist CMS — Sprint 1 Plan
+## Plan: Insert Dummy Test Data for Landing Page
 
-### Brand & Design System Setup
-- Configure Tailwind with brand colors: Blaze (#FF6F4C), Horizon (#FDC436), Abyss (#1A1D2E), Lagoon (#64CBB9), Ridge (#056147), Drift (#EEE5D5)
-- Set Inter as the global font (14px body, 13px table data)
-- Create reusable UI patterns: status badges, card styles, table styles per spec
+Since the database has no destinations or itineraries yet, I need to create seed data in this order:
 
-### Database (Lovable Cloud / Supabase)
-Create all 10 tables as specified:
-- `users`, `master_values`, `destinations`, `itineraries`, `landing_pages`, `leads`, `lead_timeline`, `vendors`, `trip_cashflow`, `automations_log`
-- Enable RLS on all tables
-- Note: Roles will be stored on the `users` table as requested
+### Step 1: Insert a dummy destination
+- **Name**: "Rajasthan" / **Slug**: "rajasthan"
+- Themes: Adventure, Culture, Heritage
+- Best months: Oct, Nov, Dec, Jan, Feb
+- Suitable for: Couples, Family
 
-### Authentication
-- **Login page**: Centered card on Abyss background, Adventourist logo (4-quadrant sun/mountains/waves/heart icon built with SVG), "Welcome back" heading, email + password fields, Blaze-colored sign-in button
-- Supabase Auth with email/password
-- Role-based route protection — redirect unauthenticated users to login
-- After login → redirect to Dashboard
+### Step 2: Insert a dummy itinerary linked to that destination
+- **Headline**: "Royal Rajasthan Explorer"
+- 5 days / 4 nights, ₹18,500 per person
+- Day-by-day plan with 5 days of content
+- Inclusions & exclusions text
 
-### App Shell & Layout
-- **Dark sidebar** (#1A1D2E): All 10 nav items with Lucide icons, active state with #FF6F4C left border + subtle highlight, collapsible
-- **Top bar**: Dynamic page title, reminders bell with badge count, user avatar + name + role pill, logout button
-- White content area
+### Step 3: Insert a dummy landing page
+- **Name**: "City of Palaces: A Royal Rajasthan Story"
+- **Slug**: "city-of-palaces-a-royal-rajasthan-story"
+- Hero headline, subtext, budget ₹18,500
+- Attribution: Platform=Meta, Channel=Paid Social, Campaign=Conversion, Ad Group=Couples
+- Stay days: "5 Days & 4 Nights"
+- Best time, suitable for, destination type filled
+- SEO title and description
+- Status: active, published
 
-### Pages Built in Sprint 1
+All three inserts will use the Supabase insert tool. No schema changes needed.
 
-#### 1. Dashboard (full)
-- **4 KPI cards**: Total Leads (with trend arrow vs last month), Files Closed, Revenue This Month, Avg Margin %
-- **Lead funnel chart**: New → Contacted → Qualified → Proposal → Closed (bar or funnel visualization)
-- **Revenue trend line chart**: Last 6 months
-- **Recent activity feed**: Latest lead timeline events
-
-#### 2. Lead Management (full CRUD)
-- Table view with columns: Traveller Code, Name, Destination, Status, Disposition, Assigned To, Created Date
-- Search, filter by status/disposition/destination/assigned_to
-- Add/Edit lead drawer or modal form
-- Lead detail view with timeline/activity log
-- Status and disposition updates with color-coded badges
-
-#### 3. DB Management — Destinations (full CRUD)
-- Table listing all destinations with name, themes, active status
-- Add/Edit form: name, slug (auto-generated), about, best months, themes, suitable for, hero image upload, gallery, testimonials
-- Toggle active/inactive
-
-#### 4. DB Management — Master Values (full CRUD)
-- Grouped tabs or filter by type (platform, channel, campaign_type, etc.)
-- Add/edit/deactivate values
-- Drag or manual sort order
-
-#### 5. Remaining pages (shell only)
-- Itineraries, Landing Pages, Trip Cashflow, Vendors, Reports, User Management, Role Management — placeholder pages with title and "Coming soon" state, wired into sidebar navigation
-
-### Charts Library
-- Use Recharts (already compatible with shadcn/ui chart component) for the dashboard visualizations
+### Technical details
+- Destination ID will be referenced by itinerary and landing page
+- Itinerary ID will be referenced by landing page
+- `itinerary_days` JSONB will contain 5 day objects with title, description, meals, accommodation
 
