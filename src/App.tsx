@@ -13,7 +13,10 @@ import ItineraryList from "./pages/ItineraryList";
 import ItineraryEdit from "./pages/ItineraryEdit";
 import Destinations from "./pages/Destinations";
 import MasterValues from "./pages/MasterValues";
-import { LandingPages, TripCashflow, Vendors, Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
+import VendorList from "./pages/VendorList";
+import VendorEdit from "./pages/VendorEdit";
+import VendorDetail from "./pages/VendorDetail";
+import { LandingPages, TripCashflow, Reports, UserManagement, RoleManagement } from "./pages/PlaceholderPages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,7 +38,10 @@ const App = () => (
             <Route path="/itineraries/edit/:id" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
             <Route path="/landing-pages" element={<ProtectedRoute><LandingPages /></ProtectedRoute>} />
             <Route path="/trip-cashflow" element={<ProtectedRoute><TripCashflow /></ProtectedRoute>} />
-            <Route path="/vendors" element={<ProtectedRoute><Vendors /></ProtectedRoute>} />
+            <Route path="/vendors" element={<ProtectedRoute><VendorList /></ProtectedRoute>} />
+            <Route path="/vendors/new" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
+            <Route path="/vendors/edit/:id" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
+            <Route path="/vendors/:id" element={<ProtectedRoute><VendorDetail /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/db/destinations" element={<ProtectedRoute><Destinations /></ProtectedRoute>} />
             <Route path="/db/master-values" element={<ProtectedRoute><MasterValues /></ProtectedRoute>} />

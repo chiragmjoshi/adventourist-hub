@@ -661,6 +661,21 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_code_sequence: {
+        Row: {
+          last_sequence: number
+          year_prefix: string
+        }
+        Insert: {
+          last_sequence?: number
+          year_prefix: string
+        }
+        Update: {
+          last_sequence?: number
+          year_prefix?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           bank_account: string | null
@@ -675,6 +690,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           nick_name: string | null
+          notes: string | null
           office_address_1: string | null
           office_address_2: string | null
           pan: string | null
@@ -696,6 +712,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           nick_name?: string | null
+          notes?: string | null
           office_address_1?: string | null
           office_address_2?: string | null
           pan?: string | null
@@ -717,6 +734,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           nick_name?: string | null
+          notes?: string | null
           office_address_1?: string | null
           office_address_2?: string | null
           pan?: string | null
