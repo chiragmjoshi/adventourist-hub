@@ -45,6 +45,8 @@ const queryClient = new QueryClient();
 const App = () => {
   useEffect(() => {
     processAutomationQueue();
+    const interval = setInterval(processAutomationQueue, 30 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

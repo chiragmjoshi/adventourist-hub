@@ -213,42 +213,54 @@ const TripCashflowDetail = () => {
           </Card>
 
           {/* Automation Status */}
-          {automationQueue.length > 0 && (
-            <Card className="border-border/50 shadow-none mt-4">
-              <CardHeader className="px-5 pt-4 pb-2">
-                <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5" />Automation Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-5 pb-4 space-y-2">
-                {automationQueue.map((item: any) => {
+          <Card className="border-border/50 shadow-none mt-4">
+            <CardHeader className="px-5 pt-4 pb-2">
+              <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5" />WhatsApp Automations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-4 space-y-2">
+              {automationQueue.length === 0 ? (
+                <div className="text-center py-4">
+                  {cf.travel_start_date && cf.travel_end_date ? (
+                    <p className="text-xs text-muted-foreground">No automations queued yet</p>
+                  ) : (
+                    <div className="bg-[hsl(var(--horizon))]/10 rounded-lg p-3">
+                      <p className="text-xs text-[hsl(var(--horizon))]">Set travel dates to schedule WhatsApp automations</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                automationQueue.map((item: any) => {
                   const statusColors: Record<string, string> = {
-                    pending: "bg-yellow-100 text-yellow-700",
-                    sent: "bg-ridge/20 text-ridge",
-                    failed: "bg-destructive/20 text-destructive",
+                    pending: "bg-[hsl(var(--horizon))]/20 text-[hsl(var(--horizon))]",
+                    sent: "bg-[hsl(var(--ridge))]/20 text-[hsl(var(--ridge))]",
+                    failed: "bg-destructive/15 text-destructive",
                     cancelled: "bg-muted text-muted-foreground",
                   };
+                  const icons: Record<string, string> = { pre_trip_3days: "🔔", safe_journey: "✈️", review_request: "⭐" };
                   const handleSendNow = async () => {
                     const tplName = item.automation_templates?.aisensy_template_name;
                     if (!tplName) { toast.error("Template not configured"); return; }
-                    const result = await sendWhatsAppMessage(tplName, item.recipient_mobile, Array.isArray(item.variables) ? item.variables : [], "Adventourist");
-                    await supabase.from("automation_queue" as any).update({
+                    const result = await sendWhatsAppMessage(tplName, item.recipient_mobile, Array.isArray(item.variables) ? (item.variables as any[]).map(String) : [], "Adventourist");
+                    await supabase.from("automation_queue").update({
                       status: result.success ? "sent" : "failed",
                       aisensy_response: result.response,
                       attempts: (item.attempts || 0) + 1,
                       last_attempted_at: new Date().toISOString(),
                     }).eq("id", item.id);
                     queryClient.invalidateQueries({ queryKey: ["cashflow_automations", id] });
-                    toast[result.success ? "success" : "error"](result.success ? "Message sent" : "Failed to send");
+                    toast[result.success ? "success" : "error"](result.success ? "Message sent" : "Failed to send", { duration: 3000 });
                   };
                   return (
                     <div key={item.id} className="flex items-center justify-between text-xs">
                       <div>
+                        <span className="mr-1">{icons[item.trigger_event] || "⚡"}</span>
                         <span className="font-medium">{item.automation_templates?.name || formatLabel(item.trigger_event)}</span>
                         <span className="text-muted-foreground ml-2">{item.scheduled_for ? format(new Date(item.scheduled_for), "dd MMM, HH:mm") : ""}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={`text-[10px] ${statusColors[item.status] || ""}`}>{formatLabel(item.status)}</Badge>
+                        <Badge className={`text-[10px] border-0 ${statusColors[item.status] || ""}`}>{formatLabel(item.status)}</Badge>
                         {(item.status === "pending" || item.status === "failed") && (
                           <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={handleSendNow}>
                             <Send className="h-3 w-3 mr-1" />Send Now
@@ -257,10 +269,10 @@ const TripCashflowDetail = () => {
                       </div>
                     </div>
                   );
-                })}
-              </CardContent>
-            </Card>
-          )}
+                })
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AppLayout>
