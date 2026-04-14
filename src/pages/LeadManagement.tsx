@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X } from "lucide-react";
-import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, subDays } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
