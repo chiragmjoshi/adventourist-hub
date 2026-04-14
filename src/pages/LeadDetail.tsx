@@ -22,12 +22,12 @@ import { format, formatDistanceToNow } from "date-fns";
 
 /* ── Timeline event colors ── */
 const EVENT_COLORS: Record<string, string> = {
-  lead_created: "bg-[hsl(var(--lagoon))]",
-  status_change: "bg-[hsl(var(--horizon))]",
-  disposition_change: "bg-purple-500",
-  note_added: "bg-gray-400",
+  lead_created: "bg-[#64CBB9]",
+  status_change: "bg-[#FDC436]",
+  disposition_change: "bg-[#8B5CF6]",
+  note_added: "bg-[#6B7280]",
   document_uploaded: "bg-blue-500",
-  file_closed: "bg-[hsl(var(--ridge))]",
+  file_closed: "bg-[#056147]",
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -165,13 +165,13 @@ const LeadDetail = () => {
       const events: { event_type: string; note: string }[] = [];
       if (updates.sales_status && updates.sales_status !== oldLead.sales_status) {
         const et = updates.sales_status === "File Closed" ? "file_closed" : "status_change";
-        events.push({ event_type: et, note: `Sales status changed to "${updates.sales_status}" by ${profile?.name || "User"}` });
+        events.push({ event_type: et, note: `Sales status changed from "${oldLead.sales_status || 'None'}" to "${updates.sales_status}" by ${profile?.name || "User"}` });
       }
       if (updates.disposition && updates.disposition !== oldLead.disposition) {
-        events.push({ event_type: "disposition_change", note: `Disposition changed to "${updates.disposition}" by ${profile?.name || "User"}` });
+        events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
       }
       if (updates.notes !== undefined && updates.notes !== oldLead.notes) {
-        events.push({ event_type: "note_added", note: `Notes updated by ${profile?.name || "User"}` });
+        events.push({ event_type: "note_added", note: `Note added by ${profile?.name || "User"}` });
       }
       for (const ev of events) {
         await supabase.from("lead_timeline").insert({ lead_id: id!, actor_id: profile?.id || null, ...ev });
@@ -216,17 +216,31 @@ const LeadDetail = () => {
     });
   };
 
+  /* ── Comments (using lead_comments table) ── */
+  const { data: comments = [], refetch: refetchComments } = useQuery({
+    queryKey: ["lead_comments", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lead_comments" as any)
+        .select("*, users:user_id(name)")
+        .eq("lead_id", id!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!id,
+  });
+
   const addComment = useMutation({
     mutationFn: async (text: string) => {
-      await supabase.from("lead_timeline").insert({
-        lead_id: id!, actor_id: profile?.id || null,
-        event_type: "comment", note: text,
-      });
+      const { error } = await supabase.from("lead_comments" as any).insert({
+        lead_id: id!, user_id: profile?.id, comment: text,
+      } as any);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lead_timeline", id] });
+      queryClient.invalidateQueries({ queryKey: ["lead_comments", id] });
       setCommentText("");
-      toast.success("Comment added");
+      toast.success("Comment posted");
     },
   });
 
