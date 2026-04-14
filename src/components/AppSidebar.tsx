@@ -9,7 +9,8 @@ import {
   SidebarMenuSubItem, SidebarMenuSubButton, useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import AdventouristLogo from "@/components/AdventouristLogo";
+import logoHorizontal from "@/assets/logo-horizontal.png";
+import logoMain from "@/assets/logo-main.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -48,9 +49,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarContent className="bg-sidebar pt-4">
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 mb-6">
-          <AdventouristLogo size={32} />
-          {!collapsed && <span className="text-sidebar-foreground font-semibold text-base">Adventourist</span>}
+        <div className="flex items-center justify-center px-4 mb-6">
+          {collapsed
+            ? <img src={logoMain} alt="Adventourist" className="h-8 w-auto" />
+            : <img src={logoHorizontal} alt="Adventourist" className="h-10 w-auto" />
+          }
         </div>
 
         <SidebarGroup>
