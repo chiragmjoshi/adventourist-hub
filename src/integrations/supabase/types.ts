@@ -676,6 +676,7 @@ export type Database = {
           disposition: string | null
           email: string | null
           id: string
+          is_hot: boolean | null
           itinerary_id: string | null
           landing_page_id: string | null
           mobile: string | null
@@ -699,6 +700,7 @@ export type Database = {
           disposition?: string | null
           email?: string | null
           id?: string
+          is_hot?: boolean | null
           itinerary_id?: string | null
           landing_page_id?: string | null
           mobile?: string | null
@@ -722,6 +724,7 @@ export type Database = {
           disposition?: string | null
           email?: string | null
           id?: string
+          is_hot?: boolean | null
           itinerary_id?: string | null
           landing_page_id?: string | null
           mobile?: string | null
