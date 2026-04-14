@@ -42,7 +42,12 @@ import { processAutomationQueue } from "./services/queueProcessor";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    processAutomationQueue();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
