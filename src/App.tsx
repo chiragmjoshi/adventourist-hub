@@ -35,6 +35,7 @@ import TeamPerformance from "./pages/reports/TeamPerformance";
 import UserManagementPage from "./pages/UserManagementPage";
 import RoleManagementPage from "./pages/RoleManagementPage";
 import ProfilePage from "./pages/ProfilePage";
+import Automations from "./pages/Automations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
