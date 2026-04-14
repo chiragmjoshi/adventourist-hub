@@ -1,0 +1,1 @@
+ALTER TABLE public.itineraries DROP COLUMN IF EXISTS destination_slug;
