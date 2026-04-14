@@ -22,12 +22,12 @@ import { format, formatDistanceToNow } from "date-fns";
 
 /* ── Timeline event colors ── */
 const EVENT_COLORS: Record<string, string> = {
-  lead_created: "bg-[hsl(var(--lagoon))]",
-  status_change: "bg-[hsl(var(--horizon))]",
-  disposition_change: "bg-purple-500",
-  note_added: "bg-gray-400",
+  lead_created: "bg-[#64CBB9]",
+  status_change: "bg-[#FDC436]",
+  disposition_change: "bg-[#8B5CF6]",
+  note_added: "bg-[#6B7280]",
   document_uploaded: "bg-blue-500",
-  file_closed: "bg-[hsl(var(--ridge))]",
+  file_closed: "bg-[#056147]",
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -165,13 +165,13 @@ const LeadDetail = () => {
       const events: { event_type: string; note: string }[] = [];
       if (updates.sales_status && updates.sales_status !== oldLead.sales_status) {
         const et = updates.sales_status === "File Closed" ? "file_closed" : "status_change";
-        events.push({ event_type: et, note: `Sales status changed to "${updates.sales_status}" by ${profile?.name || "User"}` });
+        events.push({ event_type: et, note: `Sales status changed from "${oldLead.sales_status || 'None'}" to "${updates.sales_status}" by ${profile?.name || "User"}` });
       }
       if (updates.disposition && updates.disposition !== oldLead.disposition) {
-        events.push({ event_type: "disposition_change", note: `Disposition changed to "${updates.disposition}" by ${profile?.name || "User"}` });
+        events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
       }
       if (updates.notes !== undefined && updates.notes !== oldLead.notes) {
-        events.push({ event_type: "note_added", note: `Notes updated by ${profile?.name || "User"}` });
+        events.push({ event_type: "note_added", note: `Note added by ${profile?.name || "User"}` });
       }
       for (const ev of events) {
         await supabase.from("lead_timeline").insert({ lead_id: id!, actor_id: profile?.id || null, ...ev });
@@ -216,17 +216,31 @@ const LeadDetail = () => {
     });
   };
 
+  /* ── Comments (using lead_comments table) ── */
+  const { data: comments = [], refetch: refetchComments } = useQuery({
+    queryKey: ["lead_comments", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lead_comments" as any)
+        .select("*, users:user_id(name)")
+        .eq("lead_id", id!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!id,
+  });
+
   const addComment = useMutation({
     mutationFn: async (text: string) => {
-      await supabase.from("lead_timeline").insert({
-        lead_id: id!, actor_id: profile?.id || null,
-        event_type: "comment", note: text,
-      });
+      const { error } = await supabase.from("lead_comments" as any).insert({
+        lead_id: id!, user_id: profile?.id, comment: text,
+      } as any);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lead_timeline", id] });
+      queryClient.invalidateQueries({ queryKey: ["lead_comments", id] });
       setCommentText("");
-      toast.success("Comment added");
+      toast.success("Comment posted");
     },
   });
 
@@ -247,7 +261,7 @@ const LeadDetail = () => {
 
   const l = lead as any;
   const initials = l.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-  const comments = timeline.filter((e: any) => e.event_type === "comment");
+  // comments now from lead_comments query above
 
   return (
     <AppLayout title="Lead Detail">
@@ -523,34 +537,40 @@ const LeadDetail = () => {
             <TabsContent value="comments" className="mt-5">
               <Card className="border-border/50 shadow-none">
                 <CardContent className="p-5">
-                  <div className="flex gap-2 mb-5">
-                    <Textarea value={commentText} onChange={e => setCommentText(e.target.value)} rows={2}
-                      className="rounded-md flex-1" placeholder="Add a comment..." />
-                    <Button size="sm" className="self-end rounded-md" disabled={!commentText.trim() || addComment.isPending}
-                      onClick={() => addComment.mutate(commentText.trim())}>
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="mb-5">
+                    <Textarea value={commentText} onChange={e => setCommentText(e.target.value)} rows={3}
+                      className="rounded-md mb-2" placeholder="Add an internal comment..." />
+                    <div className="flex justify-end">
+                      <Button size="sm" className="rounded-md bg-[hsl(var(--blaze))] hover:bg-[hsl(var(--blaze))]/90" disabled={!commentText.trim() || addComment.isPending}
+                        onClick={() => addComment.mutate(commentText.trim())}>
+                        Post Comment
+                      </Button>
+                    </div>
                   </div>
                   {comments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No comments yet</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Add the first comment.</p>
                   ) : (
                     <div className="space-y-4">
-                      {comments.map((c: any) => (
-                        <div key={c.id} className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium flex-shrink-0">
-                            {(c as any).users?.name?.[0]?.toUpperCase() || "?"}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">{(c as any).users?.name || "Unknown"}</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ""}
-                              </span>
+                      {comments.map((c: any) => {
+                        const userName = c.users?.name || "Unknown";
+                        const userInitial = userName[0]?.toUpperCase() || "?";
+                        return (
+                          <div key={c.id} className="flex gap-3">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 text-white" style={{ backgroundColor: "hsl(var(--blaze))" }}>
+                              {userInitial}
                             </div>
-                            <p className="text-sm text-foreground/80 mt-0.5">{c.note}</p>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold">{userName}</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ""}
+                                </span>
+                              </div>
+                              <p className="text-sm text-foreground/80 mt-0.5">{c.comment}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -567,13 +587,13 @@ const LeadDetail = () => {
                 </Button>
               </CardHeader>
               <CardContent className="px-5 pb-5">
-                {timeline.filter((e: any) => e.event_type !== "comment").length === 0 ? (
+                {timeline.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">No timeline events yet</p>
                 ) : (
                   <div className="relative">
                     <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/60" />
                     <div className="space-y-4">
-                      {timeline.filter((e: any) => e.event_type !== "comment").map((event: any) => (
+                      {timeline.map((event: any) => (
                         <div key={event.id} className="flex gap-3 relative">
                           <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${EVENT_COLORS[event.event_type] || "bg-gray-400"}`}>
                             {event.event_type === "lead_created" ? <User className="h-3 w-3 text-white" /> :
