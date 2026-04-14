@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Map, Layout, DollarSign, Truck, BarChart3,
-  Database, UserCheck, Shield, ChevronDown, Settings,
+  Database, UserCheck, Shield, ChevronDown, Settings, Zap,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -27,7 +27,6 @@ export function AppSidebar() {
         : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
     }`;
 
-  // Role-based nav filtering
   const navItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard, show: true },
     { title: "Lead Management", url: "/leads", icon: Users, show: hasPermission("leads") },
@@ -36,6 +35,7 @@ export function AppSidebar() {
     { title: "Trip Cashflow", url: "/trip-cashflow", icon: DollarSign, show: hasPermission("trip_cashflow") },
     { title: "Vendors", url: "/vendors", icon: Truck, show: hasPermission("vendors") },
     { title: "Reports", url: "/reports", icon: BarChart3, show: hasPermission("reports") },
+    { title: "Automations", url: "/automations", icon: Zap, show: hasRole("admin", "super_admin") },
   ].filter((i) => i.show);
 
   const showDb = hasPermission("db_management") || hasRole("super_admin", "admin");
