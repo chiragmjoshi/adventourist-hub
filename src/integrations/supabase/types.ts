@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_queue: {
+        Row: {
+          aisensy_response: Json | null
+          attempts: number | null
+          cashflow_id: string | null
+          created_at: string | null
+          id: string
+          last_attempted_at: string | null
+          lead_id: string | null
+          recipient_mobile: string
+          scheduled_for: string
+          status: string | null
+          template_id: string | null
+          trigger_event: string
+          variables: Json
+        }
+        Insert: {
+          aisensy_response?: Json | null
+          attempts?: number | null
+          cashflow_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_attempted_at?: string | null
+          lead_id?: string | null
+          recipient_mobile: string
+          scheduled_for: string
+          status?: string | null
+          template_id?: string | null
+          trigger_event: string
+          variables?: Json
+        }
+        Update: {
+          aisensy_response?: Json | null
+          attempts?: number | null
+          cashflow_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_attempted_at?: string | null
+          lead_id?: string | null
+          recipient_mobile?: string
+          scheduled_for?: string
+          status?: string | null
+          template_id?: string | null
+          trigger_event?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_queue_cashflow_id_fkey"
+            columns: ["cashflow_id"]
+            isOneToOne: false
+            referencedRelation: "trip_cashflow"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_queue_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_queue_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "automation_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_settings: {
         Row: {
           description: string | null
@@ -35,6 +105,39 @@ export type Database = {
           key?: string
           updated_at?: string | null
           value?: string
+        }
+        Relationships: []
+      }
+      automation_templates: {
+        Row: {
+          aisensy_template_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          recipient_type: string | null
+          trigger_event: string
+        }
+        Insert: {
+          aisensy_template_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          recipient_type?: string | null
+          trigger_event: string
+        }
+        Update: {
+          aisensy_template_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          recipient_type?: string | null
+          trigger_event?: string
         }
         Relationships: []
       }
