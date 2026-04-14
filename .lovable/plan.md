@@ -1,25 +1,55 @@
 
 
-## Plan: Fix Issues Found in UX Audit
+## Plan: Update All Itineraries with Production Data
 
-### Issues to fix
+### What this does
+Updates all 72 existing itineraries in the database with rich content from the production MariaDB dump, including:
+- **Inclusions & Exclusions** (HTML stripped to plain text)
+- **Day-by-day itinerary** (parsed from `days_data` JSON into `itinerary_days` JSONB)
+- **SEO fields** (`seo_title`, `seo_description`)
+- **Important things / highlights** (mapped to `highlights` array)
+- **Inclusion flags** corrected (`transfers_included`, `meals_included`, `stay_included`, etc.)
 
-**1. Lead Management table — format snake_case labels**
-In `src/pages/LeadManagement.tsx`, the Disposition and Status columns display raw values like `not_contacted` and `new_lead`. Apply the existing `formatLabel()` utility to these columns.
+### How it works
 
-**2. Lead Detail — Disposition/Status dropdowns not showing selected value**  
-In `src/pages/LeadDetail.tsx`, the top-right disposition and sales status dropdowns appear to have empty/invisible selected values. Need to check the select components are properly showing the current value.
+**Step 1: Parse the uploaded SQL file**
+Write a Python script that:
+1. Reads the MariaDB SQL dump
+2. Extracts all 72 itinerary records with their slugs
+3. For each record, parses:
+   - `important_things` HTML → plain text array for `highlights`
+   - `inclusion` HTML → plain text for `inclusions`
+   - `exclusion` HTML → plain text for `exclusions`
+   - `days_data` JSON → `itinerary_days` JSONB (mapping `title`/`detail` to the app's day plan format with meals/activities/accommodation defaults)
+   - `meta_title` → `seo_title`
+   - `meta_description` → `seo_description`
+   - Boolean flags: `transfers_included`, `all_meals_included` → `meals_included`, `stay_included`, `breakfast_included`, `sightseeing_included`, `support_24x7` → `support_247`
+4. Generates UPDATE SQL statements matched by `slug`
 
-**3. Automation template seed values**
-Run a migration to update `automation_templates` rows where `aisensy_template_name = 'REPLACE_WITH_YOUR_TEMPLATE_NAME'` to the correct placeholder names (`adventourist_trip_confirmed`, `adventourist_pre_trip_reminder`, etc.) as specified in the Sprint 7 spec.
+**Step 2: Execute updates via the insert tool**
+Run the generated UPDATE statements in batches against the database, updating each itinerary by slug.
 
-### Technical details
+### Data mapping
 
-- **File 1**: `src/pages/LeadManagement.tsx` — wrap disposition and status column renders with `formatLabel()`
-- **File 2**: `src/pages/LeadDetail.tsx` — inspect the disposition/status select components for missing value display
-- **File 3**: Migration SQL to update template names
+```text
+Old MariaDB Column        → New Supabase Column
+─────────────────────────────────────────────────
+important_things (HTML)    → highlights (text[])
+inclusion (HTML)           → inclusions (text)
+exclusion (HTML)           → exclusions (text)
+days_data (JSON)           → itinerary_days (JSONB)
+meta_title                 → seo_title
+meta_description           → seo_description
+all_meals_included         → meals_included
+support_24x7_included      → support_247
+flights_included           → flights_included
+transfers_included         → transfers_included
+stay_included              → stay_included
+breakfast_included         → breakfast_included
+sightseeing_included       → sightseeing_included
+```
 
-### Out of scope
-- Mobile header cramping is minor and cosmetic
-- Template names will be updated by admin in production — the seed fix is just for better defaults
+### What won't change
+- Existing `price_per_person`, `nights`, `days`, `destination_id` remain as-is (already seeded correctly)
+- No schema changes needed — all target columns already exist
 
