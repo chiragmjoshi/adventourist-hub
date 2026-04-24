@@ -13,6 +13,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, ChevronRight, Plus, Trash2, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
+import StepProgress from "@/components/forms/StepProgress";
+import StepNav from "@/components/forms/StepNav";
+import UnsavedBadge from "@/components/forms/UnsavedBadge";
+import UnsavedChangesDialog from "@/components/forms/UnsavedChangesDialog";
+import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
+import { useAutoSaveDraft } from "@/components/forms/useAutoSaveDraft";
+
+const VENDOR_STEPS = [
+  { key: "basic", label: "Basic" },
+  { key: "bank", label: "Bank & Tax" },
+  { key: "contacts", label: "Contacts" },
+];
 
 interface ContactPoint {
   name: string;
@@ -35,6 +47,8 @@ const VendorEdit = () => {
   const isNew = !id || id === "new";
   const [activeTab, setActiveTab] = useState("basic");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [completedTabs, setCompletedTabs] = useState<string[]>([]);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const [form, setForm] = useState({
     name: "", nick_name: "", vendor_code: "",
@@ -49,6 +63,8 @@ const VendorEdit = () => {
   const [gstFile, setGstFile] = useState<File | null>(null);
   const [panUrl, setPanUrl] = useState("");
   const [gstUrl, setGstUrl] = useState("");
+
+  const { isDirty, blocker, markClean, resetSnapshot } = useUnsavedChanges(form, !isNew || form.name.length > 0);
 
   const { data: existing } = useQuery({
     queryKey: ["vendor", id],
@@ -79,7 +95,7 @@ const VendorEdit = () => {
   useEffect(() => {
     if (existing) {
       const cp = Array.isArray(existing.contact_points) ? (existing.contact_points as unknown as ContactPoint[]) : [emptyContact()];
-      setForm({
+      const next = {
         name: existing.name || "",
         nick_name: existing.nick_name || "",
         vendor_code: existing.vendor_code || "",
@@ -96,9 +112,11 @@ const VendorEdit = () => {
         pan: existing.pan || "",
         gst: existing.gst || "",
         contact_points: cp.length > 0 ? cp : [emptyContact()],
-      });
+      };
+      setForm(next);
+      resetSnapshot(next);
     }
-  }, [existing]);
+  }, [existing, resetSnapshot]);
 
   const setField = (key: string, value: any) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -191,6 +209,8 @@ const VendorEdit = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
       toast.success(`Vendor ${form.name} saved successfully`);
+      markClean();
+      setLastSavedAt(new Date());
       navigate("/vendors");
     },
     onError: (e: any) => toast.error(e.message || "Failed to save vendor"),
@@ -201,10 +221,32 @@ const VendorEdit = () => {
     saveMutation.mutate();
   };
 
-  const nextTab = () => {
-    if (activeTab === "basic") setActiveTab("bank");
-    else if (activeTab === "bank") setActiveTab("contacts");
+  const goToStep = (key: string) => setActiveTab(key);
+  const stepIndex = VENDOR_STEPS.findIndex(s => s.key === activeTab);
+  const isFirst = stepIndex === 0;
+  const isLast = stepIndex === VENDOR_STEPS.length - 1;
+  const goNext = () => {
+    if (isLast) return;
+    setCompletedTabs(prev => prev.includes(activeTab) ? prev : [...prev, activeTab]);
+    setActiveTab(VENDOR_STEPS[stepIndex + 1].key);
   };
+  const goBack = () => {
+    if (isFirst) return;
+    setActiveTab(VENDOR_STEPS[stepIndex - 1].key);
+  };
+  const saveDraft = async () => {
+    if (!form.name.trim()) {
+      toast.info("Add a company name to save a draft");
+      return;
+    }
+    saveMutation.mutate();
+  };
+
+  // Auto-save every 60s while dirty (only when name is set, otherwise validation will fail)
+  useAutoSaveDraft(
+    () => { if (form.name.trim()) saveMutation.mutate(); },
+    isDirty && !!form.name.trim(),
+  );
 
   const FieldError = ({ field }: { field: string }) => errors[field] ? <p className="text-xs text-destructive mt-1">{errors[field]}</p> : null;
 
@@ -219,18 +261,22 @@ const VendorEdit = () => {
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
           <span className="font-medium">{form.name || "New Vendor"}</span>
           {form.vendor_code && <span className="font-mono text-xs text-primary ml-2">{form.vendor_code}</span>}
+          <UnsavedBadge isDirty={isDirty} lastSavedAt={lastSavedAt} className="ml-2" />
         </div>
         <div className="flex items-center gap-2">
-          {activeTab !== "contacts" && (
-            <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={nextTab}>
-              Save & Continue
-            </Button>
-          )}
           <Button size="sm" className="rounded-md text-xs" onClick={handleSubmit} disabled={saveMutation.isPending}>
             <Save className="h-3.5 w-3.5 mr-1" />Save Vendor
           </Button>
         </div>
       </div>
+
+      <StepProgress
+        steps={VENDOR_STEPS}
+        current={activeTab}
+        completed={completedTabs}
+        onJump={goToStep}
+        className="mb-4"
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none mb-5">
@@ -325,6 +371,12 @@ const VendorEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav
+            isFirst={isFirst} isLast={isLast}
+            onBack={goBack} onNext={goNext}
+            onSaveDraft={saveDraft} onSave={handleSubmit}
+            saving={saveMutation.isPending} saveLabel="Save Vendor"
+          />
         </TabsContent>
 
         {/* Tab 2: Bank & Compliance */}
@@ -427,6 +479,12 @@ const VendorEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav
+            isFirst={false} isLast={false}
+            onBack={goBack} onNext={goNext}
+            onSaveDraft={saveDraft} onSave={handleSubmit}
+            saving={saveMutation.isPending}
+          />
         </TabsContent>
 
         {/* Tab 3: Contact Points */}
@@ -495,13 +553,15 @@ const VendorEdit = () => {
             <Plus className="h-3.5 w-3.5 mr-1" />Add New Contact
           </Button>
 
-          <div className="flex justify-end pt-4">
-            <Button className="rounded-md" onClick={handleSubmit} disabled={saveMutation.isPending}>
-              <Save className="h-4 w-4 mr-2" />Submit
-            </Button>
-          </div>
+          <StepNav
+            isFirst={false} isLast={true}
+            onBack={goBack} onNext={goNext}
+            onSaveDraft={saveDraft} onSave={handleSubmit}
+            saving={saveMutation.isPending} saveLabel="Save Vendor"
+          />
         </TabsContent>
       </Tabs>
+      <UnsavedChangesDialog blocker={blocker} />
     </AppLayout>
   );
 };
