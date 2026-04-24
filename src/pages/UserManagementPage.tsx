@@ -142,7 +142,9 @@ const UserManagementPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full" onClick={handleInvite}>Send Invite</Button>
+              <Button className="w-full" onClick={handleInvite} disabled={pendingAction}>
+                {pendingAction ? "Sending…" : "Send Invite"}
+              </Button>
             </div>
           </SheetContent>
         </Sheet>
