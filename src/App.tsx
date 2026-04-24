@@ -26,6 +26,13 @@ import LandingPageList from "./pages/LandingPageList";
 import LandingPageEdit from "./pages/LandingPageEdit";
 import LandingPageDetail from "./pages/LandingPageDetail";
 import LandingPage from "./pages/LandingPage";
+import PublicHome from "./public-site/pages/PublicHome";
+import PublicDestinations from "./public-site/pages/PublicDestinations";
+import PublicDestinationDetail from "./public-site/pages/PublicDestinationDetail";
+import PublicItineraries from "./public-site/pages/PublicItineraries";
+import PublicItineraryDetail from "./public-site/pages/PublicItineraryDetail";
+import PublicAbout from "./public-site/pages/PublicAbout";
+import PublicContact from "./public-site/pages/PublicContact";
 import ReportsHub from "./pages/ReportsHub";
 import SalesReport from "./pages/reports/SalesReport";
 import RevenueReport from "./pages/reports/RevenueReport";
@@ -95,6 +102,13 @@ const App = () => {
             <Route path="/automations" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Automations"><Automations /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/l/:slug" element={<LandingPage />} />
+            <Route path="/preview" element={<PublicHome />} />
+            <Route path="/preview/destinations" element={<PublicDestinations />} />
+            <Route path="/preview/destinations/:slug" element={<PublicDestinationDetail />} />
+            <Route path="/preview/itineraries" element={<PublicItineraries />} />
+            <Route path="/preview/itineraries/:slug" element={<PublicItineraryDetail />} />
+            <Route path="/preview/about" element={<PublicAbout />} />
+            <Route path="/preview/contact" element={<PublicContact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
