@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, Plus, UserCheck } from "lucide-react";
+import { Search, Plus, UserCheck, MoreHorizontal, Mail, KeyRound, Trash2, UserX, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ROLES = ["super_admin", "admin", "sales", "operations", "finance"] as const;
 const ROLE_COLORS: Record<string, string> = {
@@ -32,7 +34,7 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 };
 
 const UserManagementPage = () => {
-  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -41,6 +43,8 @@ const UserManagementPage = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "sales", mobile: "" });
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
+  const [pendingAction, setPendingAction] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -68,19 +72,42 @@ const UserManagementPage = () => {
 
   const handleInvite = async () => {
     if (!inviteForm.name || !inviteForm.email) { toast.error("Name and email are required"); return; }
-    const { error } = await supabase.from("users").insert({ name: inviteForm.name, email: inviteForm.email, role: inviteForm.role, is_active: false, mobile: inviteForm.mobile || null } as any);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Invitation created for ${inviteForm.email}`);
+    setPendingAction(true);
+    const { data, error } = await supabase.functions.invoke("admin-user-management", {
+      body: { action: "invite", ...inviteForm },
+    });
+    setPendingAction(false);
+    if (error || (data as any)?.error) { toast.error((data as any)?.error || error!.message); return; }
+    toast.success(`Invitation email sent to ${inviteForm.email}`);
     setInviteOpen(false);
     setInviteForm({ name: "", email: "", role: "sales", mobile: "" });
     fetchUsers();
   };
 
-  const handleDeactivate = async (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    await supabase.from("users").update({ is_active: !user.is_active }).eq("id", userId);
-    toast.success(user.is_active ? "User deactivated" : "User activated");
+  const callAdmin = async (action: string, payload: Record<string, any>, successMsg: string) => {
+    setPendingAction(true);
+    const { data, error } = await supabase.functions.invoke("admin-user-management", {
+      body: { action, ...payload },
+    });
+    setPendingAction(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error!.message);
+      return false;
+    }
+    toast.success(successMsg);
     fetchUsers();
+    return true;
+  };
+
+  const handleToggleActive = (u: any) =>
+    callAdmin("toggle_active", { user_id: u.id, is_active: !u.is_active }, u.is_active ? "User deactivated" : "User activated");
+  const handleResendInvite = (u: any) => callAdmin("resend_invite", { user_id: u.id }, `Invite re-sent to ${u.email}`);
+  const handleResetPassword = (u: any) => callAdmin("reset_password", { user_id: u.id }, `Password reset email sent to ${u.email}`);
+  const handleChangeRole = (u: any, role: string) => callAdmin("update_role", { user_id: u.id, role }, "Role updated");
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const ok = await callAdmin("delete", { user_id: confirmDelete.id }, `${confirmDelete.name} deleted`);
+    if (ok) setConfirmDelete(null);
   };
 
   return (
@@ -115,7 +142,9 @@ const UserManagementPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full" onClick={handleInvite}>Send Invite</Button>
+              <Button className="w-full" onClick={handleInvite} disabled={pendingAction}>
+                {pendingAction ? "Sending…" : "Send Invite"}
+              </Button>
             </div>
           </SheetContent>
         </Sheet>
@@ -181,7 +210,44 @@ const UserManagementPage = () => {
                   </TableCell>
                   <TableCell className="text-right">{leadCounts[u.id] || 0}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeactivate(u.id)}>{u.is_active ? "Deactivate" : "Activate"}</Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={pendingAction}><MoreHorizontal className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <div className="px-2 py-1.5">
+                          <p className="text-xs text-muted-foreground mb-1">Change role</p>
+                          <Select value={u.role} onValueChange={(v) => handleChangeRole(u, v)}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {ROLES.map((r) => <SelectItem key={r} value={r} className="capitalize text-xs">{r.replace("_", " ")}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <DropdownMenuSeparator />
+                        {!u.is_active && (
+                          <DropdownMenuItem onClick={() => handleResendInvite(u)}>
+                            <Mail className="h-4 w-4 mr-2" />Resend invite
+                          </DropdownMenuItem>
+                        )}
+                        {u.is_active && (
+                          <DropdownMenuItem onClick={() => handleResetPassword(u)}>
+                            <KeyRound className="h-4 w-4 mr-2" />Send password reset
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => handleToggleActive(u)} disabled={u.id === authUser?.id}>
+                          {u.is_active ? <><UserX className="h-4 w-4 mr-2" />Deactivate</> : <><UserPlus className="h-4 w-4 mr-2" />Activate</>}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setConfirmDelete(u)}
+                          disabled={u.id === authUser?.id}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />Delete user
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -189,6 +255,24 @@ const UserManagementPage = () => {
           </Table>
         </Card>
       )}
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {confirmDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the user account and revokes their access. Any leads, comments,
+              or trips assigned to them will become unassigned. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete user
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };

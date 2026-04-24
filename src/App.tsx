@@ -38,6 +38,8 @@ import RoleManagementPage from "./pages/RoleManagementPage";
 import ProfilePage from "./pages/ProfilePage";
 import Automations from "./pages/Automations";
 import NotFound from "./pages/NotFound";
+import AcceptInvite from "./pages/AcceptInvite";
+import ResetPassword from "./pages/ResetPassword";
 import { processAutomationQueue } from "./services/queueProcessor";
 
 const queryClient = new QueryClient();
@@ -58,6 +60,8 @@ const App = () => {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
             <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
