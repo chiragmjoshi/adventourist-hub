@@ -13,7 +13,16 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-    const { action, table, rows, sql } = await req.json();
+    const { action, table, rows, sql, select, limit, offset } = await req.json();
+
+    if (action === "select" && table) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(select || "*")
+        .range(offset || 0, (offset || 0) + (limit || 1000) - 1);
+      if (error) throw error;
+      return new Response(JSON.stringify({ ok: true, data }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     if (action === "sql" && sql) {
       const { error } = await supabase.rpc("exec_sql", { query: sql }).maybeSingle();
