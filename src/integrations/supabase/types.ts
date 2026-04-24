@@ -675,6 +675,7 @@ export type Database = {
           destination_id: string | null
           disposition: string | null
           email: string | null
+          follow_up_date: string | null
           id: string
           is_hot: boolean | null
           itinerary_id: string | null
@@ -699,6 +700,7 @@ export type Database = {
           destination_id?: string | null
           disposition?: string | null
           email?: string | null
+          follow_up_date?: string | null
           id?: string
           is_hot?: boolean | null
           itinerary_id?: string | null
@@ -723,6 +725,7 @@ export type Database = {
           destination_id?: string | null
           disposition?: string | null
           email?: string | null
+          follow_up_date?: string | null
           id?: string
           is_hot?: boolean | null
           itinerary_id?: string | null
@@ -1008,34 +1011,40 @@ export type Database = {
       }
       trip_cashflow_vendors: {
         Row: {
+          amount_paid: number
           cashflow_id: string
           cost_per_pax_incl_gst: number
           created_at: string | null
           description: string | null
           id: string
           invoice_url: string | null
+          payment_status: string
           service_type: string
           sort_order: number | null
           vendor_id: string | null
         }
         Insert: {
+          amount_paid?: number
           cashflow_id: string
           cost_per_pax_incl_gst?: number
           created_at?: string | null
           description?: string | null
           id?: string
           invoice_url?: string | null
+          payment_status?: string
           service_type: string
           sort_order?: number | null
           vendor_id?: string | null
         }
         Update: {
+          amount_paid?: number
           cashflow_id?: string
           cost_per_pax_incl_gst?: number
           created_at?: string | null
           description?: string | null
           id?: string
           invoice_url?: string | null
+          payment_status?: string
           service_type?: string
           sort_order?: number | null
           vendor_id?: string | null
