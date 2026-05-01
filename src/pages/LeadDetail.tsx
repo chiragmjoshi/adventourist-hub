@@ -20,7 +20,7 @@ import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
-import { triggerFileClosedAutomation, triggerFollowUpReminder } from "@/services/automationTriggers";
+import { evaluateRulesForLead } from "@/services/automationEngine";
 
 /* ── Timeline event colors ── */
 const EVENT_COLORS: Record<string, string> = {
@@ -168,24 +168,12 @@ const LeadDetail = () => {
       if (updates.sales_status && updates.sales_status !== oldLead.sales_status) {
         const et = updates.sales_status === "File Closed" ? "file_closed" : "status_change";
         events.push({ event_type: et, note: `Sales status changed from "${oldLead.sales_status || 'None'}" to "${updates.sales_status}" by ${profile?.name || "User"}` });
-
-        // Trigger file closed automation
-        if (updates.sales_status === "file_closed" || updates.sales_status === "File Closed") {
-          triggerFileClosedAutomation(id!).then(() => {
-            if (oldLead.mobile) toast.success(`Trip confirmation WhatsApp queued for ${oldLead.name}`);
-          });
-        }
+        // Fire rules listening for status_changed
+        evaluateRulesForLead(id!, "status_changed");
       }
       if (updates.disposition && updates.disposition !== oldLead.disposition) {
         events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
-
-        // Trigger follow-up reminder
-        if (updates.disposition === "follow_up_needed" || updates.disposition === "Follow Up Needed") {
-          triggerFollowUpReminder(id!).then(() => {
-            const agentName = (oldLead.users as any)?.name || "agent";
-            toast.success(`Follow up reminder sent to ${agentName}`);
-          });
-        }
+        evaluateRulesForLead(id!, "disposition_changed");
       }
       if (updates.notes !== undefined && updates.notes !== oldLead.notes) {
         events.push({ event_type: "note_added", note: `Note added by ${profile?.name || "User"}` });
