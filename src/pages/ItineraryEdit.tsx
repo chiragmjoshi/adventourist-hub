@@ -16,6 +16,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ChevronRight, Save, Globe, Plus, GripVertical, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
+import StepProgress from "@/components/forms/StepProgress";
+import StepNav from "@/components/forms/StepNav";
+import ImageUploader from "@/components/forms/ImageUploader";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -46,6 +49,26 @@ const ItineraryEdit = () => {
   const autoSaveTimer = useRef<ReturnType<typeof setInterval>>();
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const STEPS = [
+    { key: "summary", label: "Trip Summary" },
+    { key: "media", label: "Media" },
+    { key: "details", label: "Itinerary Details" },
+    { key: "dayplan", label: "Day-by-Day Plan" },
+    { key: "seo", label: "SEO Data" },
+  ];
+  const [activeTab, setActiveTab] = useState<string>("summary");
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const stepIdx = STEPS.findIndex(s => s.key === activeTab);
+  const goTo = (key: string) => {
+    setActiveTab(key);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const goNext = () => {
+    setCompletedSteps(prev => new Set(prev).add(activeTab));
+    if (stepIdx < STEPS.length - 1) goTo(STEPS[stepIdx + 1].key);
+  };
+  const goBack = () => { if (stepIdx > 0) goTo(STEPS[stepIdx - 1].key); };
 
   const [form, setForm] = useState<Record<string, any>>({
     headline: "", slug: "", about: "", destination_id: "", days: null, nights: null,
@@ -96,6 +119,12 @@ const ItineraryEdit = () => {
   // Load existing data
   useEffect(() => {
     if (existing) {
+      // Defensive: itinerary_days may come back as an array OR a JSON string
+      let rawDays: any = existing.itinerary_days;
+      if (typeof rawDays === "string") {
+        try { rawDays = JSON.parse(rawDays); } catch { rawDays = []; }
+      }
+      if (!Array.isArray(rawDays)) rawDays = [];
       setForm({
         headline: existing.headline || "",
         slug: existing.slug || "",
@@ -121,7 +150,10 @@ const ItineraryEdit = () => {
         highlights: existing.highlights || [],
         inclusions: existing.inclusions || "",
         exclusions: existing.exclusions || "",
-        itinerary_days: ((existing.itinerary_days as unknown as DayPlan[]) || []).map(d => ({
+        itinerary_days: (rawDays as DayPlan[]).map((d: any, i: number) => ({
+          day: typeof d?.day === "number" ? d.day : i + 1,
+          title: d?.title || "",
+          description: d?.description || "",
           ...d,
           meals: d.meals || { breakfast: false, lunch: false, dinner: false },
           activities: d.activities || [],
@@ -283,7 +315,14 @@ const ItineraryEdit = () => {
       </div>
 
       {/* ── Tabs ── */}
-      <Tabs defaultValue="summary">
+      <StepProgress
+        steps={STEPS}
+        current={activeTab}
+        completed={Array.from(completedSteps)}
+        onJump={goTo}
+        className="mb-5"
+      />
+      <Tabs value={activeTab} onValueChange={goTo}>
         <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none mb-5">
           {[
             { v: "summary", l: "Trip Summary" }, { v: "media", l: "Media" },
@@ -402,6 +441,16 @@ const ItineraryEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav
+            isFirst={stepIdx === 0}
+            isLast={stepIdx === STEPS.length - 1}
+            onBack={goBack}
+            onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(undefined)}
+            onSave={() => saveMutation.mutate(true)}
+            saving={saveMutation.isPending}
+            saveLabel="Save & Publish"
+          />
         </TabsContent>
 
         {/* ══ Tab 2: Media ══ */}
@@ -409,19 +458,12 @@ const ItineraryEdit = () => {
           <Card className="border-border/50 shadow-none">
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Hero Image</CardTitle></CardHeader>
             <CardContent className="px-5 pb-5">
-              {form.hero_image ? (
-                <div className="relative">
-                  <img src={form.hero_image} alt="Hero" className="w-full h-48 object-cover rounded-lg" />
-                  <div className="absolute top-2 right-2 flex gap-1">
-                    <Button size="sm" variant="secondary" className="text-xs h-7 rounded-md" onClick={() => setField("hero_image", "")}>Remove</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-border/60 rounded-lg p-12 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">Drag & drop or click to upload</p>
-                  <Input value={form.hero_image} onChange={e => setField("hero_image", e.target.value)} placeholder="Or paste image URL" className="max-w-sm mx-auto rounded-md text-xs" />
-                </div>
-              )}
+              <ImageUploader
+                folder={isNew ? "drafts" : (id as string)}
+                filename="hero"
+                value={form.hero_image}
+                onChange={(url) => setField("hero_image", url)}
+              />
             </CardContent>
           </Card>
           <Card className="border-border/50 shadow-none">
@@ -446,35 +488,28 @@ const ItineraryEdit = () => {
                 </div>
               )}
               {(form.gallery as string[]).length < 10 && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Paste image URL and press Enter or click Add"
-                    className="rounded-md text-xs"
-                    value={form._galleryInput || ""}
-                    onChange={e => setField("_galleryInput", e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" && form._galleryInput?.trim()) {
-                        e.preventDefault();
-                        setField("gallery", [...(form.gallery as string[]), form._galleryInput.trim()]);
-                        setField("_galleryInput", "");
-                      }
-                    }}
-                  />
-                  <Button variant="outline" size="sm" className="rounded-md text-xs shrink-0" onClick={() => {
-                    if (form._galleryInput?.trim()) {
-                      setField("gallery", [...(form.gallery as string[]), form._galleryInput.trim()]);
-                      setField("_galleryInput", "");
-                    }
-                  }}>
-                    <Plus className="h-3.5 w-3.5 mr-1" />Add Image
-                  </Button>
-                </div>
+                <ImageUploader
+                  folder={isNew ? "drafts" : (id as string)}
+                  filename={`gallery-${(form.gallery as string[]).length + 1}`}
+                  value=""
+                  onChange={(url) => { if (url) setField("gallery", [...(form.gallery as string[]), url]); }}
+                />
               )}
               {(form.gallery as string[]).length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">No gallery images yet. Add up to 10 image URLs.</p>
               )}
             </CardContent>
           </Card>
+          <StepNav
+            isFirst={stepIdx === 0}
+            isLast={stepIdx === STEPS.length - 1}
+            onBack={goBack}
+            onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(undefined)}
+            onSave={() => saveMutation.mutate(true)}
+            saving={saveMutation.isPending}
+            saveLabel="Save & Publish"
+          />
         </TabsContent>
 
         {/* ══ Tab 3: Details ══ */}
@@ -516,6 +551,16 @@ const ItineraryEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav
+            isFirst={stepIdx === 0}
+            isLast={stepIdx === STEPS.length - 1}
+            onBack={goBack}
+            onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(undefined)}
+            onSave={() => saveMutation.mutate(true)}
+            saving={saveMutation.isPending}
+            saveLabel="Save & Publish"
+          />
         </TabsContent>
 
         {/* ══ Tab 4: Day-by-Day ══ */}
@@ -576,6 +621,16 @@ const ItineraryEdit = () => {
               </CardContent>
             </Card>
           )}
+          <StepNav
+            isFirst={stepIdx === 0}
+            isLast={stepIdx === STEPS.length - 1}
+            onBack={goBack}
+            onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(undefined)}
+            onSave={() => saveMutation.mutate(true)}
+            saving={saveMutation.isPending}
+            saveLabel="Save & Publish"
+          />
         </TabsContent>
 
         {/* ══ Tab 5: SEO ══ */}
@@ -648,6 +703,16 @@ const ItineraryEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav
+            isFirst={stepIdx === 0}
+            isLast={stepIdx === STEPS.length - 1}
+            onBack={goBack}
+            onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(undefined)}
+            onSave={() => saveMutation.mutate(true)}
+            saving={saveMutation.isPending}
+            saveLabel="Save & Publish"
+          />
         </TabsContent>
       </Tabs>
     </AppLayout>
