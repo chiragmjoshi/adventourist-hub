@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ArrowLeft, ChevronRight, Save, Plus, Trash2, Upload, GripVertical, Check } from "lucide-react";
 import { toast } from "sonner";
 import { formatINR } from "@/lib/formatINR";
-import { queueTripAutomations } from "@/services/automationTriggers";
+// Travel-date based automations are now scheduled by the rule engine cron
 
 interface VendorLine {
   id?: string;

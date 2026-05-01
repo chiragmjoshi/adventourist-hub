@@ -3,377 +3,296 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Settings, Send, XCircle, Zap, Clock, CheckCircle, AlertTriangle, Activity } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Pencil, Trash2, Plus, Zap, MessageSquare, Mail, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { formatLabel } from "@/lib/formatLabel";
 import { formatDistanceToNow, format } from "date-fns";
-import { sendWhatsAppMessage } from "@/services/aisensy";
+import RuleEditor from "@/components/automations/RuleEditor";
 
-const maskMobile = (m: string) => {
-  if (!m || m.length < 5) return m || "—";
-  return `+${m.slice(0, -5).replace(/./g, "X")} ${m.slice(-5)}`;
+const TRIGGER_COLORS: Record<string, string> = {
+  lead_created: "bg-emerald-500/15 text-emerald-700 border-emerald-300",
+  status_changed: "bg-blue-500/15 text-blue-700 border-blue-300",
+  disposition_changed: "bg-purple-500/15 text-purple-700 border-purple-300",
+  travel_date_approaching: "bg-orange-500/15 text-orange-700 border-orange-300",
+  travel_date_passed: "bg-teal-500/15 text-teal-700 border-teal-300",
+  inactivity_days: "bg-red-500/15 text-red-700 border-red-300",
+  follow_up_date_reached: "bg-indigo-500/15 text-indigo-700 border-indigo-300",
 };
 
-const TRIGGER_ICONS: Record<string, string> = {
-  file_closed: "🎉",
-  pre_trip_3days: "🔔",
-  safe_journey: "✈️",
-  review_request: "⭐",
-  follow_up_reminder: "📋",
+const TRIGGER_LABELS: Record<string, string> = {
+  lead_created: "Lead created",
+  status_changed: "Status changed",
+  disposition_changed: "Disposition changed",
+  travel_date_approaching: "Before travel",
+  travel_date_passed: "After travel",
+  inactivity_days: "Inactivity",
+  follow_up_date_reached: "Follow-up due",
 };
+
+function conditionSummary(rule: any): string {
+  const parts: string[] = [];
+  if (rule.condition_status?.length) parts.push(`status → ${rule.condition_status.join(", ")}`);
+  if (rule.condition_disposition?.length) parts.push(`disposition → ${rule.condition_disposition.join(", ")}`);
+  if (rule.condition_platform?.length) parts.push(`platform → ${rule.condition_platform.join(", ")}`);
+  if (rule.trigger_days_before != null && ["travel_date_approaching", "travel_date_passed"].includes(rule.trigger_event)) {
+    parts.push(`${rule.trigger_days_before} day${rule.trigger_days_before === 1 ? "" : "s"}`);
+  }
+  return parts.length ? `When ${parts.join(" • ")}` : "Applies to all leads";
+}
 
 const Automations = () => {
-  const queryClient = useQueryClient();
-  const [queueFilter, setQueueFilter] = useState("all");
-  const [responseModal, setResponseModal] = useState<any>(null);
+  const qc = useQueryClient();
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<any | null>(null);
+  const [deleteRule, setDeleteRule] = useState<any | null>(null);
+  const [logFilters, setLogFilters] = useState({ status: "all", channel: "all", rule: "all" });
 
-  // Templates
-  const { data: templates = [] } = useQuery({
-    queryKey: ["automation_templates"],
+  const { data: rules = [] } = useQuery({
+    queryKey: ["automation_rules"],
     queryFn: async () => {
-      const { data } = await supabase.from("automation_templates").select("*").order("created_at");
+      const { data } = await supabase.from("automation_rules").select("*").order("created_at", { ascending: false });
       return (data || []) as any[];
     },
   });
 
-  // Stats
   const { data: stats } = useQuery({
     queryKey: ["automation_stats"],
     queryFn: async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const [{ count: pending }, { count: failed }, { count: sentToday }, { count: totalSent }] = await Promise.all([
-        supabase.from("automation_queue").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("automation_queue").select("*", { count: "exact", head: true }).eq("status", "failed"),
-        supabase.from("automations_log").select("*", { count: "exact", head: true }).eq("status", "sent").gte("fired_at", today.toISOString()),
-        supabase.from("automations_log").select("*", { count: "exact", head: true }).eq("status", "sent"),
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const [{ count: active }, { count: pending }, { count: failed }, { count: sentToday }] = await Promise.all([
+        supabase.from("automation_rules").select("*", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("automation_executions").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("automation_executions").select("*", { count: "exact", head: true }).eq("status", "failed"),
+        supabase.from("automation_executions").select("*", { count: "exact", head: true }).eq("status", "sent").gte("executed_at", today.toISOString()),
       ]);
-      return { pending: pending || 0, failed: failed || 0, sentToday: sentToday || 0, totalSent: totalSent || 0 };
+      return { active: active || 0, pending: pending || 0, failed: failed || 0, sentToday: sentToday || 0 };
     },
   });
 
-  // Queue
-  const { data: queue = [], refetch: refetchQueue } = useQuery({
-    queryKey: ["automation_queue", queueFilter],
+  const { data: executions = [] } = useQuery({
+    queryKey: ["automation_executions", logFilters],
     queryFn: async () => {
-      let query = supabase
-        .from("automation_queue")
-        .select("*, automation_templates(name, aisensy_template_name), leads(name, traveller_code)")
-        .order("scheduled_for", { ascending: false })
-        .limit(100);
-      if (queueFilter !== "all") query = query.eq("status", queueFilter);
-      const { data } = await query;
+      let q = supabase
+        .from("automation_executions")
+        .select("*, automation_rules(name), leads(name, traveller_code)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (logFilters.status !== "all") q = q.eq("status", logFilters.status);
+      if (logFilters.channel !== "all") q = q.eq("channel", logFilters.channel);
+      if (logFilters.rule !== "all") q = q.eq("rule_id", logFilters.rule);
+      const { data } = await q;
       return (data || []) as any[];
     },
   });
 
-  // Activity log
-  const { data: logs = [] } = useQuery({
-    queryKey: ["automations_log_recent"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("automations_log")
-        .select("*, leads(name, traveller_code)")
-        .order("fired_at", { ascending: false })
-        .limit(100);
-      return data || [];
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase.from("automation_rules").update({ is_active: value }).eq("id", id);
+      if (error) throw error;
     },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["automation_rules"] }),
   });
 
-  // Toggle template active
-  const toggleTemplate = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      await supabase.from("automation_templates").update({ is_active }).eq("id", id);
+  const deleteRuleMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("automation_rules").delete().eq("id", id);
+      if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["automation_templates"] }); toast.success("Template updated"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["automation_rules"] });
+      qc.invalidateQueries({ queryKey: ["automation_executions"] });
+      toast.success("Rule deleted");
+      setDeleteRule(null);
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
-  // Cancel queue item
-  const cancelItem = async (id: string) => {
-    await supabase.from("automation_queue").update({ status: "cancelled" }).eq("id", id);
-    toast.success("Automation cancelled");
-    refetchQueue();
-    queryClient.invalidateQueries({ queryKey: ["automation_stats"] });
+  const retryExecution = async (ex: any) => {
+    await supabase.from("automation_executions").update({ status: "pending", scheduled_for: new Date().toISOString() }).eq("id", ex.id);
+    qc.invalidateQueries({ queryKey: ["automation_executions"] });
+    toast.success("Re-queued");
   };
-
-  // Send now
-  const sendNow = async (item: any) => {
-    const templateName = item.automation_templates?.aisensy_template_name;
-    if (!templateName) { toast.error("No template configured"); return; }
-
-    await supabase.from("automation_queue").update({
-      status: "processing",
-      attempts: (item.attempts || 0) + 1,
-      last_attempted_at: new Date().toISOString(),
-    }).eq("id", item.id);
-
-    const result = await sendWhatsAppMessage(
-      templateName,
-      item.recipient_mobile,
-      Array.isArray(item.variables) ? (item.variables as any[]).map(String) : [],
-      (item as any).recipient_name || "Customer"
-    );
-
-    await supabase.from("automation_queue").update({
-      status: result.success ? "sent" : "failed",
-      aisensy_response: result.response,
-    }).eq("id", item.id);
-
-    // Log
-    await supabase.from("automations_log").insert({
-      lead_id: item.lead_id,
-      trigger_event: item.trigger_event,
-      template_name: templateName,
-      recipient_mobile: item.recipient_mobile,
-      channel: "whatsapp",
-      status: result.success ? "sent" : "failed",
-      response_payload: result.response,
-    });
-
-    toast[result.success ? "success" : "error"](result.success ? "Message sent successfully" : "Failed to send message", { duration: 3000 });
-    refetchQueue();
-    queryClient.invalidateQueries({ queryKey: ["automation_stats"] });
-    queryClient.invalidateQueries({ queryKey: ["automations_log_recent"] });
-  };
-
-  const statusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-[hsl(var(--horizon))]/20 text-[hsl(var(--horizon))]",
-      sent: "bg-[hsl(var(--ridge))]/20 text-[hsl(var(--ridge))]",
-      failed: "bg-destructive/15 text-destructive",
-      cancelled: "bg-muted text-muted-foreground",
-      processing: "bg-blue-100 text-blue-700",
-    };
-    return <Badge className={`text-[10px] border-0 ${colors[status] || ""}`}>{formatLabel(status)}</Badge>;
-  };
-
-  const statCards = [
-    { label: "Pending", value: stats?.pending || 0, icon: Clock, color: "text-[hsl(var(--horizon))]" },
-    { label: "Sent Today", value: stats?.sentToday || 0, icon: CheckCircle, color: "text-[hsl(var(--ridge))]" },
-    { label: "Failed", value: stats?.failed || 0, icon: AlertTriangle, color: "text-destructive" },
-    { label: "Total Sent", value: stats?.totalSent || 0, icon: Activity, color: "text-primary" },
-  ];
 
   return (
     <AppLayout title="Automations">
       <div className="flex items-center justify-between mb-1">
         <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">Automations <Zap className="h-5 w-5 text-[hsl(var(--horizon))]" /></h1>
-          <p className="text-sm text-muted-foreground">WhatsApp automation queue and activity log</p>
+          <h1 className="text-xl font-semibold">Automations</h1>
+          <p className="text-xs text-muted-foreground">Create rules that run automatically based on lead activity.</p>
         </div>
-        <Link to="/settings?tab=automations">
-          <Button variant="outline" size="sm" className="text-xs"><Settings className="h-3.5 w-3.5 mr-1.5" />Configure Templates</Button>
-        </Link>
+        <Button size="sm" onClick={() => { setEditingRule(null); setEditorOpen(true); }}>
+          <Plus className="h-4 w-4 mr-1" />New Rule
+        </Button>
       </div>
 
-      {/* SECTION 1: Live Stats */}
-      <div className="grid grid-cols-4 gap-3 mt-5 mb-6">
-        {statCards.map((s) => (
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3 my-5">
+        {[
+          { label: "Active rules", value: stats?.active || 0, icon: Zap, color: "text-emerald-600" },
+          { label: "Sent today", value: stats?.sentToday || 0, icon: MessageSquare, color: "text-blue-600" },
+          { label: "Pending", value: stats?.pending || 0, icon: RefreshCw, color: "text-amber-600" },
+          { label: "Failed", value: stats?.failed || 0, icon: Mail, color: "text-red-600" },
+        ].map((s) => (
           <Card key={s.label} className="border-border/50 shadow-none">
-            <CardContent className="p-4 flex items-center gap-3">
-              <s.icon className={`h-5 w-5 ${s.color}`} />
+            <CardContent className="px-4 py-3 flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</p>
+                <p className="text-xl font-semibold">{s.value}</p>
               </div>
+              <s.icon className={`h-4 w-4 ${s.color}`} />
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Template Status */}
-      <div className="mb-6">
-        <h2 className="text-sm font-medium mb-3">Template Status</h2>
-        <div className="grid grid-cols-5 gap-3">
-          {templates.map((tpl: any) => (
-            <Card key={tpl.id} className="border-border/50 shadow-none">
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium truncate flex items-center gap-1.5">
-                    <span>{TRIGGER_ICONS[tpl.trigger_event] || "⚡"}</span>
-                    {tpl.name}
-                  </p>
-                  <Switch
-                    checked={tpl.is_active}
-                    onCheckedChange={(v) => toggleTemplate.mutate({ id: tpl.id, is_active: v })}
-                  />
+      {/* Rules list */}
+      <h2 className="text-sm font-medium mb-3">Rules</h2>
+      {rules.length === 0 ? (
+        <Card className="border-dashed border-border/50 shadow-none">
+          <CardContent className="px-6 py-10 text-center">
+            <Zap className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm font-medium">No automation rules yet</p>
+            <p className="text-xs text-muted-foreground mb-3">Create your first rule to start automating customer messages.</p>
+            <Button size="sm" onClick={() => { setEditingRule(null); setEditorOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" />New Rule
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+          {rules.map((r: any) => (
+            <Card key={r.id} className="border-border/50 shadow-none">
+              <CardContent className="px-4 py-3">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{r.name}</p>
+                    {r.description && <p className="text-[11px] text-muted-foreground truncate">{r.description}</p>}
+                  </div>
+                  <Switch checked={r.is_active} onCheckedChange={(v) => toggleActive.mutate({ id: r.id, value: v })} />
                 </div>
-                <p className="text-[10px] text-muted-foreground line-clamp-2">{tpl.description}</p>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px]">{tpl.recipient_type === "agent" ? "Agent" : "Customer"}</Badge>
-                  <Badge variant="secondary" className="text-[10px]">{tpl.trigger_event}</Badge>
+                <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                  <Badge variant="outline" className={`text-[10px] ${TRIGGER_COLORS[r.trigger_event] || ""}`}>
+                    {TRIGGER_LABELS[r.trigger_event] || r.trigger_event}
+                  </Badge>
+                  {r.wa_enabled && <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-700 border-emerald-300">WA → {r.wa_recipient}</Badge>}
+                  {r.email_enabled && <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-700 border-blue-300">Email → {r.email_recipient}</Badge>}
+                </div>
+                <p className="text-[11px] text-muted-foreground mb-2">{conditionSummary(r)}</p>
+                <div className="flex items-center justify-between border-t pt-2 mt-2">
+                  <p className="text-[10px] text-muted-foreground">
+                    Ran {r.run_count || 0} times{r.last_run_at ? ` • ${formatDistanceToNow(new Date(r.last_run_at), { addSuffix: true })}` : ""}
+                  </p>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingRule(r); setEditorOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600" onClick={() => setDeleteRule(r)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* SECTION 2: Queue */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium">Automation Queue</h2>
-          <div className="flex gap-1">
-            {["all", "pending", "sent", "failed", "cancelled"].map((f) => (
-              <Button key={f} variant={queueFilter === f ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setQueueFilter(f)}>
-                {formatLabel(f === "all" ? "All" : f)}
-              </Button>
-            ))}
-          </div>
+      {/* Execution log */}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-medium">Execution log</h2>
+        <div className="flex gap-2">
+          <Select value={logFilters.status} onValueChange={(v) => setLogFilters((f) => ({ ...f, status: v }))}>
+            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["all", "pending", "sent", "failed", "skipped"].map((s) => <SelectItem key={s} value={s} className="text-xs capitalize">{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={logFilters.channel} onValueChange={(v) => setLogFilters((f) => ({ ...f, channel: v }))}>
+            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["all", "whatsapp", "email"].map((s) => <SelectItem key={s} value={s} className="text-xs capitalize">{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={logFilters.rule} onValueChange={(v) => setLogFilters((f) => ({ ...f, rule: v }))}>
+            <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Rule" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">All rules</SelectItem>
+              {rules.map((r: any) => <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-        <Card className="border shadow-sm">
-          <CardContent className="p-0">
-            {queue.length === 0 ? (
-              <div className="flex flex-col items-center py-16 text-muted-foreground">
-                <Zap className="h-10 w-10 mb-3 text-[hsl(var(--horizon))]/40" />
-                <p className="text-sm font-medium">No automations in queue</p>
-                <p className="text-xs text-muted-foreground mt-1">Automations are scheduled automatically when trips are confirmed</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Lead</TableHead>
-                    <TableHead>Template</TableHead>
-                    <TableHead>Recipient</TableHead>
-                    <TableHead>Scheduled For</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-center">Attempts</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {queue.map((item: any) => (
-                    <TableRow key={item.id} className={item.status === "failed" ? "bg-destructive/5" : ""}>
-                      <TableCell>
-                        {item.lead_id ? (
-                          <Link to={`/leads/${item.lead_id}`} className="text-xs text-primary hover:underline">
-                            {(item.leads as any)?.name || "Lead"}<br />
-                            <span className="font-mono text-muted-foreground">{(item.leads as any)?.traveller_code}</span>
-                          </Link>
-                        ) : <span className="text-xs text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <span className="mr-1">{TRIGGER_ICONS[item.trigger_event] || "⚡"}</span>
-                        {(item.automation_templates as any)?.name || formatLabel(item.trigger_event)}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">{maskMobile(item.recipient_mobile)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {item.scheduled_for ? (
-                          <span title={format(new Date(item.scheduled_for), "dd MMM yyyy, HH:mm")}>
-                            {formatDistanceToNow(new Date(item.scheduled_for), { addSuffix: true })}
-                          </span>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell>{statusBadge(item.status)}</TableCell>
-                      <TableCell className="text-center">
-                        <span className={`text-xs ${(item.attempts || 0) > 1 ? "text-destructive font-medium" : ""}`}>
-                          {item.attempts || 0}/3
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {(item.status === "pending" || item.status === "failed") && (
-                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => sendNow(item)}>
-                              <Send className="h-3 w-3 mr-1" />Send Now
-                            </Button>
-                          )}
-                          {item.status === "pending" && (
-                            <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => cancelItem(item.id)}>
-                              <XCircle className="h-3 w-3 mr-1" />Cancel
-                            </Button>
-                          )}
-                          {item.status === "sent" && item.aisensy_response && (
-                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setResponseModal(item.aisensy_response)}>
-                              View Log
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
-      {/* SECTION 3: Activity Log */}
-      <div className="mb-6">
-        <h2 className="text-sm font-medium mb-3">Activity Log <span className="text-muted-foreground font-normal text-xs">Last 100 events</span></h2>
-        <Card className="border shadow-sm">
-          <CardContent className="p-0">
-            {logs.length === 0 ? (
-              <div className="flex flex-col items-center py-16 text-muted-foreground">
-                <Activity className="h-10 w-10 mb-3 opacity-30" />
-                <p className="text-sm font-medium">No automations logged yet</p>
-                <p className="text-xs text-muted-foreground mt-1">Activity will appear here once WhatsApp messages are sent</p>
-              </div>
+      <Card className="border-border/50 shadow-none">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[10px] uppercase">Time</TableHead>
+              <TableHead className="text-[10px] uppercase">Rule</TableHead>
+              <TableHead className="text-[10px] uppercase">Lead</TableHead>
+              <TableHead className="text-[10px] uppercase">Channel</TableHead>
+              <TableHead className="text-[10px] uppercase">Recipient</TableHead>
+              <TableHead className="text-[10px] uppercase">Preview</TableHead>
+              <TableHead className="text-[10px] uppercase">Status</TableHead>
+              <TableHead className="text-[10px] uppercase"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {executions.length === 0 ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-8">No executions yet</TableCell></TableRow>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Lead</TableHead>
-                    <TableHead>Template</TableHead>
-                    <TableHead>Mobile</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.map((log: any) => (
-                    <TableRow key={log.id} className={log.status === "failed" ? "bg-destructive/5" : ""}>
-                      <TableCell className="text-xs text-muted-foreground">
-                        <span title={log.fired_at ? format(new Date(log.fired_at), "dd MMM yyyy, HH:mm") : ""}>
-                          {log.fired_at ? formatDistanceToNow(new Date(log.fired_at), { addSuffix: true }) : "—"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {log.lead_id ? (
-                          <Link to={`/leads/${log.lead_id}`} className="text-xs text-primary hover:underline">
-                            {(log.leads as any)?.traveller_code || ""} · {(log.leads as any)?.name || "Lead"}
-                          </Link>
-                        ) : <span className="text-xs text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell className="text-xs">{log.template_name || formatLabel(log.trigger_event)}</TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">{maskMobile(log.recipient_mobile)}</TableCell>
-                      <TableCell>{statusBadge(log.status)}</TableCell>
-                      <TableCell>
-                        {log.response_payload && Object.keys(log.response_payload).length > 0 && (
-                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setResponseModal(log.response_payload)}>
-                            View Response
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              executions.map((ex: any) => (
+                <TableRow key={ex.id}>
+                  <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">{format(new Date(ex.created_at), "dd MMM HH:mm")}</TableCell>
+                  <TableCell className="text-xs">{ex.automation_rules?.name || "—"}</TableCell>
+                  <TableCell className="text-xs">
+                    {ex.leads ? <Link to={`/leads/${ex.lead_id}`} className="text-primary hover:underline">{ex.leads.name} <span className="text-muted-foreground">({ex.leads.traveller_code})</span></Link> : "—"}
+                  </TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px] capitalize">{ex.channel}</Badge></TableCell>
+                  <TableCell className="text-[11px] capitalize">{ex.recipient_type}</TableCell>
+                  <TableCell className="text-[11px] text-muted-foreground max-w-[260px] truncate">{ex.message_preview || "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-[10px] ${
+                      ex.status === "sent" ? "bg-emerald-500/15 text-emerald-700 border-emerald-300" :
+                      ex.status === "failed" ? "bg-red-500/15 text-red-700 border-red-300" :
+                      ex.status === "pending" ? "bg-amber-500/15 text-amber-700 border-amber-300" :
+                      "bg-muted text-muted-foreground"
+                    }`}>{ex.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {ex.status === "failed" && (
+                      <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => retryExecution(ex)}>
+                        <RefreshCw className="h-3 w-3 mr-1" />Retry
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
-      {/* Response Modal */}
-      <Dialog open={!!responseModal} onOpenChange={() => setResponseModal(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>AiSensy Response</DialogTitle>
-          </DialogHeader>
-          <pre className="bg-muted/50 rounded-lg p-4 text-xs overflow-auto max-h-80 whitespace-pre-wrap">
-            {JSON.stringify(responseModal, null, 2)}
-          </pre>
-        </DialogContent>
-      </Dialog>
+      <RuleEditor open={editorOpen} onClose={() => setEditorOpen(false)} rule={editingRule} />
+
+      <AlertDialog open={!!deleteRule} onOpenChange={(v) => !v && setDeleteRule(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete rule?</AlertDialogTitle>
+            <AlertDialogDescription>"{deleteRule?.name}" will be permanently removed. Past execution history is preserved.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteRule && deleteRuleMut.mutate(deleteRule.id)}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };

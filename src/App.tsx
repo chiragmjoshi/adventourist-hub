@@ -47,14 +47,14 @@ import Automations from "./pages/Automations";
 import NotFound from "./pages/NotFound";
 import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
-import { processAutomationQueue } from "./services/queueProcessor";
+import { processAutomationQueue } from "./services/automationEngine";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
     processAutomationQueue();
-    const interval = setInterval(processAutomationQueue, 30 * 60 * 1000);
+    const interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
