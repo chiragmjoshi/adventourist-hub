@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -231,6 +231,11 @@ const LeadManagement = () => {
 
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Reset to page 1 whenever the active filter set changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search]);
 
   const resetFilters = () => {
     setDateFrom(format(subDays(new Date(), 30), "yyyy-MM-dd"));
