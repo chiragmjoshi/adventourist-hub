@@ -1,165 +1,136 @@
-# CMS Production-Launch Overhaul
+# 13-Bug Production Fix Plan
 
-A single-pass implementation covering all 11 fix areas, followed by an end-to-end test simulation and pass/fail report.
-
-The work is grouped into shared infrastructure first (so every form benefits), then per-module changes, then seed data + E2E validation.
+> Note: your message was truncated mid–Bug 4. I'm reconstructing bugs 5–13 from the original 11-fix scope we agreed on (Batches 2 & 3). I'll list them explicitly below — please correct any that don't match before approving.
 
 ---
 
-## Phase 0 — Shared infrastructure (build once, reuse everywhere)
+## Bug 1 — Lead Mgmt: date filter not working
 
-Create reusable primitives in `src/components/forms/`:
+`src/pages/LeadManagement.tsx`
 
-- **`StepProgress.tsx`** — numbered/check dots, clickable, accepts `steps[]`, `current`, `completed[]`, `onJump`.
-- **`StepNav.tsx`** — Back / Save Draft / Next (or Save) footer bar with conditional visibility.
-- **`useUnsavedChanges.ts`** — hook that:
-  - Tracks `isDirty` (deep-equal vs initial snapshot).
-  - Blocks in-app navigation via React Router `useBlocker`, shows shadcn AlertDialog ("Stay" / "Leave without saving").
-  - Adds `beforeunload` listener for browser back/refresh/close.
-  - Exposes `markClean()` after save.
-- **`useAutoSaveDraft.ts`** — runs a passed `saveFn` every 60 s while dirty; surfaces `lastSavedAt`.
-- **`UnsavedBadge.tsx`** — small "● Unsaved changes" pill for page headers.
+- Add `fromDate` / `toDate` state, render `DateRangePicker` (already exists in `src/components/DateRangePicker.tsx`).
+- In the leads `useQuery`, include `fromDate`/`toDate` in `queryKey`.
+- Apply `.gte('created_at', fromDate.toISOString().slice(0,10))` and `.lte('created_at', toDate.toISOString().slice(0,10) + 'T23:59:59.999Z')`.
+- Default range = last 90 days. "Reset" button clears to default.
 
-Create `src/components/EmptyState.tsx` — centered SVG icon, heading, body copy, CTA button. One component, reused across every list.
+## Bug 2 — Lead Mgmt: dropdown filters not working
 
-Create `src/components/CommandPalette.tsx` — Cmd/Ctrl+K full-screen modal using shadcn `Command`. Mounted once in `AppLayout`. Queries `leads`, `itineraries`, `vendors`, `trip_cashflow` (top 3 each, debounced 200 ms), groups results, navigates on select.
+- Audit each filter (Destination, Channel, Platform, Campaign, Disposition, Sales Status). Each must:
+  - Be in `queryKey` so React Query refetches on change.
+  - Apply `.eq()` only when value is not `"all"` / empty.
+- Combine with date filter using AND (chained `.eq()` calls).
+- "Reset filters" button resets all dropdown state + date range.
 
----
+## Bug 3 — Itinerary editor: Next/Back navigation
 
-## Phase 1 — Multi-tab form upgrades (Fix 1 + Fix 2)
+`src/pages/ItineraryEdit.tsx`
 
-Apply the StepProgress + StepNav + useUnsavedChanges + useAutoSaveDraft pattern to:
+- Replace plain `<Tabs>` with `StepProgress` (top) + `StepNav` (bottom of each `TabsContent`) using the shared components already built.
+- Steps: `summary | media | details | days | seo`.
+- Next scrolls form to top; last step shows "Save & Publish".
+- Track `completedSteps` (Set) — mark step done when user clicks Next.
+- Wire `useUnsavedChanges` + `useAutoSaveDraft`.
 
-- **`VendorEdit.tsx`** — 3 tabs: Basic / Banking & Tax / Contacts.
-- **`ItineraryEdit.tsx`** — 5 tabs: Basics / Inclusions / Day Plan / Media & SEO / Publish.
-- **`LandingPageEdit.tsx`** — 5 tabs: Basics / Hero & Form / Content / Tracking / Publish.
-- **`TripCashflowEdit.tsx`** — gets the unsaved-changes + autosave hook (already tabbed).
+## Bug 4 — Itinerary > Media: image upload broken (file + URL)
 
-Each tab footer renders `<StepNav>`. Header renders `<StepProgress>` + `<UnsavedBadge>`.
+- Create migration: bucket `itinerary-images` (public) + RLS:
+  - public SELECT, authenticated INSERT/UPDATE/DELETE.
+- Build `<ImageUploader>` component in `src/components/forms/ImageUploader.tsx`:
+  - Drag-and-drop + click-to-upload → uploads to `itinerary-images/{id}/hero.{ext}` via `supabase.storage.from('itinerary-images').upload(..., { upsert: true })`, gets `getPublicUrl`, writes to `hero_image`.
+  - URL paste field with "Use URL" button → validates http(s), writes directly to `hero_image`.
+  - Shows preview thumbnail + Remove button.
+- Reuse for `gallery[]` (multi-upload, append to array).
+- Wire into Itinerary Media tab; same component used by Destinations/Landing later.
 
----
+## Bug 5 — Landing Page editor: Next/Back navigation (5 tabs)
 
-## Phase 2 — Lead Management power UX (Fix 3)
+`src/pages/LandingPageEdit.tsx`
 
-DB migration: `ALTER TABLE leads ADD COLUMN follow_up_date date;`
+- Same `StepProgress` + `StepNav` treatment as Bug 3.
+- Steps: `basics | hero | content | form | seo` (verify against existing tab keys; adjust to match).
+- Last step CTA: "Save & Publish".
 
-In `LeadManagement.tsx`:
+## Bug 6 — Trip Cashflow editor: Next/Back + payment status UI
 
-- **Row-hover 3-dot menu** (shadcn `DropdownMenu`): Change Status / Change Disposition / Assign to (each with submenu of values), Open WhatsApp, View Details.
-- **WhatsApp icon button** in actions column → builds `https://wa.me/<mobile>?text=...` with template using lead name, agent name (from `useAuth`), destination name. Strips non-digits from mobile, prepends `91` if missing.
-- **Bulk-select**: checkbox column + select-all header. Floating bottom toolbar appears when ≥1 selected: Assign to, Change status, Mark as Invalid, Export selected (CSV), Deselect all.
-- **File-closed prompt**: when `sales_status` mutation succeeds with value `file_closed`, open AlertDialog → "Create Cashflow" navigates to `/trip-cashflow/new?lead_id=<id>`.
+`src/pages/TripCashflowEdit.tsx`
 
-In `LeadDetail.tsx` sidebar:
+- Multi-step layout (Traveller → Vendors → Billing → Review).
+- In Vendors step, surface new `payment_status` (Unpaid/Partial/Paid badge) + `amount_paid` numeric input per vendor row. Auto-flip status when `amount_paid >= cost_per_pax_incl_gst * pax`.
 
-- **Follow-up Date picker** with quick-chips: Today / Tomorrow / Next Week / Custom (shadcn Calendar in Popover). Writes to `leads.follow_up_date`.
+## Bug 7 — Itinerary Day-by-Day Plan: not rendering
 
-`TripCashflowEdit.tsx` already reads `lead_id` from search params — extend to pre-fill traveller_name, mobile, destination_id, itinerary_id, assigned_to from the lead.
+- Current `itinerary_days` is `jsonb`. The editor likely treats it as text.
+- New `<DayPlanEditor>`: array of `{ day, title, description, meals, stay }` with add/remove/reorder.
+- On save, persist as JSON array. On load, parse; if string, attempt `JSON.parse` then fallback to empty.
+- Detail view (`PublicItineraryDetail`, admin preview) renders ordered cards Day 1 … Day N.
 
----
+## Bug 8 — Lead Mgmt power UX (bulk + WhatsApp + follow-up)
 
-## Phase 3 — Vendor ↔ Cashflow connection (Fix 4)
+- Add row checkboxes + header "select all (filtered)".
+- Bulk action bar: Assign to user, Change disposition, Change sales_status, Send WhatsApp template (logged via existing `automation_queue`, no live send), Export CSV.
+- "Follow-up" date column using new `follow_up_date` field; inline date picker; overdue rows highlighted.
+- Hot-lead toggle (`is_hot`) inline.
 
-DB migration on `trip_cashflow_vendors`:
-- Add `payment_status text default 'unpaid'` (unpaid | partial | paid)
-- Add `amount_paid numeric default 0`
+## Bug 9 — Dashboard widgets + role-gated revenue KPI
 
-In `TripCashflowEdit.tsx` vendor lines:
-- Replace free-text vendor name with shadcn `Combobox` populated from `vendors` (display: `${name} — ${vendor_code}`).
-- On select, auto-fill `service_type` from vendor's `services[0]` and store contact in line description if blank.
-- Add Payment Status segmented control + conditional `amount_paid` input when "Partial".
-- GST toggle and margin/cost inputs use `useMemo` to recompute selling price + margin amount + margin % live (no save needed).
+`src/pages/Dashboard.tsx`
 
----
+- KPIs: Total Leads (period), Hot Leads, Conversions, Revenue (₹). Revenue card hidden when `useRBAC().role === 'sales'`.
+- Charts: Leads-over-time (line), Leads-by-platform (bar), Disposition funnel.
+- Date range filter shared with Lead Mgmt.
+- Empty states using `EmptyState`.
 
-## Phase 4 — Dashboard (Fix 5)
+## Bug 10 — Cmd+K global command palette
 
-Replace mocked KPI cards in `Dashboard.tsx` with live queries:
+- New `src/components/CommandPalette.tsx` using `cmdk` (already in shadcn `command.tsx`).
+- Hotkey listener in `AppLayout`: `Cmd/Ctrl+K`.
+- Searches: leads (by name/mobile/traveller_code), itineraries, destinations, vendors, landing pages. Routes to detail page on select.
+- Quick actions: "Create lead", "New itinerary", "New cashflow".
 
-- **Total Leads** + green "+X today" sub-count.
-- **Conversion Rate** card — `(file_closed / total) * 100`, 30-day delta. Hidden for role `sales` via `useRBAC`.
-- **Revenue This Month** — hidden for role `sales`.
-- **Today's Follow-ups** widget — list of leads where `follow_up_date = today` AND `assigned_to = currentUser`. Each row shows name + WhatsApp icon button.
+## Bug 11 — Empty states everywhere
 
----
+- Audit list pages (Leads, Destinations, Itineraries, Landing Pages, Vendors, Cashflow, Reports). Replace bare empty tables with `<EmptyState>` (icon + title + helper + primary CTA).
 
-## Phase 5 — Empty states (Fix 6)
+## Bug 12 — User Management polish + role enforcement
 
-Drop `<EmptyState>` into: `LeadManagement`, `ItineraryList`, `VendorList`, `LandingPageList`, `TripCashflowList`, `Automations` log tab. CTA routes to the respective `/new` page.
+`src/pages/UserManagementPage.tsx`
 
----
+- Inline role editor (Admin/Sales/Ops) with confirm dialog.
+- Activate/deactivate toggle.
+- Invite user flow already exists — verify it returns proper error on duplicate email.
+- Block last-admin demotion at UI + via check in `admin-user-management` edge function.
 
-## Phase 6 — Global search Cmd+K (Fix 7)
+## Bug 13 — Automations cron + E2E walkthrough
 
-Mount `<CommandPalette>` in `AppLayout`. Global keydown listener. Handled in Phase 0.
-
----
-
-## Phase 7 — Automations reliability (Fix 8)
-
-- Create edge function `supabase/functions/process-automations/index.ts` (verify_jwt = false). Logic mirrors `src/services/queueProcessor.ts` but server-side using service role key and AiSensy credentials from secrets.
-- Enable `pg_cron` + `pg_net` extensions; insert cron job (every 15 min) via `supabase--read_query`/insert tool with the function URL + anon key. Per skill rules: use the insert tool, not migrations.
-- In `Automations.tsx` template card: add "Send test message" button → prompt for mobile → POST to `process-automations` with `{test: true, template_id, mobile}`.
-- Confirm AiSensy API key secret exists; if missing, request it via `add_secret`.
-
----
-
-## Phase 8 — User management polish (Fix 9)
-
-In `UserManagementPage.tsx` table:
-- Add **Last Login** column — query `auth.users.last_sign_in_at` via existing `admin-user-management` edge function (extend its list endpoint).
-- Add **Status** badge (Active / Inactive) using `users.is_active`.
-- After role change mutation succeeds: toast + inline notice "User must log out and back in for changes to take effect."
-- **Force Logout** button → calls extended admin edge function which runs `supabase.auth.admin.signOut(userId)`.
+- Edge function `process-automation-queue` (already wired? verify) — runs every 5 min, picks `automation_queue` rows where `scheduled_for <= now() AND status='pending'`, logs to `automations_log`, marks `sent` (no live AiSensy call — log payload only, per earlier decision).
+- Add `supabase/config.toml` cron block for the function.
+- E2E: walk all 14 steps from the original spec, screenshot each, fix on the fly, then output a pass/fail table.
 
 ---
 
-## Phase 9 — Itinerary Day-by-Day display fix (Fix 11)
+## Technical notes
 
-Audit `ItineraryEdit.tsx` Day-by-Day Plan tab:
-- Confirm it reads `form.itinerary_days` (jsonb array). On load, parse `existing.itinerary_days` (Supabase returns it already-parsed as JS array, but guard against string).
-- Render each day in shadcn `Accordion`, collapsed by default. Header = `Day {n} — {title}`. Body = description + meal icons (B/L/D) + accommodation.
-- Empty state: "No day plan added yet. Click + Add Day to start building the itinerary."
-- Verify CSV import path actually persists to `itinerary_days` column (likely the bug — it may be writing to a different field or returning string instead of jsonb).
+- All editors use shared `StepProgress`, `StepNav`, `useUnsavedChanges`, `useAutoSaveDraft`, `UnsavedChangesDialog` already created in Batch 1.
+- New shared components: `ImageUploader`, `DayPlanEditor`, `CommandPalette`, `BulkActionBar`.
+- Migration adds `itinerary-images` storage bucket + RLS only — no schema changes (follow_up_date, payment_status already migrated).
+- No live WhatsApp — payloads logged to `automations_log` only.
+- Revenue KPI gated via `useRBAC()` (already available).
 
----
+## Delivery order (single pass, but file-by-file)
 
-## Phase 10 — Seed dummy E2E data (Fix 10)
+1. Migration: `itinerary-images` bucket + RLS.
+2. Shared components: `ImageUploader`, `DayPlanEditor`, `BulkActionBar`, `CommandPalette`.
+3. LeadManagement (Bugs 1, 2, 8).
+4. ItineraryEdit (Bugs 3, 4, 7).
+5. LandingPageEdit (Bug 5).
+6. TripCashflowEdit (Bug 6).
+7. Dashboard (Bug 9).
+8. AppLayout: Cmd+K wiring (Bug 10).
+9. List pages: empty states (Bug 11).
+10. UserManagementPage (Bug 12).
+11. Automation cron + config.toml (Bug 13).
+12. E2E walkthrough + pass/fail table.
 
-Use the **insert tool** (not migrations) to seed:
-- 3 vendors (Desert Camp Jaisalmer, Royal Rajasthan Tours, Taj View Hotel Agra) with full bank/GST/contact details.
-- 1 trip_cashflow record linked to the most recent `file_closed` lead (or create a test lead if none exists), with 2 vendor lines, 25% margin, status `in_progress`.
-- 1 landing_page (Rajasthan Heritage Tour) linked to the matching destination + itinerary.
+## Confirm before I proceed
 
----
-
-## Phase 11 — E2E test execution & report
-
-After all code is deployed, run a manual simulation by:
-1. Querying the database to confirm seed rows exist and FK references resolve.
-2. Calling the public-api and admin edge functions with curl to confirm endpoints respond.
-3. Visiting key preview routes via the browser tool only if a step's correctness is otherwise unverifiable.
-4. Producing a numbered pass/fail table for all 14 E2E steps and addressing any failure inline.
-
-Final message: **"CMS is ready for production"** once every step passes.
-
----
-
-## Technical notes (for implementation phase)
-
-- All new DB columns added via the migration tool; all data inserts via the insert tool.
-- `useUnsavedChanges` will use React Router v6's `useBlocker` (already on v6 per existing routing).
-- Combobox for vendor selection: build on shadcn `Command` + `Popover` (no new dep).
-- Edge function `process-automations` uses `corsHeaders`, validates body with Zod, reads `AISENSY_API_KEY` from secrets.
-- `AppLayout` will mount CommandPalette inside `<TooltipProvider>` to keep keyboard handlers global.
-- Role gating uses existing `useRBAC().role`; no new permission strings needed.
-
-## Out of scope (call out before approving)
-
-- No redesign of brand/colors — uses existing tokens from `mem://design/brand`.
-- No new auth providers — Google OAuth status unchanged.
-- Reports pages other than Conversion are not touched (Conversion already exists).
-
----
-
-**Approve this plan and I will execute all 11 fixes, seed the test data, run the E2E flow, and report pass/fail per step in a single build pass.**
+- Bugs 5–13 above are reconstructed from our prior agreed scope because your message was cut off. If your real bugs 5–13 differ, paste the rest and I'll revise this plan before coding.

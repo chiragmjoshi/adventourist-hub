@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -76,7 +76,6 @@ const LeadManagement = () => {
   const [filterCampaign, setFilterCampaign] = useState("all");
   const [filterAdGroup, setFilterAdGroup] = useState("all");
   const [filterDestination, setFilterDestination] = useState("all");
-  const [filtersApplied, setFiltersApplied] = useState(false);
   const [moreFilters, setMoreFilters] = useState(false);
 
   /* ── Quick filters (multi-select) ── */
@@ -205,20 +204,18 @@ const LeadManagement = () => {
     return leads.filter((l: any) => {
       const q = search.toLowerCase();
       if (q && !(l.name?.toLowerCase().includes(q) || l.traveller_code?.toLowerCase().includes(q) || l.email?.toLowerCase().includes(q) || l.mobile?.includes(q))) return false;
-      if (filtersApplied) {
-        if (dateFrom && l.created_at && l.created_at < dateFrom) return false;
-        if (dateTo && l.created_at && l.created_at > dateTo + "T23:59:59") return false;
-        if (filterChannel !== "all" && l.channel !== filterChannel) return false;
-        if (filterPlatform !== "all" && l.platform !== filterPlatform) return false;
-        if (filterCampaign !== "all" && l.campaign_type !== filterCampaign) return false;
-        if (filterAdGroup !== "all" && l.ad_group !== filterAdGroup) return false;
-        if (filterDestination !== "all" && l.destination_id !== filterDestination) return false;
-      }
+      if (dateFrom && l.created_at && l.created_at < dateFrom) return false;
+      if (dateTo && l.created_at && l.created_at > dateTo + "T23:59:59") return false;
+      if (filterChannel !== "all" && l.channel !== filterChannel) return false;
+      if (filterPlatform !== "all" && l.platform !== filterPlatform) return false;
+      if (filterCampaign !== "all" && l.campaign_type !== filterCampaign) return false;
+      if (filterAdGroup !== "all" && l.ad_group !== filterAdGroup) return false;
+      if (filterDestination !== "all" && l.destination_id !== filterDestination) return false;
       if (activeDispositions.size > 0 && !activeDispositions.has(l.disposition)) return false;
       if (activeStatuses.size > 0 && !activeStatuses.has(l.sales_status)) return false;
       return true;
     });
-  }, [leads, search, filtersApplied, dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses]);
+  }, [leads, search, dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses]);
 
   const dispositionCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -235,11 +232,16 @@ const LeadManagement = () => {
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  // Reset to page 1 whenever the active filter set changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search]);
+
   const resetFilters = () => {
     setDateFrom(format(subDays(new Date(), 30), "yyyy-MM-dd"));
     setDateTo(format(new Date(), "yyyy-MM-dd"));
     setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
-    setFilterAdGroup("all"); setFilterDestination("all"); setFiltersApplied(false);
+    setFilterAdGroup("all"); setFilterDestination("all");
     setActiveDispositions(new Set()); setActiveStatuses(new Set()); setCurrentPage(1);
   };
 
@@ -266,7 +268,12 @@ const LeadManagement = () => {
     toast.success("Exported to CSV");
   };
 
-  const anyFiltersActive = filtersApplied || activeDispositions.size > 0 || activeStatuses.size > 0;
+  const anyFiltersActive =
+    dateFrom !== format(subDays(new Date(), 30), "yyyy-MM-dd") ||
+    dateTo !== format(new Date(), "yyyy-MM-dd") ||
+    filterChannel !== "all" || filterPlatform !== "all" || filterCampaign !== "all" ||
+    filterAdGroup !== "all" || filterDestination !== "all" ||
+    activeDispositions.size > 0 || activeStatuses.size > 0;
 
   const SmallSelect = ({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) => (
     <Select value={value} onValueChange={onChange}>
@@ -315,10 +322,6 @@ const LeadManagement = () => {
         )}
         <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 px-2" onClick={() => setMoreFilters(!moreFilters)}>
           {moreFilters ? "Less" : "More"} <ChevronDown className={`h-3 w-3 transition-transform ${moreFilters ? "rotate-180" : ""}`} />
-        </Button>
-
-        <Button size="sm" className="h-8 text-xs rounded-md px-3 bg-[hsl(var(--blaze))] hover:bg-[hsl(var(--blaze))]/90" onClick={() => { setFiltersApplied(true); setCurrentPage(1); }}>
-          Apply
         </Button>
 
         {anyFiltersActive && (
