@@ -243,11 +243,10 @@ const TripCashflowDetail = () => {
                     const tplName = item.automation_templates?.aisensy_template_name;
                     if (!tplName) { toast.error("Template not configured"); return; }
                     const result = await sendWhatsAppMessage(tplName, item.recipient_mobile, Array.isArray(item.variables) ? (item.variables as any[]).map(String) : [], "Adventourist");
-                    await supabase.from("automation_queue").update({
+                    await (supabase.from as any)("automation_executions").update({
                       status: result.success ? "sent" : "failed",
-                      aisensy_response: result.response,
-                      attempts: (item.attempts || 0) + 1,
-                      last_attempted_at: new Date().toISOString(),
+                      executed_at: new Date().toISOString(),
+                      error_message: result.success ? null : String(result.response || "Failed"),
                     }).eq("id", item.id);
                     queryClient.invalidateQueries({ queryKey: ["cashflow_automations", id] });
                     toast[result.success ? "success" : "error"](result.success ? "Message sent" : "Failed to send", { duration: 3000 });

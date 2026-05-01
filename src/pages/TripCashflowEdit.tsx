@@ -229,12 +229,8 @@ const TripCashflowEdit = () => {
       queryClient.invalidateQueries({ queryKey: ["trip_cashflow"] });
       setLastSaved(new Date());
       toast.success("Cashflow saved");
-      // Queue automations if travel dates present
-      if (cfId && form.travel_start_date && form.travel_end_date && form.lead_id) {
-        queueTripAutomations(cfId).then((count) => {
-          if (count && count > 0) toast.success(`${count} WhatsApp automations scheduled for this trip`);
-        });
-      }
+      // Trip-level automations are handled by the new automation engine
+      // via lead status changes (no manual queueing needed here).
       if (isNew && cfId) navigate(`/trip-cashflow/edit/${cfId}`, { replace: true });
     },
     onError: (e: any) => toast.error(e.message || "Failed to save"),

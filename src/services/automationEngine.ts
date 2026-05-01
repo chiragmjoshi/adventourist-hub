@@ -208,7 +208,7 @@ async function scheduleRule(rule: any, leadId: string, ctx: VariableContext, tri
 
   for (const c of channels) {
     if (!c.enabled) continue;
-    const recips = recipientsFor(c.ch === "wa" ? "wa" : "email", c.recipient, ctx);
+    const recips = recipientsFor(c.ch === "whatsapp" ? "wa" : "email", c.recipient, ctx);
     for (const r of recips) {
       const scheduled = new Date(Date.now() + (rule.delay_hours || 0) * 3600 * 1000).toISOString();
       const { data: exec } = await supabase
