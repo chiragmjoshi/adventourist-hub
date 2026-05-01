@@ -364,12 +364,13 @@ const LeadManagement = () => {
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Disposition</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("disposition").map((d: any) => {
-            const active = activeDispositions.has(d.value);
+            const dbKey = displayToKey(d.value);
+            const active = activeDispositions.has(dbKey);
             const dotColor = DISP_DOT[d.value] || "bg-gray-400";
             return (
               <button
                 key={d.id}
-                onClick={() => toggleChip(activeDispositions, setActiveDispositions, d.value)}
+                onClick={() => toggleChip(activeDispositions, setActiveDispositions, dbKey)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
                   active ? "bg-foreground/5 border-foreground/20 shadow-sm" : "border-border/40 hover:border-border hover:bg-muted/30"
                 }`}
@@ -377,7 +378,7 @@ const LeadManagement = () => {
                 <span className={`w-2 h-2 rounded-full ${dotColor}`} />
                 <span className="text-foreground/80">{d.value}</span>
                 <span className="text-muted-foreground text-[10px] font-semibold">·</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">{dispositionCounts[d.value] || 0}</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">{dispositionCounts[dbKey] || 0}</span>
               </button>
             );
           })}
@@ -389,12 +390,13 @@ const LeadManagement = () => {
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Sales Status</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("sales_status").map((s: any) => {
-            const active = activeStatuses.has(s.value);
+            const dbKey = displayToKey(s.value);
+            const active = activeStatuses.has(dbKey);
             const dotColor = STATUS_DOT[s.value] || "bg-gray-400";
             return (
               <button
                 key={s.id}
-                onClick={() => toggleChip(activeStatuses, setActiveStatuses, s.value)}
+                onClick={() => toggleChip(activeStatuses, setActiveStatuses, dbKey)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
                   active ? "bg-foreground/5 border-foreground/20 shadow-sm" : "border-border/40 hover:border-border hover:bg-muted/30"
                 }`}
@@ -402,7 +404,7 @@ const LeadManagement = () => {
                 <span className={`w-2 h-2 rounded-full ${dotColor}`} />
                 <span className="text-foreground/80">{s.value}</span>
                 <span className="text-muted-foreground text-[10px] font-semibold">·</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">{statusCounts[s.value] || 0}</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">{statusCounts[dbKey] || 0}</span>
               </button>
             );
           })}
