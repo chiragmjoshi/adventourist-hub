@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send, Briefcase, Plus } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -100,13 +100,71 @@ const LeadDetail = () => {
     queryKey: ["lead_trips", id],
     queryFn: async () => {
       const l = lead as any;
-      if (!l?.traveller_code) return [];
-      const { data, error } = await supabase.from("trip_cashflow")
-        .select("*, destinations(name)").eq("lead_id", id!);
+      // Step 1: find all lead IDs sharing this traveller_code
+      let leadIds: string[] = [id!];
+      if (l?.traveller_code) {
+        const { data: sharedLeads } = await supabase
+          .from("leads")
+          .select("id, created_at")
+          .eq("traveller_code", l.traveller_code);
+        if (sharedLeads && sharedLeads.length > 0) {
+          leadIds = sharedLeads.map((x: any) => x.id);
+        }
+      }
+      // Step 2: cashflow + itineraries + destinations + leads (for travel_date)
+      const { data, error } = await supabase
+        .from("trip_cashflow")
+        .select("*, itineraries(headline, destinations(name))")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      // Step 3: vendor cost sums
+      const ids = (data || []).map((t: any) => t.id);
+      let vendorMap: Record<string, number> = {};
+      if (ids.length > 0) {
+        const { data: vrows } = await supabase
+          .from("trip_cashflow_vendors")
+          .select("cashflow_id, cost_per_pax_incl_gst")
+          .in("cashflow_id", ids);
+        (vrows || []).forEach((r: any) => {
+          vendorMap[r.cashflow_id] = (vendorMap[r.cashflow_id] || 0) + (Number(r.cost_per_pax_incl_gst) || 0);
+        });
+      }
+      const gstRate = 5; // GST default — matches TripCashflowEdit
+      return (data || []).map((t: any) => {
+        const vendorCost = vendorMap[t.id] || 0;
+        const totalVendorCost = vendorCost * (Number(t.pax_count) || 1);
+        const marginAmount = totalVendorCost * ((Number(t.margin_percent) || 0) / 100);
+        const sellingExGst = totalVendorCost + marginAmount;
+        const finalPrice = t.gst_billing ? sellingExGst * (1 + gstRate / 100) : sellingExGst;
+        return {
+          ...t,
+          itinerary_headline: t.itineraries?.headline || null,
+          destination_name: t.itineraries?.destinations?.name || null,
+          total_vendor_cost: totalVendorCost,
+          margin_amount: marginAmount,
+          selling_price_with_gst: finalPrice,
+        };
+      });
     },
     enabled: !!id && !!lead,
+  });
+
+  /* ── Earliest enquiry across this traveller_code (for "Since …") ── */
+  const { data: earliestEnquiry } = useQuery({
+    queryKey: ["lead_earliest", (lead as any)?.traveller_code],
+    queryFn: async () => {
+      const tc = (lead as any)?.traveller_code;
+      if (!tc) return null;
+      const { data } = await supabase
+        .from("leads")
+        .select("created_at")
+        .eq("traveller_code", tc)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!(lead as any)?.traveller_code,
   });
 
   const { data: masterValues = [] } = useQuery({
@@ -438,7 +496,7 @@ const LeadDetail = () => {
               {["enquiry", "trips", "comments"].map(tab => (
                 <TabsTrigger key={tab} value={tab}
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2.5 pt-1 text-sm capitalize">
-                  {tab === "enquiry" ? "Current Enquiry" : tab === "trips" ? "Trips" : "Comments"}
+                  {tab === "enquiry" ? "Current Enquiry" : tab === "trips" ? `Trips${trips.length > 0 ? ` (${trips.length})` : ""}` : "Comments"}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -517,40 +575,144 @@ const LeadDetail = () => {
             </TabsContent>
 
             <TabsContent value="trips" className="mt-5">
-              <Card className="border-border/50 shadow-none">
-                {trips.length === 0 ? (
-                  <CardContent className="py-16 text-center">
-                    <p className="text-muted-foreground text-sm">No trips yet. Close a file to create the first trip.</p>
-                  </CardContent>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-[11px] uppercase tracking-wider">Trip Code</TableHead>
-                        <TableHead className="text-[11px] uppercase tracking-wider">Destination</TableHead>
-                        <TableHead className="text-[11px] uppercase tracking-wider">Travel Dates</TableHead>
-                        <TableHead className="text-[11px] uppercase tracking-wider">Pax</TableHead>
-                        <TableHead className="text-[11px] uppercase tracking-wider">Revenue</TableHead>
-                        <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {trips.map((t: any) => (
-                        <TableRow key={t.id}>
-                          <TableCell className="text-xs font-mono">{t.traveller_code}</TableCell>
-                          <TableCell className="text-xs">{t.destinations?.name || "—"}</TableCell>
-                          <TableCell className="text-xs">{t.travel_start_date || "—"}</TableCell>
-                          <TableCell className="text-xs">{t.pax_count}</TableCell>
-                          <TableCell className="text-xs">₹{(t.total_selling_price || 0).toLocaleString("en-IN")}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-[10px]">{t.status}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </Card>
+              {(() => {
+                const isSales = profile?.role === "sales";
+                const fmtINR = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+                const activeTrips = trips.filter((t: any) => t.status !== "cancelled");
+                const totalSpend = activeTrips.reduce((s: number, t: any) => s + (t.selling_price_with_gst || 0), 0);
+                const avgSpend = activeTrips.length > 0 ? totalSpend / activeTrips.length : 0;
+                const sinceDate = earliestEnquiry?.created_at ? new Date(earliestEnquiry.created_at) : (l.created_at ? new Date(l.created_at) : null);
+                const tripCount = trips.length;
+                let loyaltyLabel = ""; let loyaltyClass = "";
+                if (tripCount === 1) { loyaltyLabel = "First Timer"; loyaltyClass = "bg-gray-100 text-gray-700 border-gray-200"; }
+                else if (tripCount === 2) { loyaltyLabel = "Returning Traveller"; loyaltyClass = "bg-blue-50 text-blue-700 border-blue-200"; }
+                else if (tripCount >= 3 && tripCount <= 4) { loyaltyLabel = "Loyal Explorer"; loyaltyClass = "bg-green-50 text-green-700 border-green-200"; }
+                else if (tripCount >= 5) { loyaltyLabel = "Adventure Champion"; loyaltyClass = "bg-orange-50 text-orange-700 border-orange-200"; }
+                const isHighValue = totalSpend >= 200000;
+                const statusBadge = (s: string) => {
+                  const map: Record<string, { label: string; cls: string }> = {
+                    in_progress: { label: "Active", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+                    completed: { label: "Completed", cls: "bg-green-50 text-green-700 border-green-200" },
+                    cancelled: { label: "Cancelled", cls: "bg-red-50 text-red-700 border-red-200" },
+                    draft: { label: "Draft", cls: "bg-gray-100 text-gray-700 border-gray-200" },
+                  };
+                  return map[s] || { label: s || "—", cls: "bg-gray-100 text-gray-700 border-gray-200" };
+                };
+                const marginColor = (pct: number) => pct < 15 ? "text-red-600" : pct <= 25 ? "text-amber-600" : "text-green-600";
+
+                if (trips.length === 0) {
+                  return (
+                    <Card className="border-border/50 shadow-none">
+                      <CardContent className="py-16 flex flex-col items-center text-center">
+                        <Briefcase className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                        <h3 className="text-sm font-semibold mb-1">No trips yet</h3>
+                        <p className="text-xs text-muted-foreground max-w-md mb-4">
+                          When this lead is marked File Closed and a trip cashflow is created, all trips for traveller{" "}
+                          <span className="font-mono" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>{" "}
+                          will appear here — including from previous enquiries.
+                        </p>
+                        <Button size="sm" className="rounded-md" onClick={() => navigate(`/trip-cashflow/new?lead_id=${l.id}`)}>
+                          <Plus className="h-3.5 w-3.5 mr-1" />Create Trip Cashflow
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {/* Loyalty summary bar */}
+                    <Card className="border-border/50 shadow-none">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-4 gap-4">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Trips</p>
+                            <p className="text-lg font-semibold mt-0.5">{tripCount}</p>
+                          </div>
+                          {!isSales && (
+                            <>
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Spend</p>
+                                <p className="text-lg font-semibold mt-0.5">{fmtINR(totalSpend)}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Avg / Trip</p>
+                                <p className="text-lg font-semibold mt-0.5">{fmtINR(avgSpend)}</p>
+                              </div>
+                            </>
+                          )}
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Since</p>
+                            <p className="text-lg font-semibold mt-0.5">{sinceDate ? format(sinceDate, "MMM yyyy") : "—"}</p>
+                          </div>
+                        </div>
+                        {(loyaltyLabel || (isHighValue && !isSales)) && (
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+                            {loyaltyLabel && (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${loyaltyClass}`}>
+                                {loyaltyLabel}
+                              </span>
+                            )}
+                            {isHighValue && !isSales && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-yellow-50 text-yellow-800 border-yellow-300">
+                                High Value
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Trip cards */}
+                    <div className="space-y-3">
+                      {trips.map((t: any) => {
+                        const sb = statusBadge(t.status);
+                        const marginPct = t.selling_price_with_gst > 0 ? (t.margin_amount / t.selling_price_with_gst) * 100 : 0;
+                        return (
+                          <Card key={t.id} className="border-border/50 shadow-none">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between mb-1">
+                                <h4 className="text-[15px] font-semibold">{t.destination_name || "—"}</h4>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${sb.cls}`}>{sb.label}</span>
+                              </div>
+                              <p className="text-sm text-foreground/80 truncate">{t.itinerary_headline || "Custom trip"}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Travel date: {t.travel_start_date ? format(new Date(t.travel_start_date), "dd MMM yyyy") : "Date not set"}
+                              </p>
+                              <Separator className="my-3" />
+                              <div className={`grid ${isSales ? "grid-cols-1" : "grid-cols-3"} gap-3 text-center`}>
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Selling</p>
+                                  <p className="text-sm font-semibold mt-0.5">{fmtINR(t.selling_price_with_gst || 0)}</p>
+                                </div>
+                                {!isSales && (
+                                  <>
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost</p>
+                                      <p className="text-sm font-semibold mt-0.5">{fmtINR(t.total_vendor_cost || 0)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Margin</p>
+                                      <p className="text-sm font-semibold mt-0.5">{fmtINR(t.margin_amount || 0)}</p>
+                                      <p className={`text-[10px] mt-0.5 ${marginColor(marginPct)}`}>({marginPct.toFixed(0)}%)</p>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                                <span className="font-mono text-xs text-muted-foreground">{t.cashflow_code || "—"}</span>
+                                <button onClick={() => navigate(`/trip-cashflow/${t.id}`)} className="text-xs font-medium hover:underline" style={{ color: "hsl(var(--blaze))" }}>
+                                  View cashflow →
+                                </button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="comments" className="mt-5">
