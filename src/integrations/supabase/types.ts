@@ -14,139 +14,155 @@ export type Database = {
   }
   public: {
     Tables: {
-      automation_queue: {
+      automation_executions: {
         Row: {
-          aisensy_response: Json | null
-          attempts: number | null
-          cashflow_id: string | null
-          created_at: string | null
+          channel: string | null
+          created_at: string
+          error_message: string | null
+          executed_at: string | null
           id: string
-          last_attempted_at: string | null
           lead_id: string | null
-          recipient_mobile: string
-          recipient_name: string | null
-          scheduled_for: string
-          status: string | null
-          template_id: string | null
-          trigger_event: string
-          variables: Json
+          message_preview: string | null
+          recipient_contact: string | null
+          recipient_type: string | null
+          rule_id: string | null
+          scheduled_for: string | null
+          skip_reason: string | null
+          status: string
+          trigger_event: string | null
         }
         Insert: {
-          aisensy_response?: Json | null
-          attempts?: number | null
-          cashflow_id?: string | null
-          created_at?: string | null
+          channel?: string | null
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
           id?: string
-          last_attempted_at?: string | null
           lead_id?: string | null
-          recipient_mobile: string
-          recipient_name?: string | null
-          scheduled_for: string
-          status?: string | null
-          template_id?: string | null
-          trigger_event: string
-          variables?: Json
+          message_preview?: string | null
+          recipient_contact?: string | null
+          recipient_type?: string | null
+          rule_id?: string | null
+          scheduled_for?: string | null
+          skip_reason?: string | null
+          status?: string
+          trigger_event?: string | null
         }
         Update: {
-          aisensy_response?: Json | null
-          attempts?: number | null
-          cashflow_id?: string | null
-          created_at?: string | null
+          channel?: string | null
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
           id?: string
-          last_attempted_at?: string | null
           lead_id?: string | null
-          recipient_mobile?: string
-          recipient_name?: string | null
-          scheduled_for?: string
-          status?: string | null
-          template_id?: string | null
-          trigger_event?: string
-          variables?: Json
+          message_preview?: string | null
+          recipient_contact?: string | null
+          recipient_type?: string | null
+          rule_id?: string | null
+          scheduled_for?: string | null
+          skip_reason?: string | null
+          status?: string
+          trigger_event?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "automation_queue_cashflow_id_fkey"
-            columns: ["cashflow_id"]
+            foreignKeyName: "automation_executions_rule_id_fkey"
+            columns: ["rule_id"]
             isOneToOne: false
-            referencedRelation: "trip_cashflow"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "automation_queue_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "automation_queue_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "automation_templates"
+            referencedRelation: "automation_rules"
             referencedColumns: ["id"]
           },
         ]
       }
       automation_rules: {
         Row: {
-          channel: string
-          created_at: string | null
-          delay_days: number | null
-          delay_hours: number | null
+          condition_channel: string[] | null
+          condition_disposition: string[] | null
+          condition_platform: string[] | null
+          condition_status: string[] | null
+          created_at: string
+          created_by: string | null
+          delay_hours: number
           description: string | null
           email_body: string | null
+          email_enabled: boolean
+          email_format: string
+          email_recipient: string
           email_subject: string | null
           id: string
-          is_active: boolean | null
+          is_active: boolean
+          last_run_at: string | null
           name: string
-          recipient_type: string
-          scheduled_time: string | null
-          sms_body: string | null
-          sort_order: number | null
-          template_name: string | null
-          trigger_condition: Json | null
+          run_count: number
+          send_time_window_end: string | null
+          send_time_window_start: string | null
+          trigger_days_before: number | null
           trigger_event: string
-          updated_at: string | null
+          trigger_inactivity_days: number | null
+          updated_at: string
+          wa_enabled: boolean
+          wa_message_body: string | null
+          wa_recipient: string
+          wa_template_name: string | null
         }
         Insert: {
-          channel: string
-          created_at?: string | null
-          delay_days?: number | null
-          delay_hours?: number | null
+          condition_channel?: string[] | null
+          condition_disposition?: string[] | null
+          condition_platform?: string[] | null
+          condition_status?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          delay_hours?: number
           description?: string | null
           email_body?: string | null
+          email_enabled?: boolean
+          email_format?: string
+          email_recipient?: string
           email_subject?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
+          last_run_at?: string | null
           name: string
-          recipient_type?: string
-          scheduled_time?: string | null
-          sms_body?: string | null
-          sort_order?: number | null
-          template_name?: string | null
-          trigger_condition?: Json | null
+          run_count?: number
+          send_time_window_end?: string | null
+          send_time_window_start?: string | null
+          trigger_days_before?: number | null
           trigger_event: string
-          updated_at?: string | null
+          trigger_inactivity_days?: number | null
+          updated_at?: string
+          wa_enabled?: boolean
+          wa_message_body?: string | null
+          wa_recipient?: string
+          wa_template_name?: string | null
         }
         Update: {
-          channel?: string
-          created_at?: string | null
-          delay_days?: number | null
-          delay_hours?: number | null
+          condition_channel?: string[] | null
+          condition_disposition?: string[] | null
+          condition_platform?: string[] | null
+          condition_status?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          delay_hours?: number
           description?: string | null
           email_body?: string | null
+          email_enabled?: boolean
+          email_format?: string
+          email_recipient?: string
           email_subject?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
+          last_run_at?: string | null
           name?: string
-          recipient_type?: string
-          scheduled_time?: string | null
-          sms_body?: string | null
-          sort_order?: number | null
-          template_name?: string | null
-          trigger_condition?: Json | null
+          run_count?: number
+          send_time_window_end?: string | null
+          send_time_window_start?: string | null
+          trigger_days_before?: number | null
           trigger_event?: string
-          updated_at?: string | null
+          trigger_inactivity_days?: number | null
+          updated_at?: string
+          wa_enabled?: boolean
+          wa_message_body?: string | null
+          wa_recipient?: string
+          wa_template_name?: string | null
         }
         Relationships: []
       }
@@ -171,39 +187,6 @@ export type Database = {
           key?: string
           updated_at?: string | null
           value?: string
-        }
-        Relationships: []
-      }
-      automation_templates: {
-        Row: {
-          aisensy_template_name: string
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          recipient_type: string | null
-          trigger_event: string
-        }
-        Insert: {
-          aisensy_template_name: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          recipient_type?: string | null
-          trigger_event: string
-        }
-        Update: {
-          aisensy_template_name?: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          recipient_type?: string | null
-          trigger_event?: string
         }
         Relationships: []
       }
@@ -269,13 +252,6 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "automations_log_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "automation_templates"
             referencedColumns: ["id"]
           },
         ]
