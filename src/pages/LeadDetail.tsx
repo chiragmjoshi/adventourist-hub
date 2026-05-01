@@ -111,12 +111,17 @@ const LeadDetail = () => {
           leadIds = sharedLeads.map((x: any) => x.id);
         }
       }
-      // Step 2: cashflow + itineraries + destinations + leads (for travel_date)
-      const { data, error } = await supabase
+      // Step 2: cashflow — match by lead_id OR by traveller_code (some legacy
+      // cashflow rows have null lead_id but a valid traveller_code).
+      const orParts: string[] = [];
+      if (leadIds.length > 0) orParts.push(`lead_id.in.(${leadIds.join(",")})`);
+      if (l?.traveller_code) orParts.push(`traveller_code.eq.${l.traveller_code}`);
+      let q = supabase
         .from("trip_cashflow")
         .select("*, itineraries(headline, destinations(name))")
-        .in("lead_id", leadIds)
         .order("created_at", { ascending: false });
+      if (orParts.length > 0) q = q.or(orParts.join(","));
+      const { data, error } = await q;
       if (error) throw error;
       // Step 3: vendor cost sums
       const ids = (data || []).map((t: any) => t.id);
