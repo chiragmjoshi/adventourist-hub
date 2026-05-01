@@ -163,6 +163,22 @@ const LeadManagement = () => {
     },
   });
 
+  /* ── Loyalty trip counts by traveller_code (bulk) ── */
+  const { data: loyaltyMap = {} } = useQuery<Record<string, number>>({
+    queryKey: ["loyalty_trip_counts"],
+    queryFn: async () => {
+      const { data: tcRows } = await supabase
+        .from("trip_cashflow")
+        .select("traveller_code, status");
+      const map: Record<string, number> = {};
+      (tcRows || []).forEach((r: any) => {
+        if (!r.traveller_code || r.status === "cancelled") return;
+        map[r.traveller_code] = (map[r.traveller_code] || 0) + 1;
+      });
+      return map;
+    },
+  });
+
   const mvByType = useCallback((type: string) => masterValues.filter((v: any) => v.type === type), [masterValues]);
 
   /* ── Create lead ── */
@@ -485,7 +501,22 @@ const LeadManagement = () => {
                           <Flame className={`h-4 w-4 ${(lead as any).is_hot ? "text-orange-500 fill-orange-500" : "text-gray-300 hover:text-orange-300"}`} />
                         </button>
                         <div>
-                          <div className="font-medium text-[13px] text-foreground">{lead.name}</div>
+                          <div className="font-medium text-[13px] text-foreground flex items-center gap-1.5">
+                            {lead.name}
+                            {(() => {
+                              const count = loyaltyMap[(lead as any).traveller_code] || 0;
+                              if (count < 2) return null;
+                              const color = count >= 5 ? "hsl(var(--blaze))" : count >= 3 ? "#16a34a" : "#2563eb";
+                              return (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                                  </TooltipTrigger>
+                                  <TooltipContent>{count} confirmed trips</TooltipContent>
+                                </Tooltip>
+                              );
+                            })()}
+                          </div>
                           <div className="text-[12px] text-muted-foreground mt-0.5">
                             {lead.mobile || lead.email || "—"}
                           </div>
