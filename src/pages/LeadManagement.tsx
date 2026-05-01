@@ -16,8 +16,23 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X, Flame } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
-import { format, formatDistanceToNow, subDays } from "date-fns";
+import { format, formatDistanceToNow, subDays, parseISO } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import DateRangePicker from "@/components/DateRangePicker";
+
+/* ────── Display ↔ DB-key mapping ──────
+ * DB stores snake_case keys (e.g. "not_contacted") but master_values
+ * use human display strings ("Not Contacted"). Most map via slugify,
+ * but a few legacy values diverge — handled by OVERRIDES.
+ */
+const DISPLAY_KEY_OVERRIDES: Record<string, string> = {
+  "Not Reachable Call Back": "not_reachable",
+  "Wrong Number / Invalid Lead": "wrong_number",
+};
+const slugify = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+const displayToKey = (display: string): string =>
+  DISPLAY_KEY_OVERRIDES[display] ?? slugify(display);
 
 /* ────── Disposition dot colors ────── */
 const DISP_DOT: Record<string, string> = {
@@ -69,8 +84,10 @@ const LeadManagement = () => {
   const { profile } = useAuth();
 
   /* ── Filters ── */
-  const [dateFrom, setDateFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
-  const [dateTo, setDateTo] = useState(format(new Date(), "yyyy-MM-dd"));
+  const defaultFrom = useMemo(() => subDays(new Date(), 30), []);
+  const defaultTo = useMemo(() => new Date(), []);
+  const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
+  const [dateTo, setDateTo] = useState<Date>(defaultTo);
   const [filterChannel, setFilterChannel] = useState("all");
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [filterCampaign, setFilterCampaign] = useState("all");
@@ -201,11 +218,15 @@ const LeadManagement = () => {
   }, [filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination]);
 
   const filtered = useMemo(() => {
+    const fromMs = new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0).getTime();
+    const toMs = new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999).getTime();
     return leads.filter((l: any) => {
       const q = search.toLowerCase();
       if (q && !(l.name?.toLowerCase().includes(q) || l.traveller_code?.toLowerCase().includes(q) || l.email?.toLowerCase().includes(q) || l.mobile?.includes(q))) return false;
-      if (dateFrom && l.created_at && l.created_at < dateFrom) return false;
-      if (dateTo && l.created_at && l.created_at > dateTo + "T23:59:59") return false;
+      if (l.created_at) {
+        const t = new Date(l.created_at).getTime();
+        if (t < fromMs || t > toMs) return false;
+      }
       if (filterChannel !== "all" && l.channel !== filterChannel) return false;
       if (filterPlatform !== "all" && l.platform !== filterPlatform) return false;
       if (filterCampaign !== "all" && l.campaign_type !== filterCampaign) return false;
@@ -217,6 +238,7 @@ const LeadManagement = () => {
     });
   }, [leads, search, dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses]);
 
+  /* Counts are keyed by DB snake_case key (matches l.disposition / l.sales_status) */
   const dispositionCounts = useMemo(() => {
     const c: Record<string, number> = {};
     leads.forEach((l: any) => { if (l.disposition) c[l.disposition] = (c[l.disposition] || 0) + 1; });
@@ -238,8 +260,8 @@ const LeadManagement = () => {
   }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search]);
 
   const resetFilters = () => {
-    setDateFrom(format(subDays(new Date(), 30), "yyyy-MM-dd"));
-    setDateTo(format(new Date(), "yyyy-MM-dd"));
+    setDateFrom(subDays(new Date(), 30));
+    setDateTo(new Date());
     setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
     setFilterAdGroup("all"); setFilterDestination("all");
     setActiveDispositions(new Set()); setActiveStatuses(new Set()); setCurrentPage(1);
@@ -269,8 +291,8 @@ const LeadManagement = () => {
   };
 
   const anyFiltersActive =
-    dateFrom !== format(subDays(new Date(), 30), "yyyy-MM-dd") ||
-    dateTo !== format(new Date(), "yyyy-MM-dd") ||
+    format(dateFrom, "yyyy-MM-dd") !== format(subDays(new Date(), 30), "yyyy-MM-dd") ||
+    format(dateTo, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") ||
     filterChannel !== "all" || filterPlatform !== "all" || filterCampaign !== "all" ||
     filterAdGroup !== "all" || filterDestination !== "all" ||
     activeDispositions.size > 0 || activeStatuses.size > 0;
@@ -302,11 +324,11 @@ const LeadManagement = () => {
 
       {/* ── Smart Filter Bar — single compact row ── */}
       <div className="flex items-center gap-2 mb-4 px-3 py-2 border border-border/50 rounded-lg bg-background h-12">
-        <div className="flex items-center gap-1 border border-border/60 rounded-md h-8 px-2 min-w-[200px]">
-          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-6 text-[11px] border-0 p-0 shadow-none w-[90px]" />
-          <span className="text-[10px] text-muted-foreground">to</span>
-          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-6 text-[11px] border-0 p-0 shadow-none w-[90px]" />
-        </div>
+        <DateRangePicker
+          from={dateFrom}
+          to={dateTo}
+          onChange={(f, t) => { setDateFrom(f); setDateTo(t); }}
+        />
         <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
           options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
         <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
