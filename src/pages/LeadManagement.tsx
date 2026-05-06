@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X, Flame } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
-import { format, formatDistanceToNow, subDays, parseISO } from "date-fns";
+import { format, formatDistanceToNow, subDays, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import DateRangePicker from "@/components/DateRangePicker";
 
@@ -84,7 +84,8 @@ const LeadManagement = () => {
   const { profile } = useAuth();
 
   /* ── Filters ── */
-  const defaultFrom = useMemo(() => subDays(new Date(), 30), []);
+  // Default = "Last 3 Months to date": start of the month 2 months ago → today.
+  const defaultFrom = useMemo(() => startOfMonth(subMonths(new Date(), 2)), []);
   const defaultTo = useMemo(() => new Date(), []);
   const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
   const [dateTo, setDateTo] = useState<Date>(defaultTo);
@@ -185,7 +186,8 @@ const LeadManagement = () => {
   const createLead = useMutation({
     mutationFn: async (f: typeof form) => {
       const { data, error } = await supabase.from("leads").insert({
-        traveller_code: "TEMP",
+        // Leave blank → DB trigger generates a real traveller_code (e.g. M2600007).
+        traveller_code: "",
         name: f.name,
         email: f.email || null,
         mobile: f.mobile || null,
@@ -276,7 +278,7 @@ const LeadManagement = () => {
   }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search]);
 
   const resetFilters = () => {
-    setDateFrom(subDays(new Date(), 30));
+    setDateFrom(startOfMonth(subMonths(new Date(), 2)));
     setDateTo(new Date());
     setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
     setFilterAdGroup("all"); setFilterDestination("all");
@@ -307,7 +309,7 @@ const LeadManagement = () => {
   };
 
   const anyFiltersActive =
-    format(dateFrom, "yyyy-MM-dd") !== format(subDays(new Date(), 30), "yyyy-MM-dd") ||
+    format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(subMonths(new Date(), 2)), "yyyy-MM-dd") ||
     format(dateTo, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") ||
     filterChannel !== "all" || filterPlatform !== "all" || filterCampaign !== "all" ||
     filterAdGroup !== "all" || filterDestination !== "all" ||
