@@ -100,13 +100,18 @@ const LeadDetail = () => {
     queryKey: ["lead_trips", id],
     queryFn: async () => {
       const l = lead as any;
+      // Treat "TEMP" / blank as no traveller_code — it's a placeholder used
+      // before the DB trigger assigns a real code. Without this guard, every
+      // "TEMP" lead would share trips with every other "TEMP" lead.
+      const tc: string | null =
+        l?.traveller_code && l.traveller_code !== "TEMP" ? l.traveller_code : null;
       // Step 1: find all lead IDs sharing this traveller_code
       let leadIds: string[] = [id!];
-      if (l?.traveller_code) {
+      if (tc) {
         const { data: sharedLeads } = await supabase
           .from("leads")
           .select("id, created_at")
-          .eq("traveller_code", l.traveller_code);
+          .eq("traveller_code", tc);
         if (sharedLeads && sharedLeads.length > 0) {
           leadIds = sharedLeads.map((x: any) => x.id);
         }
@@ -115,7 +120,7 @@ const LeadDetail = () => {
       // cashflow rows have null lead_id but a valid traveller_code).
       const orParts: string[] = [];
       if (leadIds.length > 0) orParts.push(`lead_id.in.(${leadIds.join(",")})`);
-      if (l?.traveller_code) orParts.push(`traveller_code.eq.${l.traveller_code}`);
+      if (tc) orParts.push(`traveller_code.eq.${tc}`);
       let q = supabase
         .from("trip_cashflow")
         .select("*, itineraries(headline, destinations(name))")
