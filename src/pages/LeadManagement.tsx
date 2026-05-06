@@ -186,7 +186,8 @@ const LeadManagement = () => {
   const createLead = useMutation({
     mutationFn: async (f: typeof form) => {
       const { data, error } = await supabase.from("leads").insert({
-        traveller_code: "TEMP",
+        // Leave blank → DB trigger generates a real traveller_code (e.g. M2600007).
+        traveller_code: "",
         name: f.name,
         email: f.email || null,
         mobile: f.mobile || null,
