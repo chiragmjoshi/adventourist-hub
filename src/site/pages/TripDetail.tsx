@@ -215,7 +215,7 @@ export default function TripDetail() {
               )}
 
               {/* Stats card */}
-              <dl className="bg-drift rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <dl className="bg-drift/60 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
                 <Stat icon="📅" label="Duration" value={trip.days_and_nights || "Flexible"} />
                 {destinationName && <Stat icon="📍" label="Destination" value={destinationName} />}
                 {trip.pricing_per_person ? <Stat icon="💰" label="Starting From" value={`${priceText}/person`} /> : null}
