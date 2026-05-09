@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
 import { processAutomationQueue } from "./services/automationEngine";
+import { getCrossHostRedirect, getHostKind } from "@/lib/hostname";
 
 // Admin pages — lazy loaded to keep public site bundle small
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -70,6 +71,26 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
+    // Hostname-based gating: redirect cross-domain traffic before anything renders.
+    const redirect = getCrossHostRedirect();
+    if (redirect) {
+      window.location.replace(redirect);
+      return;
+    }
+
+    // Mark admin host so we can apply noindex meta + future host-specific styling.
+    const kind = getHostKind();
+    document.documentElement.dataset.host = kind;
+    if (kind === "admin") {
+      let meta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = "robots";
+        document.head.appendChild(meta);
+      }
+      meta.content = "noindex, nofollow";
+    }
+
     processAutomationQueue();
     const interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
     return () => clearInterval(interval);
