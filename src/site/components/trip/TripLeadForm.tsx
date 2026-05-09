@@ -119,7 +119,7 @@ export default function TripLeadForm({ tripTitle, tripSlug, destination, pricePe
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-13 py-3.5 bg-blaze text-white font-display font-bold text-base rounded-full hover:bg-blaze/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blaze/25 disabled:opacity-60"
+          className="w-full h-14 bg-blaze text-white font-display font-bold text-base rounded-full hover:bg-blaze/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blaze/25 disabled:opacity-60"
         >
           {loading ? "Sending…" : "Send via WhatsApp →"}
         </button>
