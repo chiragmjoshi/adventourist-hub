@@ -40,7 +40,7 @@ const headline = [
   { text: "For You.", italic: false, color: "text-abyss" },
 ];
 
-const wordVariants = {
+const wordVariants: any = {
   hidden:  { y: 50, opacity: 0 },
   visible: (i: number) => ({
     y: 0, opacity: 1,
@@ -48,12 +48,12 @@ const wordVariants = {
   }),
 };
 
-const subtextVariants = {
+const subtextVariants: any = {
   hidden:  { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { delay: 0.55, duration: 0.5 } },
 };
 
-const ctaVariants = {
+const ctaVariants: any = {
   hidden:  { opacity: 0, scale: 0.9 },
   visible: { opacity: 1, scale: 1, transition: { delay: 0.75, type: "spring", damping: 18 } },
 };

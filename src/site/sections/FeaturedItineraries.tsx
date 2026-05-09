@@ -80,7 +80,7 @@ const FALLBACK_TRIPS: TripCard[] = [
   },
 ];
 
-const cardVariants = {
+const cardVariants: any = {
   hidden:  { opacity: 0, y: 40 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
