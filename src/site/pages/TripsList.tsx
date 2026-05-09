@@ -63,7 +63,7 @@ export default function TripsList() {
       </nav>
 
       {/* Hero — left aligned */}
-      <section className="bg-drift topo-texture pt-6 pb-12 lg:pb-16">
+      <section className="bg-drift pt-6 pb-12 lg:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-blaze font-display font-semibold tracking-[0.2em] text-xs uppercase mb-4">
             Our Itineraries
