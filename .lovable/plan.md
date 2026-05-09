@@ -1,40 +1,44 @@
-## Plan: `submit-lead` Edge Function
+# Backfill itinerary thumbnails + SEO
 
-Create a public POST endpoint at `supabase/functions/submit-lead/index.ts` for website lead capture.
+One-off Node script (run from sandbox, not part of the app). Touches only `hero_image`, `seo_title`, `seo_description`, `seo_keywords` on `itineraries`. Day-wise itinerary, inclusions, exclusions, about, pricing — all untouched.
 
-### Conflict to flag
-The `leads` table already has a `generate_traveller_code` trigger that auto-fills `traveller_code` in the format `M2600001` (month-letter + YY + 5-digit seq), using `traveller_code_sequence`. Your spec asks for a different format `ADV-2026-001` generated inside the edge function.
+## Scope
+- 74 itineraries total
+- 71 missing `hero_image`
+- 74 missing `seo_keywords`
+- 4 missing `seo_title` / `seo_description` (others have generic templated ones — will be regenerated to be richer)
 
-I will follow your spec: the function generates `ADV-YYYY-###` and passes it explicitly on insert (the trigger only runs when the value isn't supplied — actually it always overwrites; see "Technical notes" for how I'll handle that).
+## Step 1 — Thumbnails (Unsplash)
 
-If you'd rather keep the existing trigger format, say so and I'll skip the in-function generation.
+For each unique destination (~25), query Unsplash search API with `{destination name} travel landscape`, pick top result, download, upload to Supabase `itinerary-images/destinations/{slug}.jpg`, then assign that URL to every itinerary of that destination missing a hero.
 
-### Behavior
+- Itineraries that already have a `hero_image` are left alone.
+- Stores Unsplash photographer credit in console log (no DB column for it — can add later if needed).
+- One photo per destination (reused across its trips) — keeps it fast and avoids hitting Unsplash rate limits.
 
-1. **CORS**: `Access-Control-Allow-Origin: *`, methods `POST, OPTIONS`, headers `authorization, content-type, apikey, x-client-info`. Handle `OPTIONS` preflight.
-2. **Validate**: require `name` and `mobile`; otherwise `400 { error: 'Name and mobile are required' }`.
-3. **Resolve destination** (optional): if `destination_name` provided, query `destinations` by name (case-insensitive `ilike`), use `id` if found; ignore otherwise.
-4. **Generate traveller code**: call a new SQL function `public.generate_adv_traveller_code()` (SECURITY DEFINER) that atomically increments `traveller_code_sequence` keyed by `year_prefix = 'ADV-YYYY'` and returns `ADV-YYYY-001` (zero-padded to 3, grows beyond if needed). Atomicity via `INSERT ... ON CONFLICT DO UPDATE ... RETURNING last_sequence`.
-5. **Insert lead** with service-role client (bypasses RLS); `channel` defaults to `'website'` if missing → maps to organic per your earlier requirement.
-6. **Insert timeline row**: `event_type='lead_created'`, `note='Lead submitted from website'`, `metadata={channel, landing_page_id, utm_*}`.
-7. **Respond** `200 { success: true, traveller_code, lead_id }`.
-8. **Errors**: log with `console.error`, return `500 { error: 'Failed to create lead' }`.
+**Requires**: an Unsplash Access Key (free, takes 2 min at https://unsplash.com/developers). I'll request it as a secret `UNSPLASH_ACCESS_KEY` once you approve the plan.
 
-### Technical notes
+## Step 2 — SEO fields (Lovable AI, free)
 
-- **Trigger override**: The existing `generate_traveller_code` trigger overwrites `NEW.traveller_code` unconditionally. To honor your ADV format, the migration will modify the trigger to skip when `NEW.traveller_code` is already set (matching the pattern used by `generate_cashflow_code` / `generate_vendor_code`). Existing leads are unaffected.
-- **Migration created in same task**:
-  - New SQL function `generate_adv_traveller_code()` returning text.
-  - Patch `generate_traveller_code` trigger to early-return when `NEW.traveller_code IS NOT NULL`.
-- **Edge function config**: `verify_jwt = false` in `supabase/config.toml` (public endpoint).
-- **Env**: uses `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (already configured).
-- **Validation**: lightweight inline checks (no Zod) — only `name`/`mobile` required per spec.
-- **No new dependencies.**
+For each itinerary, call `google/gemini-2.5-flash` via Lovable AI Gateway with headline + about + destination + days/nights, asking for JSON:
+```
+{ seo_title (≤60 chars), seo_description (≤155 chars), seo_keywords (8–12 comma-separated) }
+```
+Run with concurrency of 5, retry on failure. Overwrites existing seo fields with richer AI versions (current ones are templated "Explore X with Adventourist" stubs).
 
-### Files
-- `supabase/migrations/<ts>_adv_traveller_code.sql` (new)
-- `supabase/functions/submit-lead/index.ts` (new)
-- `supabase/config.toml` (add `[functions.submit-lead] verify_jwt = false`)
+## Step 3 — Verification
 
-### Open question
-Confirm the traveller-code conflict resolution: **(A)** use ADV-YYYY-### as you specified (I'll patch the existing trigger to allow it), or **(B)** keep the current `M2600001` style and have the function just return whatever the trigger generated.
+After the run, print a summary table: total updated, any failures, before/after counts of nulls. You can spot-check a few in the CMS.
+
+## Technical notes
+- Script lives at `/tmp/backfill-itineraries.ts`, run with `bun` from the sandbox using `SUPABASE_SERVICE_ROLE_KEY` (already a secret) — bypasses RLS for the update.
+- No app code, no migration, no edge function. Pure data backfill.
+- Idempotent: re-running skips itineraries that already have a non-stub hero_image.
+
+## What I will NOT touch
+`itinerary_days`, `inclusions`, `exclusions`, `about`, `headline`, `slug`, `price_per_person`, `gallery`, `highlights`, `themes`, `suitable_for`, `best_months`, `status`.
+
+## After approval
+1. I'll ask you to add `UNSPLASH_ACCESS_KEY` as a secret.
+2. Run the script.
+3. Report results.
