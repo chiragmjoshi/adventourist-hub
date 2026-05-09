@@ -368,6 +368,8 @@ function ItineraryCard({ trip, index }: { trip: CMSItinerary; index: number }) {
           path={imgPath}
           alt={`${trip.headline} — ${trip.destination?.name ?? ""} travel itinerary`}
           destination={trip.destination?.name}           className="object-cover transition-transform duration-500 group-hover:scale-[1.08]"
+          loading={index < 3 ? "eager" : "lazy"}
+          fetchPriority={index < 3 ? "high" : "auto"}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-abyss/85 via-abyss/20 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-5">
