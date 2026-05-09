@@ -26,13 +26,15 @@ import LandingPageList from "./pages/LandingPageList";
 import LandingPageEdit from "./pages/LandingPageEdit";
 import LandingPageDetail from "./pages/LandingPageDetail";
 import LandingPage from "./pages/LandingPage";
-import PublicHome from "./public-site/pages/PublicHome";
-import PublicDestinations from "./public-site/pages/PublicDestinations";
-import PublicDestinationDetail from "./public-site/pages/PublicDestinationDetail";
-import PublicItineraries from "./public-site/pages/PublicItineraries";
-import PublicItineraryDetail from "./public-site/pages/PublicItineraryDetail";
-import PublicAbout from "./public-site/pages/PublicAbout";
-import PublicContact from "./public-site/pages/PublicContact";
+import SiteHome from "./site/pages/Home";
+import SiteTripsList from "./site/pages/TripsList";
+import SiteTripDetail from "./site/pages/TripDetail";
+import SiteAbout from "./site/pages/About";
+import SiteContact from "./site/pages/Contact";
+import SiteFAQs from "./site/pages/FAQs";
+import SiteTeam from "./site/pages/Team";
+import SiteTravelStories from "./site/pages/TravelStories";
+import { PrivacyPolicy, TermsConditions, RefundPolicy, PaymentPolicy } from "./site/pages/PolicyPage";
 import ReportsHub from "./pages/ReportsHub";
 import SalesReport from "./pages/reports/SalesReport";
 import RevenueReport from "./pages/reports/RevenueReport";
@@ -68,51 +70,60 @@ const App = () => {
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/accept-invite" element={<AcceptInvite />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
-            <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
-            <Route path="/itineraries" element={<ProtectedRoute><ItineraryList /></ProtectedRoute>} />
-            <Route path="/itineraries/new" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
-            <Route path="/itineraries/edit/:id" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
-            <Route path="/landing-pages" element={<ProtectedRoute><LandingPageList /></ProtectedRoute>} />
-            <Route path="/landing-pages/new" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
-            <Route path="/landing-pages/edit/:id" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
-            <Route path="/landing-pages/:id" element={<ProtectedRoute><LandingPageDetail /></ProtectedRoute>} />
-            <Route path="/trip-cashflow" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["operations", "admin", "super_admin", "finance"]} pageName="Trip Cashflow"><TripCashflowList /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/trip-cashflow/new" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
-            <Route path="/trip-cashflow/edit/:id" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
-            <Route path="/trip-cashflow/:id" element={<ProtectedRoute><TripCashflowDetail /></ProtectedRoute>} />
-            <Route path="/vendors" element={<ProtectedRoute><VendorList /></ProtectedRoute>} />
-            <Route path="/vendors/new" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
-            <Route path="/vendors/edit/:id" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
-            <Route path="/vendors/:id" element={<ProtectedRoute><VendorDetail /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="Settings"><Settings /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><ReportsHub /></ProtectedRoute>} />
-            <Route path="/reports/sales" element={<ProtectedRoute><SalesReport /></ProtectedRoute>} />
-            <Route path="/reports/revenue" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["finance", "admin", "super_admin"]} pageName="Revenue Report"><RevenueReport /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/reports/conversion" element={<ProtectedRoute><ConversionReport /></ProtectedRoute>} />
-            <Route path="/reports/destinations" element={<ProtectedRoute><DestinationReport /></ProtectedRoute>} />
-            <Route path="/reports/platform-roi" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Platform ROI"><PlatformROI /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/reports/team" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Team Performance"><TeamPerformance /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/db/destinations" element={<ProtectedRoute><Destinations /></ProtectedRoute>} />
-            <Route path="/db/master-values" element={<ProtectedRoute><MasterValues /></ProtectedRoute>} />
-            <Route path="/user-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="User Management"><UserManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/role-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="Role Management"><RoleManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/automations" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Automations"><Automations /></RoleProtectedRoute></ProtectedRoute>} />
-            <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
-            <Route path="/trips-kanban" element={<ProtectedRoute><TripsKanban /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            {/* Public site */}
+            <Route path="/" element={<SiteHome />} />
+            <Route path="/trips" element={<SiteTripsList />} />
+            <Route path="/trips/:slug" element={<SiteTripDetail />} />
+            <Route path="/about-us" element={<SiteAbout />} />
+            <Route path="/contact" element={<SiteContact />} />
+            <Route path="/faqs" element={<SiteFAQs />} />
+            <Route path="/team" element={<SiteTeam />} />
+            <Route path="/travel-stories" element={<SiteTravelStories />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsConditions />} />
+            <Route path="/refund-and-cancellation-policy" element={<RefundPolicy />} />
+            <Route path="/payment-policy" element={<PaymentPolicy />} />
             <Route path="/l/:slug" element={<LandingPage />} />
-            <Route path="/preview" element={<PublicHome />} />
-            <Route path="/preview/destinations" element={<PublicDestinations />} />
-            <Route path="/preview/destinations/:slug" element={<PublicDestinationDetail />} />
-            <Route path="/preview/itineraries" element={<PublicItineraries />} />
-            <Route path="/preview/itineraries/:slug" element={<PublicItineraryDetail />} />
-            <Route path="/preview/about" element={<PublicAbout />} />
-            <Route path="/preview/contact" element={<PublicContact />} />
+
+            {/* Admin / CMS */}
+            <Route path="/admin/login" element={<Login />} />
+            <Route path="/admin/accept-invite" element={<AcceptInvite />} />
+            <Route path="/admin/reset-password" element={<ResetPassword />} />
+            <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/admin/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
+            <Route path="/admin/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
+            <Route path="/admin/itineraries" element={<ProtectedRoute><ItineraryList /></ProtectedRoute>} />
+            <Route path="/admin/itineraries/new" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
+            <Route path="/admin/itineraries/edit/:id" element={<ProtectedRoute><ItineraryEdit /></ProtectedRoute>} />
+            <Route path="/admin/landing-pages" element={<ProtectedRoute><LandingPageList /></ProtectedRoute>} />
+            <Route path="/admin/landing-pages/new" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
+            <Route path="/admin/landing-pages/edit/:id" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
+            <Route path="/admin/landing-pages/:id" element={<ProtectedRoute><LandingPageDetail /></ProtectedRoute>} />
+            <Route path="/admin/trip-cashflow" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["operations", "admin", "super_admin", "finance"]} pageName="Trip Cashflow"><TripCashflowList /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/trip-cashflow/new" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
+            <Route path="/admin/trip-cashflow/edit/:id" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
+            <Route path="/admin/trip-cashflow/:id" element={<ProtectedRoute><TripCashflowDetail /></ProtectedRoute>} />
+            <Route path="/admin/vendors" element={<ProtectedRoute><VendorList /></ProtectedRoute>} />
+            <Route path="/admin/vendors/new" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
+            <Route path="/admin/vendors/edit/:id" element={<ProtectedRoute><VendorEdit /></ProtectedRoute>} />
+            <Route path="/admin/vendors/:id" element={<ProtectedRoute><VendorDetail /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="Settings"><Settings /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute><ReportsHub /></ProtectedRoute>} />
+            <Route path="/admin/reports/sales" element={<ProtectedRoute><SalesReport /></ProtectedRoute>} />
+            <Route path="/admin/reports/revenue" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["finance", "admin", "super_admin"]} pageName="Revenue Report"><RevenueReport /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/reports/conversion" element={<ProtectedRoute><ConversionReport /></ProtectedRoute>} />
+            <Route path="/admin/reports/destinations" element={<ProtectedRoute><DestinationReport /></ProtectedRoute>} />
+            <Route path="/admin/reports/platform-roi" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Platform ROI"><PlatformROI /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/reports/team" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Team Performance"><TeamPerformance /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/db/destinations" element={<ProtectedRoute><Destinations /></ProtectedRoute>} />
+            <Route path="/admin/db/master-values" element={<ProtectedRoute><MasterValues /></ProtectedRoute>} />
+            <Route path="/admin/user-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="User Management"><UserManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/role-management" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["super_admin"]} pageName="Role Management"><RoleManagementPage /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/automations" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Automations"><Automations /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
+            <Route path="/admin/trips-kanban" element={<ProtectedRoute><TripsKanban /></ProtectedRoute>} />
+            <Route path="/admin/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
