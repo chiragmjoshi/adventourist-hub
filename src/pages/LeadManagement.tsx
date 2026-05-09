@@ -668,8 +668,6 @@ const LeadManagement = () => {
                     <div><Label className="text-xs mb-1 block">Mobile</Label>
                       <Input value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} className="rounded-md" /></div>
                   </div>
-                  <div><Label className="text-xs mb-1 block">Travel Date</Label>
-                    <Input type="date" value={form.travel_date} onChange={e => setForm({...form, travel_date: e.target.value})} className="rounded-md" /></div>
                 </div>
               </div>
 
