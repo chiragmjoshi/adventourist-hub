@@ -23,7 +23,7 @@ const Login = () => {
     if (error) {
       toast.error("Invalid credentials. Please try again.");
     } else {
-      navigate("/");
+      navigate("/admin");
     }
   };
 

@@ -43,7 +43,7 @@ export function AppSidebar() {
     }`;
 
   const navItems = [
-    { title: "Dashboard", url: "/", icon: LayoutDashboard, show: true },
+    { title: "Dashboard", url: "/admin", icon: LayoutDashboard, show: true },
     { title: "Lead Management", url: "/admin/leads", icon: Users, show: hasPermission("leads") },
     { title: "Itineraries", url: "/admin/itineraries", icon: Map, show: hasPermission("itineraries") },
     { title: "Landing Pages", url: "/admin/landing-pages", icon: Layout, show: hasPermission("landing_pages") },
@@ -84,7 +84,7 @@ export function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end={item.url === "/"} className={({ isActive }) => linkClasses(isActive)}>
+                    <NavLink to={item.url} end={item.url === "/admin"} className={({ isActive }) => linkClasses(isActive)}>
                       <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>

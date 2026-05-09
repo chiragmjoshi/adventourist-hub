@@ -44,7 +44,7 @@ const AcceptInvite = () => {
       await supabase.from("users").update({ is_active: true }).eq("id", uid);
     }
     toast.success("Welcome aboard!");
-    navigate("/");
+    navigate("/admin");
   };
 
   return (
