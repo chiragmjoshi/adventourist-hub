@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Jost:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -109,3 +110,20 @@
     font-size: 14px;
   }
 }
+
+/* ── Public site (Adventourist) — topographic background pattern ── */
+.topo-texture { position: relative; overflow: hidden; }
+.topo-texture::before {
+  content: '';
+  position: absolute;
+  inset: -200px 0 0 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cpath d='M-50,40 C0,20 50,60 100,40 C150,20 200,60 250,40 C300,20 350,60 400,40' stroke='currentColor' stroke-width='1' fill='none' opacity='0.4'/%3E%3Cpath d='M-50,80 C0,60 50,100 100,80 C150,60 200,100 250,80 C300,60 350,100 400,80' stroke='currentColor' stroke-width='1' fill='none' opacity='0.4'/%3E%3Cpath d='M-50,120 C0,100 50,140 100,120 C150,100 200,140 250,120 C300,100 350,140 400,120' stroke='currentColor' stroke-width='1' fill='none' opacity='0.35'/%3E%3Cpath d='M-50,160 C0,140 50,180 100,160 C150,140 200,180 250,160 C300,140 350,180 400,160' stroke='currentColor' stroke-width='1' fill='none' opacity='0.3'/%3E%3Cpath d='M-50,200 C0,180 50,220 100,200 C150,180 200,220 250,200 C300,180 350,220 400,200' stroke='currentColor' stroke-width='1' fill='none' opacity='0.25'/%3E%3C/svg%3E");
+  background-size: 400px 400px;
+}
+.site-root { font-family: 'Jost', sans-serif; font-size: 16px; color: #111111; }
+.site-root h1, .site-root h2, .site-root h3, .site-root h4, .site-root h5, .site-root h6 { font-family: 'Inter Tight', sans-serif; }
+.site-root .prose-cms p { margin-bottom: 0.75rem; }
+.site-root .prose-cms ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+.site-root .prose-cms ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
