@@ -14,6 +14,7 @@ interface DateRangePickerProps {
 
 const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) => {
   const [date, setDate] = useState<{ from: Date; to: Date }>({ from, to });
+  const [open, setOpen] = useState(false);
 
   const presets = [
     { label: "This Month", from: startOfMonth(new Date()), to: endOfMonth(new Date()) },
@@ -25,7 +26,7 @@ const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) => {
 
   return (
     <div className="flex items-center gap-2">
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className={cn("justify-start text-left font-normal min-w-[240px]")}>
             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -44,6 +45,7 @@ const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) => {
                   onClick={() => {
                     setDate({ from: p.from, to: p.to });
                     onChange(p.from, p.to);
+                    setOpen(false);
                   }}
                 >
                   {p.label}
@@ -57,6 +59,7 @@ const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) => {
                 if (range?.from && range?.to) {
                   setDate({ from: range.from, to: range.to });
                   onChange(range.from, range.to);
+                  setOpen(false);
                 } else if (range?.from) {
                   setDate({ from: range.from, to: range.from });
                 }
