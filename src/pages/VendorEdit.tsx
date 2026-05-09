@@ -18,7 +18,7 @@ import StepNav from "@/components/forms/StepNav";
 import UnsavedBadge from "@/components/forms/UnsavedBadge";
 import UnsavedChangesDialog from "@/components/forms/UnsavedChangesDialog";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
-import { useAutoSaveDraft } from "@/components/forms/useAutoSaveDraft";
+// useAutoSaveDraft intentionally not imported — vendor saves are explicit only.
 
 const VENDOR_STEPS = [
   { key: "basic", label: "Basic" },
