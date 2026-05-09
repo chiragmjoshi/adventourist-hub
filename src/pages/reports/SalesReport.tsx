@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
-import { Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, ArrowLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 import { formatLabel } from "@/lib/formatLabel";
 
@@ -65,6 +66,13 @@ const SalesReport = () => {
 
   return (
     <AppLayout title="Sales Report">
+      <div className="flex items-center gap-2 text-sm mb-4">
+        <Link to="/reports" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" />Reports
+        </Link>
+        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        <span className="font-medium">Sales Report</span>
+      </div>
       <div className="flex items-center justify-between mb-6">
         <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
         <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>

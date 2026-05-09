@@ -565,12 +565,7 @@ const ItineraryEdit = () => {
 
         {/* ══ Tab 4: Day-by-Day ══ */}
         <TabsContent value="dayplan" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">{(form.itinerary_days as DayPlan[]).length} day{(form.itinerary_days as DayPlan[]).length !== 1 ? "s" : ""} planned</p>
-            <Button size="sm" variant="outline" onClick={addDay} className="rounded-md text-xs">
-              <Plus className="h-3.5 w-3.5 mr-1" />Add Day
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">{(form.itinerary_days as DayPlan[]).length} day{(form.itinerary_days as DayPlan[]).length !== 1 ? "s" : ""} planned</p>
           {(form.itinerary_days as DayPlan[]).map((day, idx) => (
             <Card key={idx} className="border-border/50 shadow-none">
               <CardContent className="p-5">
@@ -620,6 +615,13 @@ const ItineraryEdit = () => {
                 <Button variant="outline" size="sm" onClick={addDay} className="rounded-md"><Plus className="h-3.5 w-3.5 mr-1" />Add First Day</Button>
               </CardContent>
             </Card>
+          )}
+          {(form.itinerary_days as DayPlan[]).length > 0 && (
+            <div className="flex justify-center pt-2">
+              <Button size="sm" variant="outline" onClick={addDay} className="rounded-md text-xs">
+                <Plus className="h-3.5 w-3.5 mr-1" />Add Day
+              </Button>
+            </div>
           )}
           <StepNav
             isFirst={stepIdx === 0}

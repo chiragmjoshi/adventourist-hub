@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useBlocker } from "react-router-dom";
+import * as RR from "react-router-dom";
 
 /**
  * Tracks form dirtiness vs an initial snapshot, and intercepts:
@@ -34,9 +34,20 @@ export function useUnsavedChanges<T>(currentValue: T, enabled = true) {
   }, [isDirty]);
 
   // Intercept in-app navigation. Caller renders the dialog UI.
-  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
-    isDirty && currentLocation.pathname !== nextLocation.pathname,
-  );
+  // useBlocker only works inside a data router (createBrowserRouter). When
+  // the app uses <BrowserRouter>, calling it throws and white-screens the
+  // page. Guard against that and fall back to a permanently-idle stub.
+  let blocker: any = { state: "unblocked", reset: () => {}, proceed: () => {} };
+  try {
+    if (typeof (RR as any).useBlocker === "function") {
+      blocker = (RR as any).useBlocker(
+        ({ currentLocation, nextLocation }: any) =>
+          isDirty && currentLocation.pathname !== nextLocation.pathname,
+      );
+    }
+  } catch {
+    // Not in a data router — silently degrade. beforeunload still works.
+  }
 
   const markClean = useCallback((nextSnapshot?: T) => {
     initialRef.current = JSON.stringify(nextSnapshot ?? currentValue);
