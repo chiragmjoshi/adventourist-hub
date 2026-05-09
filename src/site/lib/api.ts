@@ -1,4 +1,5 @@
 import type { CMSItinerary, CMSMasterData } from "./cms-types";
+export type { CMSItinerary, CMSDestination, CMSMasterData } from "./cms-types";
 
 const PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cms-proxy`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
