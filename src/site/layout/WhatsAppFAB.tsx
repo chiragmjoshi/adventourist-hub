@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { waLink } from "@/site/lib/utils";
 
 export default function WhatsAppFAB() {
   const [hovered, setHovered] = useState(false);
 
   return (
     <a
-      href="https://wa.me/919930400694?text=Hi!%20I%27m%20interested%20in%20planning%20a%20trip%20with%20Adventourist."
+      href={waLink({ source: "whatsapp_fab" })}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"
