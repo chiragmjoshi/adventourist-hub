@@ -66,4 +66,5 @@ Disallow: /accept-invite
 Disallow: /reset-password
 
 Sitemap: https://adventourist.in/sitemap.xml
+Sitemap: https://ufjhiqdpshrubephgxrs.supabase.co/functions/v1/sitemap
 Host: https://adventourist.in
