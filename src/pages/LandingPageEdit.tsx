@@ -26,6 +26,19 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 
 const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
+const CHANNEL_BY_PLATFORM: Record<string, string[]> = {
+  "Paid":     ["Google Search", "Google Display", "YouTube Ads", "Instagram Ads", "Facebook Ads", "WhatsApp Ads"],
+  "Referral": ["Client Referral", "Non-Client Referral", "Partner Referral"],
+  "Organic":  ["Website", "Walk-in", "Google My Business", "Direct Call", "WhatsApp Direct"],
+  "Content":  ["Instagram Organic", "Facebook Organic", "YouTube Organic", "LinkedIn Organic", "Travel Blog"],
+};
+const filterChannelsByPlatform = (channels: string[], platform: string): string[] => {
+  if (!platform) return channels;
+  const allowed = CHANNEL_BY_PLATFORM[platform];
+  if (!allowed) return channels;
+  return channels.filter(c => allowed.includes(c));
+};
+
 const LandingPageEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -469,7 +482,7 @@ const LandingPageEdit = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground">Platform *</Label>
-                  <Select value={form.platform} onValueChange={v => setField("platform", v)}>
+                  <Select value={form.platform} onValueChange={v => { setField("platform", v); setField("channel", ""); }}>
                     <SelectTrigger className="mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>{getMV("platform").map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
@@ -478,7 +491,7 @@ const LandingPageEdit = () => {
                   <Label className="text-xs text-muted-foreground">Channel *</Label>
                   <Select value={form.channel} onValueChange={v => setField("channel", v)}>
                     <SelectTrigger className="mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{getMV("channel").map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                    <SelectContent>{filterChannelsByPlatform(getMV("channel"), form.platform).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>

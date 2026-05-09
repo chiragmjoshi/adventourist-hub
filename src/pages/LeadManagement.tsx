@@ -34,6 +34,20 @@ const slugify = (s: string) =>
 const displayToKey = (display: string): string =>
   DISPLAY_KEY_OVERRIDES[display] ?? slugify(display);
 
+/* ────── Platform → Channel mapping ────── */
+const CHANNEL_BY_PLATFORM: Record<string, string[]> = {
+  "Paid":     ["Google Search", "Google Display", "YouTube Ads", "Instagram Ads", "Facebook Ads", "WhatsApp Ads"],
+  "Referral": ["Client Referral", "Non-Client Referral", "Partner Referral"],
+  "Organic":  ["Website", "Walk-in", "Google My Business", "Direct Call", "WhatsApp Direct"],
+  "Content":  ["Instagram Organic", "Facebook Organic", "YouTube Organic", "LinkedIn Organic", "Travel Blog"],
+};
+const filterChannelsByPlatform = <T extends { value: string }>(channels: T[], platform: string): T[] => {
+  if (!platform) return channels;
+  const allowed = CHANNEL_BY_PLATFORM[platform];
+  if (!allowed) return channels;
+  return channels.filter(c => allowed.includes(c.value));
+};
+
 /* ────── Disposition dot colors ────── */
 const DISP_DOT: Record<string, string> = {
   "Not Contacted": "bg-gray-400",
@@ -363,10 +377,12 @@ const LeadManagement = () => {
         />
         <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
           options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
-        <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
-          options={mvByType("channel").map((v: any) => ({ value: v.value, label: v.value }))} />
-        <SmallSelect label="Platform" value={filterPlatform} onChange={setFilterPlatform}
+        <SmallSelect label="Platform" value={filterPlatform}
+          onChange={(v) => { setFilterPlatform(v); if (v !== "all") setFilterChannel("all"); }}
           options={mvByType("platform").map((v: any) => ({ value: v.value, label: v.value }))} />
+        <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
+          options={filterChannelsByPlatform(mvByType("channel"), filterPlatform === "all" ? "" : filterPlatform)
+            .map((v: any) => ({ value: v.value, label: v.value }))} />
         <SmallSelect label="Campaign" value={filterCampaign} onChange={setFilterCampaign}
           options={mvByType("campaign_type").map((v: any) => ({ value: v.value, label: v.value }))} />
 
@@ -700,10 +716,10 @@ const LeadManagement = () => {
                   <div><Label className="text-xs mb-1 block">Channel</Label>
                     <Select value={form.channel} onValueChange={v => setForm({...form, channel: v})}>
                       <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{mvByType("channel").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
+                      <SelectContent>{filterChannelsByPlatform(mvByType("channel"), form.platform).map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
                     </Select></div>
                   <div><Label className="text-xs mb-1 block">Platform</Label>
-                    <Select value={form.platform} onValueChange={v => setForm({...form, platform: v})}>
+                    <Select value={form.platform} onValueChange={v => setForm({...form, platform: v, channel: ""})}>
                       <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>{mvByType("platform").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
                     </Select></div>
