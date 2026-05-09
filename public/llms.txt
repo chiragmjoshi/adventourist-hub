@@ -1,0 +1,30 @@
+# Adventourist
+> Boutique travel planning company. Mumbai, India. Founded 2018 by Minal Joshi.
+> Tagline: "Travel Designed For You" | 4.8★ Google | 250+ trips | Zero booking fees
+
+## About
+Adventourist crafts personalised, hassle-free holidays for families, couples, and friend groups.
+Every trip is custom-built — no templates, no packages. Direct access to real planners.
+
+## Destinations
+India: Leh Ladakh, Himachal Pradesh, Kashmir, Kerala, Rajasthan, Uttarakhand, Andaman, Meghalaya, Karnataka, Sikkim
+International: Bali, Thailand, Sri Lanka, Singapore, Vietnam, Seychelles, Malaysia, Dubai, Maldives, Kenya Safari, Greece, Turkey
+
+## Trip Types
+Family holidays · Honeymoons · Anniversary trips · Girls trips · Friend groups · Workations · Wellness retreats
+
+## What's Included (typically)
+Hotels, airport transfers, sightseeing, daily breakfast, 24/7 support. Flights quoted separately.
+
+## Contact
+Pinky Prajapati (Operations): +91 99304 00549
+Minal Joshi (Co-founder & Trip Designer): +91 96199 91169
+Email: support@adventourist.in | GST: 27ABMFA3990N1ZQ
+Office: Vile Parle West, Mumbai 400056 | Mon–Sat 9AM–9PM IST
+
+## Pages
+/ — Homepage
+/trips — All itineraries (Bali, Ladakh, Thailand, Sri Lanka, Singapore, Seychelles, Vietnam, Rajasthan etc.)
+/travel-stories — Travel blogs, destination guides, client stories
+/about-us — Company story, team, values
+/contact — Plan your trip, WhatsApp enquiry
