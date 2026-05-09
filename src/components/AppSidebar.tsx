@@ -36,10 +36,10 @@ export function AppSidebar() {
   const isDbActive = location.pathname.startsWith("/admin/db");
 
   const linkClasses = (isActive: boolean) =>
-    `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+    `flex items-center gap-3 pl-3 pr-3 py-2 rounded-r-md text-sm transition-colors border-l-[3px] ${
       isActive
-        ? "bg-sidebar-accent text-sidebar-primary border-l-2 border-sidebar-primary font-medium"
-        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+        ? "bg-[#FFF5F2] text-blaze border-blaze font-medium"
+        : "text-[#6B7280] border-transparent hover:bg-[#FFF5F2] hover:text-blaze"
     }`;
 
   const navItems = [
@@ -70,9 +70,9 @@ export function AppSidebar() {
     : "?";
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarContent className="bg-sidebar pt-4 flex flex-col h-full">
-        <div className="flex items-center justify-center px-4 mb-6">
+    <Sidebar collapsible="icon" className="border-r border-[#F0EDE8]">
+      <SidebarContent className="bg-white pt-4 flex flex-col h-full">
+        <div className="flex items-center justify-center px-4 mb-6 bg-white">
           {collapsed
             ? <img src={logoMain} alt="Adventourist" className="h-8 w-auto" />
             : <img src={logoHorizontal} alt="Adventourist" className="h-10 w-auto" />
@@ -114,8 +114,8 @@ export function AppSidebar() {
                                 <NavLink
                                   to={sub.url}
                                   className={({ isActive }) =>
-                                    `text-sm px-3 py-1.5 rounded-md block ${
-                                      isActive ? "text-sidebar-primary font-medium" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                                    `text-sm px-3 py-1.5 rounded-md block transition-colors ${
+                                      isActive ? "text-blaze font-medium" : "text-[#9CA3AF] hover:text-blaze"
                                     }`
                                   }
                                 >
@@ -154,7 +154,7 @@ export function AppSidebar() {
 
               {showSettings && (
                 <>
-                  <div className="my-2 mx-3 border-t border-border/30" />
+                  <div className="my-2 mx-3 border-t border-[#F0EDE8]" />
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
                       <NavLink to="/admin/settings" className={({ isActive }) => linkClasses(isActive)}>
@@ -171,7 +171,7 @@ export function AppSidebar() {
 
         {/* User info at bottom */}
         {profile && (
-          <div className="mt-auto border-t border-border/30 px-3 py-3">
+          <div className="mt-auto border-t border-[#F0EDE8] bg-[#F9FAFB] px-3 py-3">
             {collapsed ? (
               <TooltipProvider>
                 <Tooltip>
@@ -195,7 +195,7 @@ export function AppSidebar() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
-                    <p className="text-xs font-medium text-sidebar-foreground truncate">{profile.name}</p>
+                    <p className="text-xs font-medium text-abyss truncate">{profile.name}</p>
                     {role === "super_admin" && (
                       <TooltipProvider>
                         <Tooltip>
@@ -213,7 +213,7 @@ export function AppSidebar() {
                 </div>
                 <button
                   onClick={() => signOut()}
-                  className="text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors"
+                  className="text-[#9CA3AF] hover:text-blaze transition-colors"
                   title="Sign out"
                 >
                   <LogOut className="h-3.5 w-3.5" />
