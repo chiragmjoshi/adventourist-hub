@@ -41,7 +41,7 @@ export default function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20 lg:h-24">
+          <div className="flex items-center justify-between h-24 lg:h-28">
 
             {/* Logo — vertically centered, sized to nav row */}
             <Link
@@ -52,18 +52,18 @@ export default function Navbar() {
               <img
                 src="/logo/logo-horizontal-color.svg"
                 alt="Adventourist — Travel Designed For You"
-                width={220}
-                height={56}
-                className="hidden md:block h-12 lg:h-14 w-auto"
+                width={320}
+                height={88}
+                className="hidden md:block h-16 lg:h-20 w-auto"
                 fetchPriority="high"
                 decoding="async"
               />
               <img
                 src="/logo/logo-square-color.svg"
                 alt="Adventourist"
-                width={48}
-                height={48}
-                className="md:hidden h-11 w-auto"
+                width={64}
+                height={64}
+                className="md:hidden h-14 w-auto"
                 fetchPriority="high"
                 decoding="async"
               />
