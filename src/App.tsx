@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,26 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import LeadManagement from "./pages/LeadManagement";
-import LeadDetail from "./pages/LeadDetail";
-import ItineraryList from "./pages/ItineraryList";
-import ItineraryEdit from "./pages/ItineraryEdit";
-import Destinations from "./pages/Destinations";
-import MasterValues from "./pages/MasterValues";
-import VendorList from "./pages/VendorList";
-import VendorEdit from "./pages/VendorEdit";
-import VendorDetail from "./pages/VendorDetail";
-import TripCashflowList from "./pages/TripCashflowList";
-import TripCashflowEdit from "./pages/TripCashflowEdit";
-import TripCashflowDetail from "./pages/TripCashflowDetail";
-import Settings from "./pages/Settings";
-import LandingPageList from "./pages/LandingPageList";
-import LandingPageEdit from "./pages/LandingPageEdit";
-import LandingPageDetail from "./pages/LandingPageDetail";
 import LandingPage from "./pages/LandingPage";
-import StoryList from "./pages/StoryList";
-import StoryEdit from "./pages/StoryEdit";
 import SiteHome from "./site/pages/Home";
 import SiteTripsList from "./site/pages/TripsList";
 import SiteTripDetail from "./site/pages/TripDetail";
@@ -38,23 +19,52 @@ import SiteTeam from "./site/pages/Team";
 import SiteTravelStories from "./site/pages/TravelStories";
 import SiteStoryDetail from "./site/pages/StoryDetail";
 import { PrivacyPolicy, TermsConditions, RefundPolicy, PaymentPolicy } from "./site/pages/PolicyPage";
-import ReportsHub from "./pages/ReportsHub";
-import SalesReport from "./pages/reports/SalesReport";
-import RevenueReport from "./pages/reports/RevenueReport";
-import ConversionReport from "./pages/reports/ConversionReport";
-import DestinationReport from "./pages/reports/DestinationReport";
-import PlatformROI from "./pages/reports/PlatformROI";
-import TeamPerformance from "./pages/reports/TeamPerformance";
-import UserManagementPage from "./pages/UserManagementPage";
-import RoleManagementPage from "./pages/RoleManagementPage";
-import ProfilePage from "./pages/ProfilePage";
-import Automations from "./pages/Automations";
-import Reminders from "./pages/Reminders";
-import TripsKanban from "./pages/TripsKanban";
 import NotFound from "./pages/NotFound";
 import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
 import { processAutomationQueue } from "./services/automationEngine";
+
+// Admin pages — lazy loaded to keep public site bundle small
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const LeadManagement = lazy(() => import("./pages/LeadManagement"));
+const LeadDetail = lazy(() => import("./pages/LeadDetail"));
+const ItineraryList = lazy(() => import("./pages/ItineraryList"));
+const ItineraryEdit = lazy(() => import("./pages/ItineraryEdit"));
+const Destinations = lazy(() => import("./pages/Destinations"));
+const MasterValues = lazy(() => import("./pages/MasterValues"));
+const VendorList = lazy(() => import("./pages/VendorList"));
+const VendorEdit = lazy(() => import("./pages/VendorEdit"));
+const VendorDetail = lazy(() => import("./pages/VendorDetail"));
+const TripCashflowList = lazy(() => import("./pages/TripCashflowList"));
+const TripCashflowEdit = lazy(() => import("./pages/TripCashflowEdit"));
+const TripCashflowDetail = lazy(() => import("./pages/TripCashflowDetail"));
+const Settings = lazy(() => import("./pages/Settings"));
+const LandingPageList = lazy(() => import("./pages/LandingPageList"));
+const LandingPageEdit = lazy(() => import("./pages/LandingPageEdit"));
+const LandingPageDetail = lazy(() => import("./pages/LandingPageDetail"));
+const StoryList = lazy(() => import("./pages/StoryList"));
+const StoryEdit = lazy(() => import("./pages/StoryEdit"));
+const ReportsHub = lazy(() => import("./pages/ReportsHub"));
+const SalesReport = lazy(() => import("./pages/reports/SalesReport"));
+const RevenueReport = lazy(() => import("./pages/reports/RevenueReport"));
+const ConversionReport = lazy(() => import("./pages/reports/ConversionReport"));
+const DestinationReport = lazy(() => import("./pages/reports/DestinationReport"));
+const PlatformROI = lazy(() => import("./pages/reports/PlatformROI"));
+const TeamPerformance = lazy(() => import("./pages/reports/TeamPerformance"));
+const UserManagementPage = lazy(() => import("./pages/UserManagementPage"));
+const RoleManagementPage = lazy(() => import("./pages/RoleManagementPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const Automations = lazy(() => import("./pages/Automations"));
+const Reminders = lazy(() => import("./pages/Reminders"));
+const TripsKanban = lazy(() => import("./pages/TripsKanban"));
+
+function AdminLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-6 h-6 border-2 border-blaze border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient();
 
@@ -72,6 +82,7 @@ const App = () => {
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <Suspense fallback={<AdminLoader />}>
           <Routes>
             {/* Public site */}
             <Route path="/" element={<SiteHome />} />
@@ -133,6 +144,7 @@ const App = () => {
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
