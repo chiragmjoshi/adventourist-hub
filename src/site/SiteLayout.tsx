@@ -99,7 +99,7 @@ export default function SiteLayout({
   return (
     <div className="site-root min-h-screen flex flex-col bg-white">
       <Navbar />
-      <main className="flex-1 pt-20 lg:pt-24">{children}</main>
+      <main className="flex-1 pt-24 lg:pt-28">{children}</main>
       <Footer />
       <WhatsAppFAB />
     </div>
