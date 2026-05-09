@@ -67,8 +67,8 @@ export function useLeadCapture() {
           group_size: d.group_size || undefined,
           budget_range: d.budget || undefined,
           notes: notesParts.length ? notesParts.join("\n") : undefined,
-          channel: d.page_source || "website",
-          platform: "website",
+          channel: "Website",
+          platform: "Organic",
           ...captureUTMs(),
         },
       });
