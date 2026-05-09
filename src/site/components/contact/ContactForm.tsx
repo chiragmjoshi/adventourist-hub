@@ -134,7 +134,7 @@ export default function ContactForm() {
               type="button"
               onClick={() => toggleDest(d)}
               aria-pressed={dests.includes(d)}
-              className={`font-body text-[13px] px-4 py-2 rounded-full transition-all min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-horizon focus-visible:ring-offset-1 ${
+              className={`font-body text-[13px] px-4 py-2.5 rounded-full transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-horizon focus-visible:ring-offset-1 ${
                 dests.includes(d)
                   ? "bg-blaze text-white border border-blaze shadow-sm"
                   : "border border-abyss/15 bg-drift text-abyss hover:border-blaze/60 hover:bg-blaze/5"
