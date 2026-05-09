@@ -644,6 +644,7 @@ export type Database = {
           ad_group: string | null
           address: string | null
           assigned_to: string | null
+          budget_range: string | null
           campaign_type: string | null
           channel: string | null
           created_at: string | null
@@ -652,23 +653,32 @@ export type Database = {
           disposition: string | null
           email: string | null
           follow_up_date: string | null
+          group_size: string | null
           id: string
           is_hot: boolean | null
           itinerary_id: string | null
           landing_page_id: string | null
+          landing_url: string | null
           mobile: string | null
           name: string
           notes: string | null
           platform: string | null
+          referrer_url: string | null
           sales_status: string | null
           travel_date: string | null
           traveller_code: string
           updated_at: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           ad_group?: string | null
           address?: string | null
           assigned_to?: string | null
+          budget_range?: string | null
           campaign_type?: string | null
           channel?: string | null
           created_at?: string | null
@@ -677,23 +687,32 @@ export type Database = {
           disposition?: string | null
           email?: string | null
           follow_up_date?: string | null
+          group_size?: string | null
           id?: string
           is_hot?: boolean | null
           itinerary_id?: string | null
           landing_page_id?: string | null
+          landing_url?: string | null
           mobile?: string | null
           name: string
           notes?: string | null
           platform?: string | null
+          referrer_url?: string | null
           sales_status?: string | null
           travel_date?: string | null
           traveller_code: string
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           ad_group?: string | null
           address?: string | null
           assigned_to?: string | null
+          budget_range?: string | null
           campaign_type?: string | null
           channel?: string | null
           created_at?: string | null
@@ -702,18 +721,26 @@ export type Database = {
           disposition?: string | null
           email?: string | null
           follow_up_date?: string | null
+          group_size?: string | null
           id?: string
           is_hot?: boolean | null
           itinerary_id?: string | null
           landing_page_id?: string | null
+          landing_url?: string | null
           mobile?: string | null
           name?: string
           notes?: string | null
           platform?: string | null
+          referrer_url?: string | null
           sales_status?: string | null
           travel_date?: string | null
           traveller_code?: string
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
@@ -935,6 +962,80 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      stories: {
+        Row: {
+          author: string | null
+          category: string
+          content: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          destination_id: string | null
+          excerpt: string | null
+          id: string
+          is_published: boolean | null
+          og_image_url: string | null
+          published_at: string | null
+          read_time_minutes: number | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          views: number | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string
+          content?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          destination_id?: string | null
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean | null
+          og_image_url?: string | null
+          published_at?: string | null
+          read_time_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Update: {
+          author?: string | null
+          category?: string
+          content?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          destination_id?: string | null
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean | null
+          og_image_url?: string | null
+          published_at?: string | null
+          read_time_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       traveller_code_sequence: {
         Row: {
@@ -1247,7 +1348,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_story_views: {
+        Args: { story_slug: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
