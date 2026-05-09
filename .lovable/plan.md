@@ -1,101 +1,40 @@
-# Stories admin module
+## Plan: `submit-lead` Edge Function
 
-Add a complete editorial CMS for travel stories that mirrors the existing admin patterns (Itineraries, Landing Pages). The `stories` table is already in place — we still need a public Storage bucket and the routes/UI.
+Create a public POST endpoint at `supabase/functions/submit-lead/index.ts` for website lead capture.
 
-## What I noticed in your spec vs the existing codebase
-- The brief asks for **react-quill**. Your admin already uses **TipTap** (`src/components/forms/RichTextEditor.tsx`) for every other rich field (itinerary descriptions, landing-page copy, etc.). I'll **extend the existing TipTap editor** with link / image / blockquote / H3 toolbar buttons rather than introducing a second editor. Same toolbar behaviour, zero new dependency, consistent look-and-feel.
-- Auto-save (`useAutoSaveDraft`) and unsaved-changes guard (`useUnsavedChanges` + `UnsavedChangesDialog`) hooks already exist and are used by `LandingPageEdit` — I'll reuse them.
-- `ImageUploader` already supports any bucket — I'll point it at the new `stories` bucket.
+### Conflict to flag
+The `leads` table already has a `generate_traveller_code` trigger that auto-fills `traveller_code` in the format `M2600001` (month-letter + YY + 5-digit seq), using `traveller_code_sequence`. Your spec asks for a different format `ADV-2026-001` generated inside the edge function.
 
-## 1. Database — Storage bucket only
+I will follow your spec: the function generates `ADV-YYYY-###` and passes it explicitly on insert (the trigger only runs when the value isn't supplied — actually it always overwrites; see "Technical notes" for how I'll handle that).
 
-Migration:
-- Create public bucket `stories` (5 MB image cap enforced client-side).
-- RLS on `storage.objects`:
-  - Public `SELECT` for `bucket_id='stories'`.
-  - Authenticated `INSERT/UPDATE/DELETE` for `bucket_id='stories'`.
+If you'd rather keep the existing trigger format, say so and I'll skip the in-function generation.
 
-Table is unchanged.
+### Behavior
 
-## 2. Routes (`src/App.tsx`)
+1. **CORS**: `Access-Control-Allow-Origin: *`, methods `POST, OPTIONS`, headers `authorization, content-type, apikey, x-client-info`. Handle `OPTIONS` preflight.
+2. **Validate**: require `name` and `mobile`; otherwise `400 { error: 'Name and mobile are required' }`.
+3. **Resolve destination** (optional): if `destination_name` provided, query `destinations` by name (case-insensitive `ilike`), use `id` if found; ignore otherwise.
+4. **Generate traveller code**: call a new SQL function `public.generate_adv_traveller_code()` (SECURITY DEFINER) that atomically increments `traveller_code_sequence` keyed by `year_prefix = 'ADV-YYYY'` and returns `ADV-YYYY-001` (zero-padded to 3, grows beyond if needed). Atomicity via `INSERT ... ON CONFLICT DO UPDATE ... RETURNING last_sequence`.
+5. **Insert lead** with service-role client (bypasses RLS); `channel` defaults to `'website'` if missing → maps to organic per your earlier requirement.
+6. **Insert timeline row**: `event_type='lead_created'`, `note='Lead submitted from website'`, `metadata={channel, landing_page_id, utm_*}`.
+7. **Respond** `200 { success: true, traveller_code, lead_id }`.
+8. **Errors**: log with `console.error`, return `500 { error: 'Failed to create lead' }`.
 
-```
-/admin/stories            → StoryList
-/admin/stories/new        → StoryEdit
-/admin/stories/:id/edit   → StoryEdit
-```
+### Technical notes
 
-All wrapped in `ProtectedRoute`.
+- **Trigger override**: The existing `generate_traveller_code` trigger overwrites `NEW.traveller_code` unconditionally. To honor your ADV format, the migration will modify the trigger to skip when `NEW.traveller_code` is already set (matching the pattern used by `generate_cashflow_code` / `generate_vendor_code`). Existing leads are unaffected.
+- **Migration created in same task**:
+  - New SQL function `generate_adv_traveller_code()` returning text.
+  - Patch `generate_traveller_code` trigger to early-return when `NEW.traveller_code IS NOT NULL`.
+- **Edge function config**: `verify_jwt = false` in `supabase/config.toml` (public endpoint).
+- **Env**: uses `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (already configured).
+- **Validation**: lightweight inline checks (no Zod) — only `name`/`mobile` required per spec.
+- **No new dependencies.**
 
-## 3. Sidebar (`src/components/AppSidebar.tsx`)
+### Files
+- `supabase/migrations/<ts>_adv_traveller_code.sql` (new)
+- `supabase/functions/submit-lead/index.ts` (new)
+- `supabase/config.toml` (add `[functions.submit-lead] verify_jwt = false`)
 
-Add a "Stories" item between **Landing Pages** and **Trip Cashflow**, icon `BookOpen` (lucide), gated by `hasPermission("itineraries")` (same content-team permission as Itineraries — no new role needed).
-
-## 4. List page — `src/pages/StoryList.tsx`
-
-Standard admin shell (`AppLayout`), matches the look of `ItineraryList` / `LandingPageList`:
-
-- Header: "Stories" + subtitle, **[+ New Story]** primary button (Blaze) → `/admin/stories/new`.
-- Filters row (sticky):
-  - Search by title/excerpt
-  - Category dropdown (All + 6 categories)
-  - Status dropdown (All / Published / Draft)
-- Table columns: **Title** (with cover thumbnail) · **Category** badge · **Author** · **Status** badge (green=Published, grey=Draft) · **Views** with `Eye` icon · **Published** date · **Actions** (Edit link, inline `Switch` to toggle `is_published`, `Trash2` with confirm `AlertDialog`).
-- Sort: `published_at desc nulls last, created_at desc`.
-- Empty state card: "No stories yet. Create your first one." + CTA button.
-- Toggle published switch updates `is_published`; if turning on and `published_at` is null, sets it to `now()`.
-
-Uses TanStack Query + `supabase` client. Toast feedback via `sonner`.
-
-## 5. Editor page — `src/pages/StoryEdit.tsx`
-
-Two-column sticky layout (`grid-cols-12 gap-6`, left `col-span-8`, right `col-span-4 sticky top-20 self-start`).
-
-### Left panel (editor)
-- **Title** — large input, `font-display` (Inter Tight already mapped), auto-suggests slug on blur if slug field is empty.
-- **Slug** — input with prefix label `adventourist.in/travel-stories/`. Manual edits stick. Slugify on the fly (`a-z0-9-`).
-- **Excerpt** — `Textarea` with live `value.length / 200` counter; hard cap at 200.
-- **Cover Image** — `ImageUploader` with `bucket="stories" folder={id ?? "drafts"} filename="cover"`.
-- **Content** — extended `RichTextEditor`:
-  - New toolbar buttons: **H3**, **Link** (prompt for URL → `editor.chain().toggleLink`), **Image** (opens hidden file input → uploads to `stories` bucket → `setImage`), **Blockquote**.
-  - Adds `@tiptap/extension-link` + `@tiptap/extension-image` + `Blockquote` (already in StarterKit) extensions to the editor when an `enableMedia` prop is true so other usages stay unchanged.
-  - Min height 480px.
-
-### Right panel (settings, sticky)
-- **Status** — segmented `Draft | Published` toggle. Toggling to Published sets `published_at = now()` if null (on save).
-- **Action buttons** — `[Save Draft]` (outline) and `[Publish]` (Blaze) — Publish forces `is_published=true`.
-- **Author** — `Select`: Minal Joshi / Pinky Prajapati / Team Adventourist.
-- **Category** — `Select`: Destination Guide / Travel Tips / Client Story / Food & Culture / Adventure / Honeymoon.
-- **Tags** — comma-separated `Input` rendered as removable Blaze pill chips below the field; stored as `text[]`.
-- **Destination** — `Select` populated from `destinations` table (`is_active=true`), optional, "— None —" first item.
-- **Read time** — number `Input`. A `Recalculate from content` icon button derives `Math.max(1, ceil(wordCount / 200))` from the current HTML's plain text.
-- **SEO** (collapsible `Collapsible` from shadcn, closed by default):
-  - SEO Title (`/60` counter)
-  - SEO Description (`/155` counter)
-  - OG Image — `ImageUploader` (`bucket=stories folder=… filename=og`)
-
-### Save / autosave / guards
-- `useAutoSaveDraft` (existing hook) writes to localStorage every 60s when dirty; toast "Draft auto-saved" surfaces inline (use sonner; existing pattern in `LandingPageEdit`).
-- `useUnsavedChanges` + `UnsavedChangesDialog` block route changes when dirty.
-- For new records: first save calls `insert`, navigates to `/admin/stories/:id/edit`, replacing history (so subsequent autosaves and image uploads use the real id as the storage folder).
-- Slug uniqueness is enforced by the DB; on conflict the toast says "This slug is already taken — try another."
-- "Published" header chip + small "Last saved hh:mm" indicator next to the Save button.
-
-## 6. Public site link-up (out of scope for this change but worth flagging)
-`/travel-stories` will start showing rows where `is_published=true`. This change only ships the admin; the public page already exists and currently doesn't query the DB — happy to wire it next if you want.
-
-## File summary
-- `supabase/migrations/<timestamp>_stories_storage.sql` (new)
-- `src/App.tsx` — add 3 routes
-- `src/components/AppSidebar.tsx` — add nav item
-- `src/pages/StoryList.tsx` (new)
-- `src/pages/StoryEdit.tsx` (new)
-- `src/components/forms/RichTextEditor.tsx` — opt-in `enableMedia` prop adding H3/Link/Image/Blockquote buttons + image-upload bucket prop
-- 1 new dependency: `@tiptap/extension-link` (Image extension is already part of `@tiptap/extension-image` if not present, will install both as needed)
-
-## Open question
-Confirm the autosave behaviour:
-- **A.** Auto-save to localStorage every 60s (your existing pattern — never touches the DB while drafting), then DB-save only on explicit `Save Draft` / `Publish`. **(Recommended — matches Itinerary/Landing-page editors.)**
-- **B.** Auto-save directly to the database every 60s (writes a real `is_published=false` row even mid-edit).
-
-Reply A or B and I'll implement.
+### Open question
+Confirm the traveller-code conflict resolution: **(A)** use ADV-YYYY-### as you specified (I'll patch the existing trigger to allow it), or **(B)** keep the current `M2600001` style and have the function just return whatever the trigger generated.
