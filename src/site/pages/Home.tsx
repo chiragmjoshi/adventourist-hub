@@ -8,7 +8,6 @@ import FeaturedItineraries from "@/site/sections/FeaturedItineraries";
 import TestimonialsSection from "@/site/sections/TestimonialsSection";
 import TravelStoriesSection from "@/site/sections/TravelStoriesSection";
 import WhatsAppCTABanner from "@/site/sections/WhatsAppCTABanner";
-import HomepageModal from "@/site/sections/HomepageModal";
 import { getItineraries, getMasterData, type CMSItinerary, type CMSDestination } from "@/site/lib/api";
 
 const HOME_JSONLD = [
@@ -82,7 +81,6 @@ export default function Home() {
       <TestimonialsSection />
       <TravelStoriesSection />
       <WhatsAppCTABanner />
-      <HomepageModal />
     </SiteLayout>
   );
 }
