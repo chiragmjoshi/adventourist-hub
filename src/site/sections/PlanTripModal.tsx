@@ -79,7 +79,7 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-drift flex items-center justify-center text-ink/60 hover:text-ink hover:bg-drift/80 transition-colors z-10"
+          className="absolute top-3 right-3 w-11 h-11 rounded-full bg-drift flex items-center justify-center text-ink/60 hover:text-ink hover:bg-drift/80 transition-colors z-10"
         >
           <X className="w-4 h-4" />
         </button>
@@ -141,7 +141,8 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g. Priya Sharma"
-                  className="w-full border border-ink/15 rounded-xl px-4 py-3 font-body text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-blaze/40 focus:border-blaze transition-colors"
+                  style={{ fontSize: "16px" }}
+                  className="w-full border border-ink/15 rounded-xl px-4 py-3 font-body text-base text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-blaze/40 focus:border-blaze transition-colors min-h-[48px]"
                   required
                 />
               </div>
@@ -151,7 +152,7 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
                   Phone Number *
                 </label>
                 <div className="flex">
-                  <span className="flex items-center px-3 bg-drift rounded-l-xl border border-r-0 border-ink/15 font-body text-sm text-ink/60">
+                  <span className="flex items-center px-3 bg-drift rounded-l-xl border border-r-0 border-ink/15 font-body text-base text-ink/60">
                     +91
                   </span>
                   <input
@@ -160,7 +161,8 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder="9930400694"
                     maxLength={10}
-                    className="flex-1 border border-ink/15 rounded-r-xl px-4 py-3 font-body text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-blaze/40 focus:border-blaze transition-colors"
+                    style={{ fontSize: "16px" }}
+                    className="flex-1 border border-ink/15 rounded-r-xl px-4 py-3 font-body text-base text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-blaze/40 focus:border-blaze transition-colors min-h-[48px]"
                     required
                   />
                 </div>
@@ -175,7 +177,8 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
                   value={form.destination}
                   onChange={(e) => setForm({ ...form, destination: e.target.value })}
                   placeholder="e.g. Bali, Ladakh, Thailand..."
-                  className="w-full border border-ink/15 rounded-xl px-4 py-3 font-body text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-blaze/40 focus:border-blaze transition-colors"
+                  style={{ fontSize: "16px" }}
+                  className="w-full border border-ink/15 rounded-xl px-4 py-3 font-body text-base text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-blaze/40 focus:border-blaze transition-colors min-h-[48px]"
                 />
               </div>
 
@@ -185,7 +188,7 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
 
               <button
                 type="submit"
-                className="w-full bg-blaze text-white font-display font-bold py-4 rounded-xl hover:bg-blaze/90 active:scale-[0.97] transition-all text-base"
+                className="w-full h-14 bg-blaze text-white font-display font-bold rounded-xl hover:bg-blaze/90 active:scale-[0.97] transition-all text-base"
               >
                 Plan My Trip →
               </button>

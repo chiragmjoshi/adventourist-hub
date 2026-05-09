@@ -151,22 +151,28 @@ const LandingPage = () => {
           <p className="text-xs text-gray-500 mt-1 mb-5">{(page as any).form_subtitle || "Our travel experts will call you."}</p>
           <div className="space-y-3">
             <input required placeholder="Full Name *" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-              className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 focus:border-[#FF6F4C]" />
+              style={{ fontSize: "16px" }}
+              className="w-full h-12 px-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 focus:border-[#FF6F4C]" />
             <input required type="email" placeholder="Email *" value={formData.email} onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
-              className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 focus:border-[#FF6F4C]" />
+              style={{ fontSize: "16px" }}
+              className="w-full h-12 px-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 focus:border-[#FF6F4C]" />
             <div className="flex">
-              <span className="h-10 px-3 flex items-center bg-gray-50 border border-r-0 border-gray-200 rounded-l-lg text-xs text-gray-500">+91</span>
+              <span className="h-12 px-3 flex items-center bg-gray-50 border border-r-0 border-gray-200 rounded-l-lg text-sm text-gray-500">+91</span>
               <input required type="tel" placeholder="Mobile No *" value={formData.mobile} onChange={e => setFormData(p => ({ ...p, mobile: e.target.value }))}
-                className="flex-1 h-10 px-3 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 focus:border-[#FF6F4C]" />
+                style={{ fontSize: "16px" }}
+                className="flex-1 h-12 px-3 border border-gray-200 rounded-r-lg text-base focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 focus:border-[#FF6F4C]" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <input type="date" value={formData.travel_date} onChange={e => setFormData(p => ({ ...p, travel_date: e.target.value }))}
-                className="h-10 px-3 border border-gray-200 rounded-lg text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30" />
+                style={{ fontSize: "16px" }}
+                className="h-12 px-3 border border-gray-200 rounded-lg text-base text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30" />
               <input type="number" min={1} placeholder="Travellers" value={formData.pax} onChange={e => setFormData(p => ({ ...p, pax: parseInt(e.target.value) || 1 }))}
-                className="h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30" />
+                style={{ fontSize: "16px" }}
+                className="h-12 px-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30" />
             </div>
             <textarea rows={2} placeholder="Message (optional)" value={formData.message} onChange={e => setFormData(p => ({ ...p, message: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 resize-none" />
+              style={{ fontSize: "16px" }}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 resize-none" />
             <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" checked={formData.agreed} onChange={e => setFormData(p => ({ ...p, agreed: e.target.checked }))}
                 className="mt-0.5 accent-[#FF6F4C]" />
@@ -175,7 +181,7 @@ const LandingPage = () => {
             <button
               disabled={!formData.name || !formData.email || !formData.mobile || !formData.agreed || submitMutation.isPending}
               onClick={() => submitMutation.mutate()}
-              className="w-full h-11 bg-[#FF6F4C] hover:bg-[#e5603f] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm">
+              className="w-full h-14 bg-[#FF6F4C] hover:bg-[#e5603f] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-base">
               {submitMutation.isPending ? "Submitting..." : (page as any).form_submit_text || "Submit"}
             </button>
           </div>
@@ -428,8 +434,8 @@ const LandingPage = () => {
       </footer>
 
       {/* ─── MOBILE STICKY BUTTON ─── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-sm border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-        <button onClick={() => setMobileFormOpen(true)} className="w-full h-12 bg-[#FF6F4C] hover:bg-[#e5603f] text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-sm border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <button onClick={() => setMobileFormOpen(true)} className="w-full h-14 bg-[#FF6F4C] hover:bg-[#e5603f] text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base">
           <Phone className="h-4 w-4" />Enquire Now
         </button>
       </div>
