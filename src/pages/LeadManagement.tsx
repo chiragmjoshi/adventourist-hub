@@ -34,6 +34,20 @@ const slugify = (s: string) =>
 const displayToKey = (display: string): string =>
   DISPLAY_KEY_OVERRIDES[display] ?? slugify(display);
 
+/* ────── Platform → Channel mapping ────── */
+const CHANNEL_BY_PLATFORM: Record<string, string[]> = {
+  "Paid":     ["Google Search", "Google Display", "YouTube Ads", "Instagram Ads", "Facebook Ads", "WhatsApp Ads"],
+  "Referral": ["Client Referral", "Non-Client Referral", "Partner Referral"],
+  "Organic":  ["Website", "Walk-in", "Google My Business", "Direct Call", "WhatsApp Direct"],
+  "Content":  ["Instagram Organic", "Facebook Organic", "YouTube Organic", "LinkedIn Organic", "Travel Blog"],
+};
+const filterChannelsByPlatform = <T extends { value: string }>(channels: T[], platform: string): T[] => {
+  if (!platform) return channels;
+  const allowed = CHANNEL_BY_PLATFORM[platform];
+  if (!allowed) return channels;
+  return channels.filter(c => allowed.includes(c.value));
+};
+
 /* ────── Disposition dot colors ────── */
 const DISP_DOT: Record<string, string> = {
   "Not Contacted": "bg-gray-400",
