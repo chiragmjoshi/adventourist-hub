@@ -150,3 +150,63 @@
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .line-clamp-4 { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Travel-story long-form prose */
+@layer components {
+  .story-prose h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: hsl(var(--abyss));
+    margin: 2rem 0 1rem;
+    line-height: 1.25;
+  }
+  .story-prose h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: hsl(var(--abyss));
+    margin: 1.5rem 0 0.75rem;
+    line-height: 1.3;
+  }
+  .story-prose p {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.85;
+    color: hsl(230 12% 28%);
+    margin-bottom: 1.25rem;
+  }
+  .story-prose a {
+    color: hsl(var(--blaze));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .story-prose ul,
+  .story-prose ol {
+    margin: 1rem 0 1.25rem 1.25rem;
+    padding-left: 0.5rem;
+  }
+  .story-prose ul { list-style: disc; }
+  .story-prose ol { list-style: decimal; }
+  .story-prose li {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: hsl(230 12% 28%);
+    margin-bottom: 0.5rem;
+  }
+  .story-prose img {
+    width: 100%;
+    border-radius: 1rem;
+    margin: 2rem 0;
+    height: auto;
+  }
+  .story-prose blockquote {
+    border-left: 4px solid hsl(var(--blaze));
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: hsl(230 8% 40%);
+  }
+  .story-prose strong { font-weight: 700; color: hsl(var(--abyss)); }
+}

@@ -36,6 +36,7 @@ import SiteContact from "./site/pages/Contact";
 import SiteFAQs from "./site/pages/FAQs";
 import SiteTeam from "./site/pages/Team";
 import SiteTravelStories from "./site/pages/TravelStories";
+import SiteStoryDetail from "./site/pages/StoryDetail";
 import { PrivacyPolicy, TermsConditions, RefundPolicy, PaymentPolicy } from "./site/pages/PolicyPage";
 import ReportsHub from "./pages/ReportsHub";
 import SalesReport from "./pages/reports/SalesReport";
@@ -81,6 +82,7 @@ const App = () => {
             <Route path="/faqs" element={<SiteFAQs />} />
             <Route path="/team" element={<SiteTeam />} />
             <Route path="/travel-stories" element={<SiteTravelStories />} />
+            <Route path="/travel-stories/:slug" element={<SiteStoryDetail />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-and-conditions" element={<TermsConditions />} />
             <Route path="/refund-and-cancellation-policy" element={<RefundPolicy />} />
