@@ -1,39 +1,69 @@
 ## Goal
 
-Seed 7 dedicated landing pages — one per high-volume channel — so each has its own short URL (`/lp/<slug>`). When a lead submits from that page, the page's `platform` and `channel` are inherited automatically (this already works via `landing_page_id` → `platform`/`channel` on the `leads` table).
+Serve the public site at `adventourist.in` and the admin/CMS at `admin.adventourist.in`, while keeping everything in one Lovable project (and one Lovable Cloud backend). Hostinger is only the domain registrar — nothing gets deployed there.
 
-## What gets created
+## Why this approach
 
-A single SQL insert into `landing_pages` with these 7 rows. Only the channel-tracking fields (`name`, `slug`, `platform`, `channel`, `template`, `is_active`) are filled. Everything else (destination, hero content, gallery, testimonials, SEO) is left blank for you to edit in the CMS.
+- Lovable Cloud (backend, edge functions, DB) is already hosted by Lovable. There is no separate "backend server" to deploy on Hostinger.
+- One Lovable project can be served from multiple custom domains. Both domains hit the same React app; we use the hostname to decide what's reachable.
+- Splitting into two projects would mean duplicating code, two publish flows, and drift between site and admin. Not worth it.
 
-| Slug | Name | Platform | Channel |
-|---|---|---|---|
-| `google-search` | Google Search Ads | Paid | Google Search |
-| `instagram-bio` | Instagram Bio | Content | Instagram Organic |
-| `instagram-paid` | Instagram Ads | Paid | Instagram Ads |
-| `facebook-page` | Facebook Page | Content | Facebook Organic |
-| `whatsapp-referral` | Client Referral | Referral | Client Referral |
-| `google-maps` | Google My Business | Organic | Google My Business |
-| `youtube-desc` | YouTube Descriptions | Content | YouTube Organic |
+## What gets built
 
-All rows use `template='default'`, `is_active=true`, `form_title='Enquire for Free'` (the column default).
+### 1. Hostname-based route gating (code change)
 
-These platform/channel values match exactly what the `CHANNEL_BY_PLATFORM` mapping in `LeadManagement.tsx` and `LandingPageEdit.tsx` expects, so the filtered dropdowns will render correctly when you open each page in the editor.
+Add a small `HostnameGuard` wrapper in `src/App.tsx`:
 
-## Next steps for you
+- On `admin.adventourist.in` → only `/admin/*` and `/admin/login` etc. are reachable. Hitting `/`, `/trips`, `/about-us`, `/l/:slug` etc. → redirect to `https://adventourist.in<path>`.
+- On `adventourist.in` (and `www.adventourist.in`) → only public routes. Any `/admin/*` request → redirect to `https://admin.adventourist.in<path>`.
+- On preview URLs (`*.lovable.app`, `localhost`) → no gating, everything works (so the editor preview still works).
 
-1. After insert, open Landing Pages in the CMS — all 7 will appear as drafts.
-2. For each, set destination, itinerary, hero image, headline/subtext, and SEO fields.
-3. Share short URLs:
-   - Google Ads final URL → `https://adventourist.in/lp/google-search`
-   - Instagram bio link → `/lp/instagram-bio`
-   - Meta Ads landing URL → `/lp/instagram-paid`
-   - Facebook page website → `/lp/facebook-page`
-   - Send to existing clients → `/lp/whatsapp-referral`
-   - GMB website button → `/lp/google-maps`
-   - All YouTube descriptions → `/lp/youtube-desc`
+Logic lives in one file, reads `window.location.hostname`, runs before `<Routes>`.
 
-## Notes
+### 2. Auth redirects updated
 
-- No code changes required — `submit-lead` already inherits `platform`/`channel` from the landing page when `landing_page_id` is provided.
-- If a slug already exists, the insert will fail on the unique constraint and I'll surface the conflict so you can rename.
+Anywhere we currently use `window.location.origin` for Supabase auth redirects (login, signup, password reset, accept-invite), make sure on the admin host it stays on `admin.adventourist.in`. Since redirects already use `window.location.origin`, this works automatically once users land on the admin host — no code change needed beyond verifying.
+
+Add `https://admin.adventourist.in/*` and `https://adventourist.in/*` to Supabase Auth → URL Configuration → Redirect URLs (done via Cloud settings).
+
+### 3. SEO / canonical
+
+- Public pages: canonical `https://adventourist.in/...`
+- Admin pages: add `<meta name="robots" content="noindex, nofollow">` (admin shouldn't be indexed).
+- `robots.txt` / sitemap reference only `adventourist.in`.
+
+### 4. Domain connection in Lovable
+
+After the code change is deployed:
+
+1. Publish the project (required before connecting custom domains).
+2. **Project Settings → Domains → Connect Domain** → add `adventourist.in`. Add `www.adventourist.in` as a second entry, set `adventourist.in` as **Primary** (www redirects to apex).
+3. Repeat: add `admin.adventourist.in`.
+4. At Hostinger DNS, add the records Lovable shows:
+   - `A  @       185.158.133.1`
+   - `A  www     185.158.133.1`
+   - `A  admin   185.158.133.1`
+   - `TXT _lovable  lovable_verify=...` (value from Lovable)
+5. Wait for verification + SSL (usually minutes, up to 72h).
+
+### 5. Email / DNS on Hostinger
+
+Hostinger continues to host MX, SPF, DKIM, DMARC for email — those records stay untouched. We only add the A records above. Email keeps working.
+
+## Out of scope
+
+- Splitting the repo.
+- Deploying anything to Hostinger.
+- Changing backend, database, or edge functions.
+
+## Trade-offs
+
+- Both surfaces share one bundle, so the public site downloads admin route code lazily only if you import-split. If you want to hard-strip admin code from the public bundle, that's a follow-up using `React.lazy` per route group (recommended later, not blocking).
+- A user who somehow types `/admin` on `adventourist.in` is redirected, not 404'd. Fine for a private CMS.
+
+## Deliverable in implement step
+
+- New `src/lib/hostname.ts` with host constants + helpers.
+- Edit `src/App.tsx` to wrap routes with `HostnameGuard`.
+- Add `noindex` meta on admin pages (single helper in admin layout).
+- Instructions printed in chat for the DNS records to paste into Hostinger.
