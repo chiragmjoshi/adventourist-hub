@@ -9,7 +9,7 @@ const navLinks = [
   { label: "Stories", href: "/travel-stories",icon: "🌊" },
   { label: "About",   href: "/about-us",      icon: "❤️" },
   { label: "FAQs",    href: "/faqs",          icon: "❓" },
-  { label: "Contact", href: "/contact",       icon: "⛰️" },
+  { label: "Contact", href: "/contact",       icon: "✉️" },
 ];
 
 export default function Navbar() {
@@ -41,7 +41,7 @@ export default function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-24 lg:h-28">
+          <div className="flex items-center justify-between h-16 lg:h-20">
 
             {/* Logo — vertically centered, sized to nav row */}
             <Link
