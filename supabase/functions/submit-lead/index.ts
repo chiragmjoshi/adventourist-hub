@@ -7,6 +7,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const rateBucket = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimit(ip: string, max = 5, windowMs = 60_000): boolean {
+  const now = Date.now();
+  const entry = rateBucket.get(ip);
+  if (!entry || entry.resetAt < now) {
+    rateBucket.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
     status,
@@ -53,6 +67,17 @@ Deno.serve(async (req) => {
   const mobile = body.mobile?.trim();
   if (!name || !mobile) {
     return json(400, { error: "Name and mobile are required" });
+  }
+
+  // Rate limit
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!rateLimit(ip)) {
+    return json(429, { error: "Too many requests. Please try again in a minute." });
+  }
+
+  // Honeypot
+  if ((body as any).website && String((body as any).website).trim() !== "") {
+    return json(200, { success: true, traveller_code: "ignored" });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
