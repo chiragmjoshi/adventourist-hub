@@ -130,7 +130,7 @@ const TripsKanban = () => {
                       draggable
                       onDragStart={(e) => onDragStart(e, t.id)}
                       onDragEnd={() => { setDraggingId(null); setOverStage(null); }}
-                      onClick={() => navigate(`/trip-cashflow/${t.id}`)}
+                      onClick={() => navigate(`/admin/trip-cashflow/${t.id}`)}
                       className={`p-2.5 cursor-move shadow-none border-border/60 hover:border-primary/40 hover:shadow-sm transition-all ${
                         draggingId === t.id ? "opacity-40" : ""
                       }`}

@@ -49,7 +49,7 @@ const ProfilePage = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/login");
+    navigate("/admin/login");
   };
 
   return (

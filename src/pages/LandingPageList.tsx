@@ -94,7 +94,7 @@ const LandingPageList = () => {
           <h1 className="text-xl font-semibold">Landing Pages</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{pages.length} pages · {activeCount} active</p>
         </div>
-        <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/landing-pages/new")}>
+        <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/admin/landing-pages/new")}>
           <Plus className="h-3.5 w-3.5 mr-1" />Create Landing Page
         </Button>
       </div>
@@ -141,7 +141,7 @@ const LandingPageList = () => {
           <Layout className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm font-medium mb-1">No landing pages yet</p>
           <p className="text-xs text-muted-foreground mb-4">Create your first campaign landing page</p>
-          <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/landing-pages/new")}>
+          <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/admin/landing-pages/new")}>
             <Plus className="h-3.5 w-3.5 mr-1" />Create Landing Page
           </Button>
         </div>
@@ -161,7 +161,7 @@ const LandingPageList = () => {
             </thead>
             <tbody>
               {filtered.map((p: any) => (
-                <tr key={p.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => navigate(`/landing-pages/edit/${p.id}`)}>
+                <tr key={p.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => navigate(`/admin/landing-pages/edit/${p.id}`)}>
                   <td className="px-4 py-3">
                     <p className="font-medium text-foreground">{p.name}</p>
                     <p className="text-[10px] text-muted-foreground font-mono mt-0.5">/l/{p.slug}</p>
@@ -190,7 +190,7 @@ const LandingPageList = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem onClick={() => navigate(`/landing-pages/edit/${p.id}`)}><Pencil className="h-3 w-3 mr-2" />Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/admin/landing-pages/edit/${p.id}`)}><Pencil className="h-3 w-3 mr-2" />Edit</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => window.open(`https://www.adventourist.in/l/${p.slug}`, "_blank")}><Eye className="h-3 w-3 mr-2" />Preview</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => duplicatePage(p)}><Copy className="h-3 w-3 mr-2" />Duplicate</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { if (p.is_active) setDeactivateId(p.id); else toggleMutation.mutate({ id: p.id, active: true }); }}>

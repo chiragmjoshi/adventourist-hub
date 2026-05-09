@@ -20,7 +20,7 @@ const AcceptInvite = () => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
         toast.error("Invite link is invalid or has expired");
-        setTimeout(() => navigate("/login"), 1500);
+        setTimeout(() => navigate("/admin/login"), 1500);
         return;
       }
       setEmail(data.session.user.email ?? null);

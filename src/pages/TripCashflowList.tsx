@@ -104,7 +104,7 @@ const TripCashflowList = () => {
             {cashflows.length} trips · {formatINR(totalRevenue)} confirmed revenue · {formatINR(pipelineValue)} pipeline
           </p>
         </div>
-        <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/trip-cashflow/new")}>
+        <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/admin/trip-cashflow/new")}>
           <Plus className="h-3.5 w-3.5 mr-1" />New Cashflow
         </Button>
       </div>
@@ -172,7 +172,7 @@ const TripCashflowList = () => {
             <Trophy className="h-12 w-12 mx-auto text-primary/60 mb-3" />
             <p className="text-base font-medium text-foreground mb-1">No cashflow entries yet</p>
             <p className="text-sm text-muted-foreground mb-4">Close a lead as File Closed to create your first cashflow entry</p>
-            <Button size="sm" onClick={() => navigate("/trip-cashflow/new")} className="rounded-md">Create Manually</Button>
+            <Button size="sm" onClick={() => navigate("/admin/trip-cashflow/new")} className="rounded-md">Create Manually</Button>
           </CardContent>
         </Card>
       ) : (
@@ -198,7 +198,7 @@ const TripCashflowList = () => {
                 const marginColor = fin.marginPct > 15 ? "text-[hsl(var(--ridge))]" : fin.marginPct >= 10 ? "text-[hsl(var(--horizon))]" : "text-destructive";
                 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "—";
                 return (
-                  <tr key={cf.id} onClick={() => navigate(`/trip-cashflow/${cf.id}`)}
+                  <tr key={cf.id} onClick={() => navigate(`/admin/trip-cashflow/${cf.id}`)}
                     className="border-t border-border/30 hover:bg-muted/20 cursor-pointer transition-colors">
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs text-primary">{cf.cashflow_code}</span>

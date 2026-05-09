@@ -27,12 +27,12 @@ const ReportsHub = () => {
   }, []);
 
   const reports = [
-    { id: "sales", name: "Sales Report", desc: "Lead volume, conversion funnel, team performance", icon: Users, preview: `${stats.leadsThisMonth} leads this month`, url: "/reports/sales", perm: "reports_sales" },
-    { id: "revenue", name: "Revenue Report", desc: "Monthly revenue, destination-wise P&L, margin analysis", icon: DollarSign, preview: "View revenue data", url: "/reports/revenue", perm: "reports_revenue", restrictLabel: "Admin & Finance only" },
-    { id: "conversion", name: "Conversion Report", desc: "Lead to closure rates by source, platform and campaign", icon: TrendingUp, preview: `${stats.conversionRate}% conversion rate`, url: "/reports/conversion", perm: "reports_conversion" },
-    { id: "destinations", name: "Destination Report", desc: "Top destinations by leads, revenue and margin", icon: MapPin, preview: "View destination data", url: "/reports/destinations", perm: "reports_destinations" },
-    { id: "platform-roi", name: "Platform ROI Report", desc: "Revenue and conversion by platform, channel and campaign", icon: BarChart3, preview: "View platform data", url: "/reports/platform-roi", perm: "reports_platform_roi", restrictLabel: "Admin only" },
-    { id: "team", name: "Team Performance", desc: "Individual agent metrics — leads, closures, revenue", icon: Trophy, preview: "View team data", url: "/reports/team", perm: "reports_team", restrictLabel: "Admin only" },
+    { id: "sales", name: "Sales Report", desc: "Lead volume, conversion funnel, team performance", icon: Users, preview: `${stats.leadsThisMonth} leads this month`, url: "/admin/reports/sales", perm: "reports_sales" },
+    { id: "revenue", name: "Revenue Report", desc: "Monthly revenue, destination-wise P&L, margin analysis", icon: DollarSign, preview: "View revenue data", url: "/admin/reports/revenue", perm: "reports_revenue", restrictLabel: "Admin & Finance only" },
+    { id: "conversion", name: "Conversion Report", desc: "Lead to closure rates by source, platform and campaign", icon: TrendingUp, preview: `${stats.conversionRate}% conversion rate`, url: "/admin/reports/conversion", perm: "reports_conversion" },
+    { id: "destinations", name: "Destination Report", desc: "Top destinations by leads, revenue and margin", icon: MapPin, preview: "View destination data", url: "/admin/reports/destinations", perm: "reports_destinations" },
+    { id: "platform-roi", name: "Platform ROI Report", desc: "Revenue and conversion by platform, channel and campaign", icon: BarChart3, preview: "View platform data", url: "/admin/reports/platform-roi", perm: "reports_platform_roi", restrictLabel: "Admin only" },
+    { id: "team", name: "Team Performance", desc: "Individual agent metrics — leads, closures, revenue", icon: Trophy, preview: "View team data", url: "/admin/reports/team", perm: "reports_team", restrictLabel: "Admin only" },
   ];
 
   return (

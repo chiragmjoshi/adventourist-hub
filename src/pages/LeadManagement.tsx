@@ -499,7 +499,7 @@ const LeadManagement = () => {
                   <TableRow
                     key={lead.id}
                     className="cursor-pointer hover:bg-[#F9FAFB] transition-colors duration-150 border-b border-border/30"
-                    onClick={() => navigate(`/leads/${lead.id}`)}
+                    onClick={() => navigate(`/admin/leads/${lead.id}`)}
                   >
                     {/* Name + Mobile + Code */}
                     <TableCell className="py-3">

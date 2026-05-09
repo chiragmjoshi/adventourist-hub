@@ -99,7 +99,7 @@ const ItineraryList = () => {
           <h1 className="text-xl font-semibold text-foreground">Itineraries</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} itineraries</p>
         </div>
-        <Button onClick={() => navigate("/itineraries/new")} className="rounded-md">
+        <Button onClick={() => navigate("/admin/itineraries/new")} className="rounded-md">
           <Plus className="h-4 w-4 mr-1.5" />Add Itinerary
         </Button>
       </div>
@@ -146,7 +146,7 @@ const ItineraryList = () => {
             </div>
             <h3 className="text-lg font-semibold mb-1">No itineraries yet</h3>
             <p className="text-sm text-muted-foreground mb-4">Create your first travel itinerary</p>
-            <Button onClick={() => navigate("/itineraries/new")}><Plus className="h-4 w-4 mr-1.5" />Add Itinerary</Button>
+            <Button onClick={() => navigate("/admin/itineraries/new")}><Plus className="h-4 w-4 mr-1.5" />Add Itinerary</Button>
           </CardContent>
         </Card>
       ) : (
@@ -169,7 +169,7 @@ const ItineraryList = () => {
                 <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
               ) : filtered.map((it: any) => (
                 <TableRow key={it.id} className="hover:bg-[#F9FAFB] transition-colors duration-150 border-b border-border/30 cursor-pointer"
-                  onClick={() => navigate(`/itineraries/edit/${it.id}`)}>
+                  onClick={() => navigate(`/admin/itineraries/edit/${it.id}`)}>
                   <TableCell className="py-3">
                     {it.hero_image ? (
                       <img src={it.hero_image} alt="" className="w-10 h-10 rounded-md object-cover" />
@@ -216,7 +216,7 @@ const ItineraryList = () => {
                         <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/itineraries/edit/${it.id}`)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/admin/itineraries/edit/${it.id}`)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handlePreview(it)}><Eye className="h-3.5 w-3.5 mr-2" />Preview</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDuplicate(it)}><Copy className="h-3.5 w-3.5 mr-2" />Duplicate</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleArchive(it)}>

@@ -211,7 +211,7 @@ const VendorEdit = () => {
       toast.success(`Vendor ${form.name} saved successfully`);
       markClean();
       setLastSavedAt(new Date());
-      navigate("/vendors");
+      navigate("/admin/vendors");
     },
     onError: (e: any) => toast.error(e.message || "Failed to save vendor"),
   });
@@ -252,7 +252,7 @@ const VendorEdit = () => {
       {/* Sticky top bar */}
       <div className="flex items-center justify-between mb-5 pb-4 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/vendors")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <button onClick={() => navigate("/admin/vendors")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />Vendors
           </button>
           <ChevronRight className="h-3 w-3 text-muted-foreground" />

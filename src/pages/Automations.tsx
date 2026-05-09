@@ -252,7 +252,7 @@ const Automations = () => {
                   <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">{format(new Date(ex.created_at), "dd MMM HH:mm")}</TableCell>
                   <TableCell className="text-xs">{ex.automation_rules?.name || "—"}</TableCell>
                   <TableCell className="text-xs">
-                    {ex.leads ? <Link to={`/leads/${ex.lead_id}`} className="text-primary hover:underline">{ex.leads.name} <span className="text-muted-foreground">({ex.leads.traveller_code})</span></Link> : "—"}
+                    {ex.leads ? <Link to={`/admin/leads/${ex.lead_id}`} className="text-primary hover:underline">{ex.leads.name} <span className="text-muted-foreground">({ex.leads.traveller_code})</span></Link> : "—"}
                   </TableCell>
                   <TableCell><Badge variant="outline" className="text-[10px] capitalize">{ex.channel}</Badge></TableCell>
                   <TableCell className="text-[11px] capitalize">{ex.recipient_type}</TableCell>

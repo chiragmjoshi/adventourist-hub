@@ -51,14 +51,14 @@ const LandingPageDetail = () => {
     <AppLayout title={page.name}>
       <div className="flex items-center justify-between mb-5 pb-4 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/landing-pages")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <button onClick={() => navigate("/admin/landing-pages")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />Landing Pages
           </button>
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
           <span className="font-medium">{page.name}</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/landing-pages/edit/${id}`)}>
+          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/admin/landing-pages/edit/${id}`)}>
             <Pencil className="h-3.5 w-3.5 mr-1" />Edit Page
           </Button>
           <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => window.open(`https://www.adventourist.in/l/${page.slug}`, "_blank")}>
@@ -122,7 +122,7 @@ const LandingPageDetail = () => {
               </thead>
               <tbody>
                 {leads.map(l => (
-                  <tr key={l.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer" onClick={() => navigate(`/leads/${l.id}`)}>
+                  <tr key={l.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer" onClick={() => navigate(`/admin/leads/${l.id}`)}>
                     <td className="py-2 font-mono text-primary">{l.traveller_code}</td>
                     <td className="py-2">{l.name}</td>
                     <td className="py-2 text-muted-foreground">{new Date(l.created_at!).toLocaleDateString()}</td>

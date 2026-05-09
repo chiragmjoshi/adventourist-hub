@@ -33,7 +33,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { hasPermission, hasRole, role } = useRBAC();
   const { profile, signOut } = useAuth();
-  const isDbActive = location.pathname.startsWith("/db");
+  const isDbActive = location.pathname.startsWith("/admin/db");
 
   const linkClasses = (isActive: boolean) =>
     `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
@@ -44,15 +44,15 @@ export function AppSidebar() {
 
   const navItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard, show: true },
-    { title: "Lead Management", url: "/leads", icon: Users, show: hasPermission("leads") },
-    { title: "Itineraries", url: "/itineraries", icon: Map, show: hasPermission("itineraries") },
-    { title: "Landing Pages", url: "/landing-pages", icon: Layout, show: hasPermission("landing_pages") },
-    { title: "Trip Cashflow", url: "/trip-cashflow", icon: DollarSign, show: hasPermission("trip_cashflow") },
-    { title: "Trips Kanban", url: "/trips-kanban", icon: KanbanSquare, show: hasPermission("trip_cashflow") },
-    { title: "Reminders", url: "/reminders", icon: Bell, show: true },
-    { title: "Vendors", url: "/vendors", icon: Truck, show: hasPermission("vendors") },
-    { title: "Reports", url: "/reports", icon: BarChart3, show: hasPermission("reports") },
-    { title: "Automations", url: "/automations", icon: Zap, show: hasRole("admin", "super_admin") },
+    { title: "Lead Management", url: "/admin/leads", icon: Users, show: hasPermission("leads") },
+    { title: "Itineraries", url: "/admin/itineraries", icon: Map, show: hasPermission("itineraries") },
+    { title: "Landing Pages", url: "/admin/landing-pages", icon: Layout, show: hasPermission("landing_pages") },
+    { title: "Trip Cashflow", url: "/admin/trip-cashflow", icon: DollarSign, show: hasPermission("trip_cashflow") },
+    { title: "Trips Kanban", url: "/admin/trips-kanban", icon: KanbanSquare, show: hasPermission("trip_cashflow") },
+    { title: "Reminders", url: "/admin/reminders", icon: Bell, show: true },
+    { title: "Vendors", url: "/admin/vendors", icon: Truck, show: hasPermission("vendors") },
+    { title: "Reports", url: "/admin/reports", icon: BarChart3, show: hasPermission("reports") },
+    { title: "Automations", url: "/admin/automations", icon: Zap, show: hasRole("admin", "super_admin") },
   ].filter((i) => i.show);
 
   const showDb = hasPermission("db_management") || hasRole("super_admin", "admin");
@@ -60,8 +60,8 @@ export function AppSidebar() {
   const showSettings = hasRole("super_admin");
 
   const dbSubItems = [
-    { title: "Destinations", url: "/db/destinations" },
-    { title: "Master Values", url: "/db/master-values" },
+    { title: "Destinations", url: "/admin/db/destinations" },
+    { title: "Master Values", url: "/admin/db/master-values" },
   ];
 
   const initials = profile?.name
@@ -134,7 +134,7 @@ export function AppSidebar() {
                 <>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <NavLink to="/user-management" className={({ isActive }) => linkClasses(isActive)}>
+                      <NavLink to="/admin/user-management" className={({ isActive }) => linkClasses(isActive)}>
                         <UserCheck className="h-4 w-4 shrink-0" />
                         {!collapsed && <span>User Management</span>}
                       </NavLink>
@@ -142,7 +142,7 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <NavLink to="/role-management" className={({ isActive }) => linkClasses(isActive)}>
+                      <NavLink to="/admin/role-management" className={({ isActive }) => linkClasses(isActive)}>
                         <Shield className="h-4 w-4 shrink-0" />
                         {!collapsed && <span>Role Management</span>}
                       </NavLink>
@@ -156,7 +156,7 @@ export function AppSidebar() {
                   <div className="my-2 mx-3 border-t border-border/30" />
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <NavLink to="/settings" className={({ isActive }) => linkClasses(isActive)}>
+                      <NavLink to="/admin/settings" className={({ isActive }) => linkClasses(isActive)}>
                         <Settings className="h-4 w-4 shrink-0" />
                         {!collapsed && <span>Settings</span>}
                       </NavLink>

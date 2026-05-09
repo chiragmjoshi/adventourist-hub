@@ -79,7 +79,7 @@ const VendorDetail = () => {
     <AppLayout title={vendor.name}>
       {/* Header */}
       <div className="flex items-center gap-2 text-sm mb-5">
-        <button onClick={() => navigate("/vendors")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+        <button onClick={() => navigate("/admin/vendors")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" />Vendors
         </button>
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
@@ -101,7 +101,7 @@ const VendorDetail = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/vendors/edit/${id}`)}>
+          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/admin/vendors/edit/${id}`)}>
             <Pencil className="h-3.5 w-3.5 mr-1" />Edit Vendor
           </Button>
           <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => setConfirmInactive(true)}>

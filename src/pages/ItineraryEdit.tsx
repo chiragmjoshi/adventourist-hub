@@ -231,10 +231,10 @@ const ItineraryEdit = () => {
       setLastSaved(new Date());
       if (publish) {
         toast.success("Itinerary published!");
-        navigate("/itineraries");
+        navigate("/admin/itineraries");
       } else {
         toast.success("Saved");
-        if (isNew) navigate("/itineraries");
+        if (isNew) navigate("/admin/itineraries");
       }
     },
     onError: (e: any) => toast.error(e.message || "Failed to save"),
@@ -288,7 +288,7 @@ const ItineraryEdit = () => {
       {/* ── Sticky Top Bar ── */}
       <div className="flex items-center justify-between mb-5 pb-4 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/itineraries")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <button onClick={() => navigate("/admin/itineraries")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />Itineraries
           </button>
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
