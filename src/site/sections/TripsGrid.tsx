@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/site/ui/Badge";
 import TripImage from "@/site/ui/TripImage";
@@ -519,7 +519,15 @@ function MobileDrawer({
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function TripsGrid({ itineraries }: { itineraries: CMSItinerary[] }) {
-  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState<FilterState>({
+    ...EMPTY_FILTERS,
+    destination: searchParams.get("destination") ?? "",
+  });
+  useEffect(() => {
+    const d = searchParams.get("destination");
+    if (d) setFilters((prev) => ({ ...prev, destination: d }));
+  }, [searchParams]);
   const [page,    setPage]    = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
