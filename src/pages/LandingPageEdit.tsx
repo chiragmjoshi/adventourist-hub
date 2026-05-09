@@ -482,7 +482,7 @@ const LandingPageEdit = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground">Platform *</Label>
-                  <Select value={form.platform} onValueChange={v => setField("platform", v)}>
+                  <Select value={form.platform} onValueChange={v => { setField("platform", v); setField("channel", ""); }}>
                     <SelectTrigger className="mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>{getMV("platform").map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
@@ -491,7 +491,7 @@ const LandingPageEdit = () => {
                   <Label className="text-xs text-muted-foreground">Channel *</Label>
                   <Select value={form.channel} onValueChange={v => setField("channel", v)}>
                     <SelectTrigger className="mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{getMV("channel").map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                    <SelectContent>{filterChannelsByPlatform(getMV("channel"), form.platform).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
