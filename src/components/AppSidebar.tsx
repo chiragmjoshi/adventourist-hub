@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Map, Layout, DollarSign, Truck, BarChart3,
   Database, UserCheck, Shield, ChevronDown, Settings, Zap, Crown, LogOut,
-  Bell, KanbanSquare,
+  Bell, KanbanSquare, BookOpen,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -47,6 +47,7 @@ export function AppSidebar() {
     { title: "Lead Management", url: "/admin/leads", icon: Users, show: hasPermission("leads") },
     { title: "Itineraries", url: "/admin/itineraries", icon: Map, show: hasPermission("itineraries") },
     { title: "Landing Pages", url: "/admin/landing-pages", icon: Layout, show: hasPermission("landing_pages") },
+    { title: "Stories", url: "/admin/stories", icon: BookOpen, show: hasPermission("itineraries") },
     { title: "Trip Cashflow", url: "/admin/trip-cashflow", icon: DollarSign, show: hasPermission("trip_cashflow") },
     { title: "Trips Kanban", url: "/admin/trips-kanban", icon: KanbanSquare, show: hasPermission("trip_cashflow") },
     { title: "Reminders", url: "/admin/reminders", icon: Bell, show: true },
