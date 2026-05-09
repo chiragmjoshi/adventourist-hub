@@ -11,6 +11,10 @@ export interface LeadData {
   budget?: string;
   message?: string;
   page_source?: string;
+  /** Optional trip context — when the lead came from a specific itinerary card / detail page. */
+  trip_title?: string;
+  trip_slug?: string;
+  trip_price?: string;
 }
 
 /**
@@ -28,10 +32,26 @@ export function useLeadCapture() {
     try {
       // Build notes blob with the public-form-only fields (group size, budget, month, etc.)
       const notesParts: string[] = [];
-      if (d.message) notesParts.push(d.message);
+      if (d.trip_title) {
+        notesParts.push(
+          `Interested in: ${d.trip_title}${d.trip_slug ? ` (${d.trip_slug})` : ""}${d.trip_price ? ` — ${d.trip_price}` : ""}`
+        );
+      }
+      if (d.destination)  notesParts.push(`Destination: ${d.destination}`);
       if (d.travel_month) notesParts.push(`Travel month: ${d.travel_month}`);
-      if (d.group_size) notesParts.push(`Group size: ${d.group_size}`);
-      if (d.budget) notesParts.push(`Budget: ${d.budget}`);
+      if (d.group_size)   notesParts.push(`Group size: ${d.group_size}`);
+      if (d.budget)       notesParts.push(`Budget: ${d.budget}`);
+      if (d.message)      notesParts.push(`Message:\n${d.message}`);
+
+      // Capture UTM + landing page context if available
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach((k) => {
+          const v = params.get(k);
+          if (v) notesParts.push(`${k}: ${v}`);
+        });
+        notesParts.push(`Landing page: ${window.location.pathname}`);
+      }
 
       // traveller_code has a DB trigger generating it automatically.
       const { error: err } = await supabase.from("leads").insert({
@@ -41,6 +61,7 @@ export function useLeadCapture() {
         notes: notesParts.join("\n") || null,
         channel: "website",
         platform: d.page_source || "website",
+        customer_tag: d.trip_slug || d.destination || null,
         sales_status: "new_lead",
         disposition: "not_contacted",
       } as never);
