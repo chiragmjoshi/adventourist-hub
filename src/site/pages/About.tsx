@@ -77,7 +77,7 @@ export default function About() {
         {
           "@type": "AboutPage",
           name: "About Adventourist",
-          url: "https://adventourist.in/about",
+          url: "https://adventourist.in/about-us",
           description:
             "Adventourist is a Mumbai-based experiential travel company designing bespoke trips for 250+ families across Bali, Ladakh, Thailand, Sri Lanka, Singapore and beyond.",
           isPartOf: { "@type": "WebSite", name: "Adventourist", url: "https://adventourist.in" },
@@ -115,7 +115,7 @@ export default function About() {
           "@type": "BreadcrumbList",
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Home", item: "https://adventourist.in/" },
-            { "@type": "ListItem", position: 2, name: "About", item: "https://adventourist.in/about" },
+            { "@type": "ListItem", position: 2, name: "About", item: "https://adventourist.in/about-us" },
           ],
         },
       ],
