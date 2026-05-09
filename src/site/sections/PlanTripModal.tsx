@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { WHATSAPP_NUMBER } from "@/site/lib/constants";
 import { captureUTM } from "@/site/lib/utils";
+import { useLeadCapture } from "@/site/hooks/useLeadCapture";
 
 interface PlanTripModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
   const [error, setError] = useState("");
   const utmRef = useRef<Record<string, string>>({});
   const nameRef = useRef<HTMLInputElement>(null);
+  const { submitLead } = useLeadCapture();
 
   useEffect(() => { utmRef.current = captureUTM(); }, []);
 
@@ -46,21 +48,13 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
     }
     setError("");
     try {
-      await fetch("/api/proxy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: "/leads",
-          data: {
-            name: form.name,
-            mobile: form.phone,
-            source: "landing_page",
-            slug: "homepage",
-            ...utmRef.current,
-          },
-        }),
+      await submitLead({
+        name: form.name,
+        phone: form.phone,
+        destination: form.destination || undefined,
+        page_source: "homepage-modal",
       });
-    } catch { /* fail silently */ }
+    } catch { /* fail silently — UI still confirms */ }
     setSubmitted(true);
   };
 
