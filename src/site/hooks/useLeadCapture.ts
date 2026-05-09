@@ -7,9 +7,11 @@ export interface LeadData {
   email?: string;
   destination?: string;
   travel_month?: string;
+  travel_date?: string;
   group_size?: string;
   budget?: string;
   message?: string;
+  /** Logical source of the form, used as the lead `channel`. Defaults to "website" (organic). */
   page_source?: string;
   /** Optional trip context — when the lead came from a specific itinerary card / detail page. */
   trip_title?: string;
@@ -17,9 +19,24 @@ export interface LeadData {
   trip_price?: string;
 }
 
+function captureUTMs(): Record<string, string | undefined> {
+  if (typeof window === "undefined") return {};
+  const p = new URLSearchParams(window.location.search);
+  return {
+    utm_source: p.get("utm_source") ?? undefined,
+    utm_medium: p.get("utm_medium") ?? undefined,
+    utm_campaign: p.get("utm_campaign") ?? undefined,
+    utm_content: p.get("utm_content") ?? undefined,
+    utm_term: p.get("utm_term") ?? undefined,
+    landing_url: window.location.pathname + window.location.search,
+    referrer_url: document.referrer || undefined,
+  };
+}
+
 /**
- * Inserts a public website lead into the existing CMS `leads` table.
- * The CMS lead-management screen will pick these up automatically.
+ * Submits a public website lead via the `submit-lead` edge function.
+ * The function generates the ADV traveller code, creates a timeline entry,
+ * and tags the lead with the appropriate channel (defaults to "website" = organic).
  */
 export function useLeadCapture() {
   const [loading, setLoading] = useState(false);
@@ -30,42 +47,34 @@ export function useLeadCapture() {
     setLoading(true);
     setError(null);
     try {
-      // Build notes blob with the public-form-only fields (group size, budget, month, etc.)
+      // Stash trip / month / budget / message context in notes so admin sees it.
       const notesParts: string[] = [];
       if (d.trip_title) {
         notesParts.push(
-          `Interested in: ${d.trip_title}${d.trip_slug ? ` (${d.trip_slug})` : ""}${d.trip_price ? ` — ${d.trip_price}` : ""}`
+          `Interested in: ${d.trip_title}${d.trip_slug ? ` (${d.trip_slug})` : ""}${d.trip_price ? ` — ${d.trip_price}` : ""}`,
         );
       }
-      if (d.destination)  notesParts.push(`Destination: ${d.destination}`);
       if (d.travel_month) notesParts.push(`Travel month: ${d.travel_month}`);
-      if (d.group_size)   notesParts.push(`Group size: ${d.group_size}`);
-      if (d.budget)       notesParts.push(`Budget: ${d.budget}`);
-      if (d.message)      notesParts.push(`Message:\n${d.message}`);
+      if (d.message) notesParts.push(`Message:\n${d.message}`);
 
-      // Capture UTM + landing page context if available
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach((k) => {
-          const v = params.get(k);
-          if (v) notesParts.push(`${k}: ${v}`);
-        });
-        notesParts.push(`Landing page: ${window.location.pathname}`);
-      }
+      const { data, error: invokeErr } = await supabase.functions.invoke("submit-lead", {
+        body: {
+          name: d.name,
+          mobile: d.phone,
+          email: d.email || undefined,
+          destination_name: d.destination || undefined,
+          travel_date: d.travel_date || undefined,
+          group_size: d.group_size || undefined,
+          budget_range: d.budget || undefined,
+          notes: notesParts.length ? notesParts.join("\n") : undefined,
+          channel: d.page_source || "website",
+          platform: "website",
+          ...captureUTMs(),
+        },
+      });
 
-      // traveller_code has a DB trigger generating it automatically.
-      const { error: err } = await supabase.from("leads").insert({
-        name: d.name,
-        mobile: d.phone,
-        email: d.email || null,
-        notes: notesParts.join("\n") || null,
-        channel: "website",
-        platform: d.page_source || "website",
-        customer_tag: d.trip_slug || d.destination || null,
-        sales_status: "new_lead",
-        disposition: "not_contacted",
-      } as never);
-      if (err) throw err;
+      if (invokeErr) throw invokeErr;
+      if (data && (data as any).error) throw new Error((data as any).error);
       setSuccess(true);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
