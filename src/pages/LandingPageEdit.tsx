@@ -172,7 +172,7 @@ const LandingPageEdit = () => {
       queryClient.invalidateQueries({ queryKey: ["landing_pages"] });
       setLastSaved(new Date());
       toast.success("Page saved");
-      if (isNew && newId) navigate(`/landing-pages/edit/${newId}`, { replace: true });
+      if (isNew && newId) navigate(`/admin/landing-pages/edit/${newId}`, { replace: true });
     },
     onError: (e: any) => toast.error(e.message || "Failed to save"),
   });
@@ -182,7 +182,7 @@ const LandingPageEdit = () => {
       {/* Top bar */}
       <div className="flex items-center justify-between mb-5 pb-4 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/landing-pages")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <button onClick={() => navigate("/admin/landing-pages")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />Landing Pages
           </button>
           <ChevronRight className="h-3 w-3 text-muted-foreground" />

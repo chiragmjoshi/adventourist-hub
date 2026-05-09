@@ -195,7 +195,7 @@ const Reminders = () => {
             </Badge>
             {r.leads && (
               <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/leads/${r.leads.id}`); }}
+                onClick={(e) => { e.stopPropagation(); navigate(`/admin/leads/${r.leads.id}`); }}
                 className="text-[11px] text-primary hover:underline font-mono"
               >{r.leads.traveller_code}</button>
             )}

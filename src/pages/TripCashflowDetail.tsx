@@ -85,7 +85,7 @@ const TripCashflowDetail = () => {
   return (
     <AppLayout title={cf.cashflow_code}>
       <div className="flex items-center gap-2 text-sm mb-5">
-        <button onClick={() => navigate("/trip-cashflow")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+        <button onClick={() => navigate("/admin/trip-cashflow")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" />Trip Cashflow
         </button>
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
@@ -105,7 +105,7 @@ const TripCashflowDetail = () => {
           <p className="text-sm text-muted-foreground">{cf.traveller_name} · <span className="font-mono">{cf.traveller_code}</span></p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/trip-cashflow/edit/${id}`)}>
+          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/admin/trip-cashflow/edit/${id}`)}>
             <Pencil className="h-3.5 w-3.5 mr-1" />Edit
           </Button>
         </div>

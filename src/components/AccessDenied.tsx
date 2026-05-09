@@ -19,7 +19,7 @@ const AccessDenied = ({ pageName }: { pageName?: string }) => {
           Your role ({profile?.role?.replace("_", " ")}) doesn't include access to {pageName || "this page"}.
         </p>
         <p className="text-sm text-muted-foreground mb-6">Contact your administrator if you need access.</p>
-        <Button onClick={() => navigate("/")}>Go to Dashboard</Button>
+        <Button onClick={() => navigate("/admin")}>Go to Dashboard</Button>
       </div>
     </AppLayout>
   );

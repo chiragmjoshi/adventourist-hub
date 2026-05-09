@@ -67,7 +67,7 @@ const SalesReport = () => {
   return (
     <AppLayout title="Sales Report">
       <div className="flex items-center gap-2 text-sm mb-4">
-        <Link to="/reports" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+        <Link to="/admin/reports" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" />Reports
         </Link>
         <ChevronRight className="h-3 w-3 text-muted-foreground" />

@@ -18,7 +18,7 @@ const ResetPassword = () => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
         toast.error("Reset link is invalid or has expired");
-        setTimeout(() => navigate("/login"), 1500);
+        setTimeout(() => navigate("/admin/login"), 1500);
         return;
       }
       setReady(true);
@@ -32,7 +32,7 @@ const ResetPassword = () => {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) { toast.error(error.message); setSubmitting(false); return; }
     toast.success("Password updated");
-    navigate("/");
+    navigate("/admin");
   };
 
   return (

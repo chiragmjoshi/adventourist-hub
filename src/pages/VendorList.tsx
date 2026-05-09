@@ -109,7 +109,7 @@ const VendorList = () => {
           <Button variant="outline" size="sm" className="rounded-md text-xs">
             <Upload className="h-3.5 w-3.5 mr-1" />Import CSV
           </Button>
-          <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/vendors/new")}>
+          <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/admin/vendors/new")}>
             <Plus className="h-3.5 w-3.5 mr-1" />Add Vendor
           </Button>
         </div>
@@ -166,7 +166,7 @@ const VendorList = () => {
             <Compass className="h-12 w-12 mx-auto text-primary/60 mb-3" />
             <p className="text-base font-medium text-foreground mb-1">No vendors yet</p>
             <p className="text-sm text-muted-foreground mb-4">Add your first vendor to get started</p>
-            <Button size="sm" onClick={() => navigate("/vendors/new")} className="rounded-md">
+            <Button size="sm" onClick={() => navigate("/admin/vendors/new")} className="rounded-md">
               <Plus className="h-3.5 w-3.5 mr-1" />Add Vendor
             </Button>
           </CardContent>
@@ -191,7 +191,7 @@ const VendorList = () => {
                 const dests = (v.serve_destinations || []) as string[];
                 const svcs = (v.services || []) as string[];
                 return (
-                  <tr key={v.id} onClick={() => navigate(`/vendors/${v.id}`)}
+                  <tr key={v.id} onClick={() => navigate(`/admin/vendors/${v.id}`)}
                     className="border-t border-border/30 hover:bg-muted/20 cursor-pointer transition-colors">
                     <td className="px-4 py-3">
                       <p className="text-sm font-medium text-foreground">{v.name}</p>
@@ -237,8 +237,8 @@ const VendorList = () => {
                           <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-36">
-                          <DropdownMenuItem onClick={() => navigate(`/vendors/${v.id}`)}><Eye className="h-3.5 w-3.5 mr-2" />View</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/vendors/edit/${v.id}`)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/admin/vendors/${v.id}`)}><Eye className="h-3.5 w-3.5 mr-2" />View</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/admin/vendors/edit/${v.id}`)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setConfirmDialog({ open: true, vendor: v })}>
                             <Ban className="h-3.5 w-3.5 mr-2" />{v.is_active ? "Mark Inactive" : "Mark Active"}
                           </DropdownMenuItem>

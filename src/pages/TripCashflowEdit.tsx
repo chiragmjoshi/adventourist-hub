@@ -257,7 +257,7 @@ const TripCashflowEdit = () => {
       toast.success("Cashflow saved");
       // Trip-level automations are handled by the new automation engine
       // via lead status changes (no manual queueing needed here).
-      if (isNew && cfId) navigate(`/trip-cashflow/edit/${cfId}`, { replace: true });
+      if (isNew && cfId) navigate(`/admin/trip-cashflow/edit/${cfId}`, { replace: true });
     },
     onError: (e: any) => toast.error(e.message || "Failed to save"),
   });
@@ -283,7 +283,7 @@ const TripCashflowEdit = () => {
       {/* Top bar */}
       <div className="flex items-center justify-between mb-5 pb-4 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/trip-cashflow")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <button onClick={() => navigate("/admin/trip-cashflow")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />Trip Cashflow
           </button>
           <ChevronRight className="h-3 w-3 text-muted-foreground" />

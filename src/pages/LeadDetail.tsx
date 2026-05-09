@@ -326,7 +326,7 @@ const LeadDetail = () => {
     });
     setCashflowPrompt(false);
     toast.success("Trip Cashflow entry created");
-    navigate("/trip-cashflow");
+    navigate("/admin/trip-cashflow");
   };
 
   if (isLoading) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Loading lead...</div></AppLayout>;
@@ -340,7 +340,7 @@ const LeadDetail = () => {
     <AppLayout title="Lead Detail">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/leads")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <button onClick={() => navigate("/admin/leads")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />Lead Management
           </button>
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
@@ -621,7 +621,7 @@ const LeadDetail = () => {
                           <span className="font-mono" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>{" "}
                           will appear here — including from previous enquiries.
                         </p>
-                        <Button size="sm" className="rounded-md" onClick={() => navigate(`/trip-cashflow/new?lead_id=${l.id}`)}>
+                        <Button size="sm" className="rounded-md" onClick={() => navigate(`/admin/trip-cashflow/new?lead_id=${l.id}`)}>
                           <Plus className="h-3.5 w-3.5 mr-1" />Create Trip Cashflow
                         </Button>
                       </CardContent>
@@ -711,7 +711,7 @@ const LeadDetail = () => {
                               </div>
                               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
                                 <span className="font-mono text-xs text-muted-foreground">{t.cashflow_code || "—"}</span>
-                                <button onClick={() => navigate(`/trip-cashflow/${t.id}`)} className="text-xs font-medium hover:underline" style={{ color: "hsl(var(--blaze))" }}>
+                                <button onClick={() => navigate(`/admin/trip-cashflow/${t.id}`)} className="text-xs font-medium hover:underline" style={{ color: "hsl(var(--blaze))" }}>
                                   View cashflow →
                                 </button>
                               </div>

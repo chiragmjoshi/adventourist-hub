@@ -283,7 +283,7 @@ const Settings = () => {
                       <p className="text-sm font-medium">User Management</p>
                     </div>
                     <p className="text-xs text-muted-foreground mb-3">Manage team members, invite new users, activate/deactivate accounts</p>
-                    <Link to="/user-management"><Button variant="outline" size="sm" className="text-xs">Manage Users →</Button></Link>
+                    <Link to="/admin/user-management"><Button variant="outline" size="sm" className="text-xs">Manage Users →</Button></Link>
                   </CardContent>
                 </Card>
                 <Card className="border-border/50 shadow-none">
@@ -293,7 +293,7 @@ const Settings = () => {
                       <p className="text-sm font-medium">Role Management</p>
                     </div>
                     <p className="text-xs text-muted-foreground mb-3">View role permissions and access levels for each team role</p>
-                    <Link to="/role-management"><Button variant="outline" size="sm" className="text-xs">View Roles →</Button></Link>
+                    <Link to="/admin/role-management"><Button variant="outline" size="sm" className="text-xs">View Roles →</Button></Link>
                   </CardContent>
                 </Card>
               </div>
@@ -487,7 +487,7 @@ const Settings = () => {
                   <div><p className="text-lg font-bold">{logStats?.waToday || 0}</p><p className="text-[10px] text-muted-foreground">Sent today</p></div>
                   <div><p className="text-lg font-bold">{logStats?.waMonth || 0}</p><p className="text-[10px] text-muted-foreground">This month</p></div>
                 </div>
-                <Link to="/settings?tab=automations"><Button variant="outline" size="sm" className="text-xs">Configure →</Button></Link>
+                <Link to="/admin/settings?tab=automations"><Button variant="outline" size="sm" className="text-xs">Configure →</Button></Link>
               </div>
             </CardContent>
           </Card>
@@ -510,7 +510,7 @@ const Settings = () => {
                 )}
               </div>
               <div className="flex justify-end mt-3 pt-3 border-t">
-                <Link to="/settings?tab=automations"><Button variant="outline" size="sm" className="text-xs">Configure →</Button></Link>
+                <Link to="/admin/settings?tab=automations"><Button variant="outline" size="sm" className="text-xs">Configure →</Button></Link>
               </div>
             </CardContent>
           </Card>
@@ -547,7 +547,7 @@ const Settings = () => {
                     <p className="text-xs text-muted-foreground truncate max-w-xs">{getAutoSetting("review_link") || "Not configured"}</p>
                   </div>
                 </div>
-                <Link to="/settings?tab=automations"><Button variant="outline" size="sm" className="text-xs">Change Link →</Button></Link>
+                <Link to="/admin/settings?tab=automations"><Button variant="outline" size="sm" className="text-xs">Change Link →</Button></Link>
               </div>
             </CardContent>
           </Card>

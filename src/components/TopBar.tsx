@@ -17,7 +17,7 @@ const TopBar = ({ title }: TopBarProps) => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/login");
+    navigate("/admin/login");
   };
 
   const initials = profile?.name
@@ -34,7 +34,7 @@ const TopBar = ({ title }: TopBarProps) => {
       </div>
       <div className="flex items-center gap-4">
         <NotificationsDropdown />
-        <button onClick={() => navigate("/profile")} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <button onClick={() => navigate("/admin/profile")} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
           </Avatar>
