@@ -7,7 +7,7 @@ import { Menu, X, MapPin, Calendar, DollarSign, Sun, Users, Tag, ChevronDown, Ch
 
 /* ─────────────── helpers ─────────────── */
 const waLink = (msg: string) =>
-  `https://wa.me/919999999999?text=${encodeURIComponent(msg)}`;
+  `https://wa.me/919930400694?text=${encodeURIComponent(msg)}`;
 
 /* ─────────────── component ─────────────── */
 const LandingPage = () => {
