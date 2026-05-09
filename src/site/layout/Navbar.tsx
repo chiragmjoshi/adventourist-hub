@@ -43,23 +43,31 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
 
-            {/* Logo — horizontal on md+, square icon on mobile */}
-            <div className="flex-shrink-0">
-              {/* Desktop: horizontal logo */}
-              <Link to="/" className="hidden md:flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-horizon rounded-sm" aria-label="Adventourist Home">
-                <div className="relative" style={{ width: '220px', height: '72px' }}>
-                  <img                     src="/logo/logo-horizontal-color.svg"
-                    alt="Adventourist — Travel Designed For You"                     className="object-contain object-left"                   />
-                </div>
-              </Link>
-              {/* Mobile: square logo mark */}
-              <Link to="/" className="flex md:hidden items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-horizon rounded-sm" aria-label="Adventourist Home">
-                <div className="relative" style={{ width: '44px', height: '44px' }}>
-                  <img                     src="/logo/logo-square-color.svg"
-                    alt="Adventourist"                     className="object-contain"                   />
-                </div>
-              </Link>
-            </div>
+            {/* Logo — vertically centered, sized to nav row */}
+            <Link
+              to="/"
+              className="flex-shrink-0 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-horizon rounded-sm"
+              aria-label="Adventourist Home"
+            >
+              <img
+                src="/logo/logo-horizontal-color.svg"
+                alt="Adventourist — Travel Designed For You"
+                width={180}
+                height={36}
+                className="hidden md:block h-9 lg:h-10 w-auto"
+                fetchPriority="high"
+                decoding="async"
+              />
+              <img
+                src="/logo/logo-square-color.svg"
+                alt="Adventourist"
+                width={36}
+                height={36}
+                className="md:hidden h-9 w-auto"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </Link>
 
             {/* Desktop nav links */}
             <div className="hidden xl:flex items-center gap-6">
@@ -115,11 +123,14 @@ export default function Navbar() {
         >
           {/* Header row */}
           <div className="flex items-center justify-between px-6 pt-5 pb-8">
-            <div className="relative overflow-hidden" style={{ width: '160px', height: '52px' }}>
-              <img                 src="/logo/logo-horizontal-color.svg"
-                alt="Adventourist"                 className="object-contain object-left"
-              />
-            </div>
+            <img
+              src="/logo/logo-horizontal-color.svg"
+              alt="Adventourist"
+              width={160}
+              height={36}
+              className="h-9 w-auto"
+              decoding="async"
+            />
             <button
               onClick={() => setIsOpen(false)}
               aria-label="Close menu"
