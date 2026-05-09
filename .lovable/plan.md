@@ -1,33 +1,59 @@
-## Issue
+# Plan: 18 CMS Fixes & Enhancements
 
-Bhargav's trip cashflow `AU2500008` exists in `trip_cashflow` with `traveller_code = AU2500008` but `lead_id = NULL`. The Trips tab query only matches `lead_id IN (...)`, so the row is filtered out.
+This is a very large batch (18 items, including 2 brand-new modules). To deliver safely without regressing existing features, I'll group the work into **4 phases**. Each phase ends in a working, testable state. Please confirm the phase order — or tell me if you want me to do the whole thing in one pass anyway (will take longer and is harder to QA).
 
-The same issue affects the Lead Management loyalty dot — counts are only built from `traveller_code` on the cashflow row (that part already works), but the bulk query is fine.
+---
 
-## Fix
+## Phase 1 — Quick fixes & UX polish (low risk)
 
-In `src/pages/LeadDetail.tsx`, change the `lead_trips` query so it matches a cashflow row when EITHER:
+1. **Itinerary "+ Add Day" button** moved below last day card (#2)
+2. **Lead Management status tabs** redesigned — full background colour, bold active text (#4)
+3. **Lead Management table** — add Destination & Itinerary columns (#5)
+4. **Lead Management date filter** — auto-close popover on selection (#6)
+5. **Add New Lead** — remove Travel Date field (#7)
+6. **Sales Report** — add Back/breadcrumb to Reports hub (#11)
+7. **Vendor — Add New Vendor white screen** — debug & fix crash (#12)
+8. **Itinerary row actions** — wire up Preview / Duplicate / Archive (#3)
 
-- `trip_cashflow.lead_id` is in the set of lead IDs sharing this traveller_code, OR
-- `trip_cashflow.traveller_code` equals the current lead's traveller_code
+## Phase 2 — Form rebuilds (medium risk)
 
-Replace the current `.in("lead_id", leadIds)` with a Supabase `.or(...)` filter:
+9. **Itinerary Inclusions/Exclusions** rich-text editor (Tiptap) (#1)
+10. **Trip Cashflow** — convert to 4-step wizard (#8)
+11. **Trip Cashflow Step 1** — DD/MM/YYYY dates + "Customized Trip" with PDF upload (#9)
+12. **Trip Cashflow Pricing** — Margin in ₹ instead of % (recompute selling price) (#10)
+13. **Landing Pages** — convert to multi-step wizard (#13)
+14. **Landing Pages Gallery** — direct image upload with progress + thumbnails (#14)
+15. **Landing Pages Testimonials** — search & select up to 3 (#15)
+16. **Destinations form** — Best Months / Themes / Suitable For / multi-image upload / testimonials (#16)
 
-```ts
-const orParts: string[] = [];
-if (leadIds.length > 0) orParts.push(`lead_id.in.(${leadIds.join(",")})`);
-if (l?.traveller_code) orParts.push(`traveller_code.eq.${l.traveller_code}`);
+## Phase 3 — New module: Reminders & Calendar (#17)
 
-let q = supabase
-  .from("trip_cashflow")
-  .select("*, itineraries(headline, destinations(name))")
-  .order("created_at", { ascending: false });
-if (orParts.length > 0) q = q.or(orParts.join(","));
-const { data, error } = await q;
-```
+- New table `reminders` (title, type, lead_id, due_date, due_time, notes, status)
+- Sidebar entry, list + month/week calendar view
+- "Today's Reminders" widget on Dashboard
+- Done / Snoozed actions
 
-Everything downstream (vendor cost lookup, financial calc, trip cards, summary bar) already handles the rows correctly — no other changes needed.
+## Phase 4 — New module: Trips Kanban (#18)
 
-## Optional follow-up (not part of this fix)
+- Sidebar entry "Trips Board"
+- New `trip_stage` column on `trip_cashflow` (or reuse `status`)
+- Drag-and-drop columns: Trip Sold → Booking Reconfirmation → Briefing Call → On Tour Support → Feedback Call → Trip Completed
+- Card → opens lead detail
 
-The cashflow row has `lead_id = NULL` because it was created before lead-linking existed (or the link was lost). If you want, I can also backfill `trip_cashflow.lead_id` from `traveller_code` for all such rows in a separate migration. Let me know.
+---
+
+## Technical notes
+
+- Tiptap (`@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-highlight`, `@tiptap/extension-text-align`) for #1
+- `@dnd-kit/core` for #18 Kanban
+- DD/MM/YYYY via `date-fns` `format(d, "dd/MM/yyyy")` + parsing helpers
+- Reminders & destination testimonials need DB migrations
+- Destination images: extend existing `gallery` array or use `itinerary-images` bucket
+- Landing-page direct upload uses existing `itinerary-images` storage bucket
+- Customized Trip PDF uses existing `cashflow-docs` bucket
+
+---
+
+## Recommendation
+
+Start with **Phase 1** now (8 items, ~1 pass), then proceed phase-by-phase so you can validate each batch in the preview before I touch the next. Reply with which phase(s) to execute, or say "all" to run end-to-end.
