@@ -75,7 +75,7 @@ export function AppSidebar() {
         <div className="flex items-center justify-center px-4 mb-6 bg-white">
           {collapsed
             ? <img src={logoMain} alt="Adventourist" className="h-8 w-auto" />
-            : <img src={logoHorizontal} alt="Adventourist" className="h-10 w-auto" />
+            : <img src={logoHorizontal} alt="Adventourist" className="h-16 w-auto" />
           }
         </div>
 
