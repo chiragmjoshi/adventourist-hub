@@ -377,10 +377,12 @@ const LeadManagement = () => {
         />
         <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
           options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
-        <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
-          options={mvByType("channel").map((v: any) => ({ value: v.value, label: v.value }))} />
-        <SmallSelect label="Platform" value={filterPlatform} onChange={setFilterPlatform}
+        <SmallSelect label="Platform" value={filterPlatform}
+          onChange={(v) => { setFilterPlatform(v); if (v !== "all") setFilterChannel("all"); }}
           options={mvByType("platform").map((v: any) => ({ value: v.value, label: v.value }))} />
+        <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
+          options={filterChannelsByPlatform(mvByType("channel"), filterPlatform === "all" ? "" : filterPlatform)
+            .map((v: any) => ({ value: v.value, label: v.value }))} />
         <SmallSelect label="Campaign" value={filterCampaign} onChange={setFilterCampaign}
           options={mvByType("campaign_type").map((v: any) => ({ value: v.value, label: v.value }))} />
 
