@@ -1348,6 +1348,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_role: { Args: never; Returns: string }
       generate_adv_traveller_code: { Args: never; Returns: string }
       increment_story_views: {
         Args: { story_slug: string }
