@@ -65,6 +65,20 @@ const STATUS_DOT: Record<string, string> = {
   "Booked Outside": "bg-gray-700",
 };
 
+/* Active-tab style: full-bleed coloured pill (white text, bold) */
+const STATUS_ACTIVE: Record<string, string> = {
+  "File Closed": "bg-[hsl(var(--ridge))] text-white border-[hsl(var(--ridge))]",
+  "File Lost": "bg-red-500 text-white border-red-500",
+  "Quote Sent": "bg-[hsl(var(--horizon))] text-[hsl(var(--abyss))] border-[hsl(var(--horizon))]",
+  "New Lead": "bg-[hsl(var(--abyss))] text-white border-[hsl(var(--abyss))]",
+  "Contacted": "bg-[hsl(var(--lagoon))] text-white border-[hsl(var(--lagoon))]",
+  "Follow Up Needed": "bg-[hsl(var(--blaze))] text-white border-[hsl(var(--blaze))]",
+  "Ongoing Discussions": "bg-blue-500 text-white border-blue-500",
+  "Refund Issued": "bg-orange-500 text-white border-orange-500",
+  "Invalid Lead": "bg-gray-400 text-white border-gray-400",
+  "Booked Outside": "bg-gray-700 text-white border-gray-700",
+};
+
 const STATUS_BADGE: Record<string, string> = {
   "File Closed": "bg-[hsl(var(--ridge))]/10 text-[hsl(var(--ridge))] border-[hsl(var(--ridge))]/20",
   "File Lost": "bg-red-50 text-red-600 border-red-200",
@@ -410,19 +424,22 @@ const LeadManagement = () => {
           {mvByType("sales_status").map((s: any) => {
             const dbKey = displayToKey(s.value);
             const active = activeStatuses.has(dbKey);
+            const activeStyle = STATUS_ACTIVE[s.value] || "bg-foreground text-background border-foreground";
             const dotColor = STATUS_DOT[s.value] || "bg-gray-400";
             return (
               <button
                 key={s.id}
                 onClick={() => toggleChip(activeStatuses, setActiveStatuses, dbKey)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
-                  active ? "bg-foreground/5 border-foreground/20 shadow-sm" : "border-border/40 hover:border-border hover:bg-muted/30"
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-all duration-150 ${
+                  active
+                    ? `${activeStyle} font-bold shadow-sm`
+                    : "font-medium border-border/40 hover:border-border hover:bg-muted/30"
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-                <span className="text-foreground/80">{s.value}</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">·</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">{statusCounts[dbKey] || 0}</span>
+                {!active && <span className={`w-2 h-2 rounded-full ${dotColor}`} />}
+                <span>{s.value}</span>
+                <span className={`text-[10px] font-semibold ${active ? "opacity-90" : "text-muted-foreground"}`}>·</span>
+                <span className={`text-[10px] font-semibold ${active ? "opacity-90" : "text-muted-foreground"}`}>{statusCounts[dbKey] || 0}</span>
               </button>
             );
           })}
