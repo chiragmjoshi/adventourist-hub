@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import SiteLayout from "@/site/SiteLayout";
 import { WHATSAPP_NUMBER } from "@/site/lib/constants";
@@ -191,9 +191,8 @@ function PolicyPage(props: PolicyProps) {
     [sections],
   );
 
-  // Inject JSON-LD breadcrumb + WebPage schema
-  useEffect(() => {
-    const ld = {
+  const jsonLd = useMemo(
+    () => ({
       "@context": "https://schema.org",
       "@graph": [
         {
@@ -212,21 +211,12 @@ function PolicyPage(props: PolicyProps) {
           ],
         },
       ],
-    };
-    const el = document.createElement("script");
-    el.type = "application/ld+json";
-    el.id = "policy-jsonld";
-    el.text = JSON.stringify(ld);
-    const old = document.getElementById("policy-jsonld");
-    if (old) old.remove();
-    document.head.appendChild(el);
-    return () => {
-      el.remove();
-    };
-  }, [title, description, canonicalPath, lastUpdated]);
+    }),
+    [title, description, canonicalPath, lastUpdated],
+  );
 
   return (
-    <SiteLayout title={`${title} | Adventourist`} description={description} canonicalPath={canonicalPath}>
+    <SiteLayout title={`${title} | Adventourist`} description={description} jsonLd={jsonLd}>
       {/* Hero */}
       <section className="bg-gradient-to-b from-drift to-white border-b border-ink/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20">
