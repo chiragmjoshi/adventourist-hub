@@ -716,10 +716,10 @@ const LeadManagement = () => {
                   <div><Label className="text-xs mb-1 block">Channel</Label>
                     <Select value={form.channel} onValueChange={v => setForm({...form, channel: v})}>
                       <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{mvByType("channel").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
+                      <SelectContent>{filterChannelsByPlatform(mvByType("channel"), form.platform).map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
                     </Select></div>
                   <div><Label className="text-xs mb-1 block">Platform</Label>
-                    <Select value={form.platform} onValueChange={v => setForm({...form, platform: v})}>
+                    <Select value={form.platform} onValueChange={v => setForm({...form, platform: v, channel: ""})}>
                       <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>{mvByType("platform").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
                     </Select></div>
