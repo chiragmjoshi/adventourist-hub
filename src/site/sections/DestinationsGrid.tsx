@@ -28,7 +28,7 @@ function buildTiles({ apiDestinations, apiTrips }: Props): Tile[] {
   if (!apiDestinations || apiDestinations.length === 0) return FALLBACK;
 
   // Count itineraries per destination id
-  const counts = new Map<number, number>();
+  const counts = new Map<string | number, number>();
   (apiTrips || []).forEach((t) => {
     const id = t.destination?.id;
     if (id != null) counts.set(id, (counts.get(id) || 0) + 1);

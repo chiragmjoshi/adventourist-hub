@@ -1,5 +1,5 @@
 export interface CMSItinerary {
-  id: number;
+  id: string | number;
   slug: string;
   headline: string;
   about?: string;
@@ -12,7 +12,7 @@ export interface CMSItinerary {
   exclusion?: string;
   important_things?: string;
   destination?: {
-    id: number;
+    id: string | number;
     name: string;
     pictures?: Array<{ file_path?: string }>;
     types?: Array<{ master_type: { id: number; value: string } }>;
@@ -26,7 +26,7 @@ export interface CMSItinerary {
 }
 
 export interface CMSDestination {
-  id: number;
+  id: string | number;
   name: string;
   pictures?: Array<{ file_path?: string }>;
 }
