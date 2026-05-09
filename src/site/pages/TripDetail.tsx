@@ -215,7 +215,7 @@ export default function TripDetail() {
               )}
 
               {/* Stats card */}
-              <dl className="bg-drift rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <dl className="bg-drift/60 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
                 <Stat icon="📅" label="Duration" value={trip.days_and_nights || "Flexible"} />
                 {destinationName && <Stat icon="📍" label="Destination" value={destinationName} />}
                 {trip.pricing_per_person ? <Stat icon="💰" label="Starting From" value={`${priceText}/person`} /> : null}
@@ -454,10 +454,10 @@ export default function TripDetail() {
 function Stat({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div className="flex gap-3 items-start">
-      <span aria-hidden="true" className="text-xl flex-shrink-0">{icon}</span>
+      <span aria-hidden="true" className="text-lg flex-shrink-0 mt-0.5 opacity-80">{icon}</span>
       <div className="min-w-0">
-        <dt className="font-display font-bold text-[11px] uppercase tracking-widest text-ink/50">{label}</dt>
-        <dd className="font-display font-bold text-base text-abyss leading-tight mt-0.5 truncate">{value}</dd>
+        <dt className="font-display font-medium text-[10.5px] uppercase tracking-[0.14em] text-ink/45">{label}</dt>
+        <dd className="font-display font-semibold text-[15px] text-abyss leading-snug mt-1 truncate">{value}</dd>
       </div>
     </div>
   );
