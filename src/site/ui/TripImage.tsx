@@ -23,10 +23,12 @@ interface TripImageProps {
   destination?: string;
   className?: string;
   sizes?: string;
+  loading?: "lazy" | "eager";
+  fetchPriority?: "high" | "low" | "auto";
 }
 
 export default function TripImage({
-  path, alt, destination, className,
+  path, alt, destination, className, sizes, loading = "lazy", fetchPriority = "auto",
 }: TripImageProps) {
   const [error, setError] = useState(false);
   const gradient = DESTINATION_GRADIENTS[destination ?? ""] ?? DEFAULT_GRADIENT;
@@ -47,7 +49,12 @@ export default function TripImage({
   return (
     <img       src={getCMSImageUrl(path)}
       alt={alt} 
-      className={className} 
+      className={`w-full h-full ${className ?? ""}`}
+      loading={loading}
+      decoding="async"
+      sizes={sizes ?? "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"}
+      // @ts-expect-error fetchpriority is a valid HTML attribute, React types lag
+      fetchpriority={fetchPriority}
       onError={() => setError(true)}
     />
   );
