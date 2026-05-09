@@ -814,6 +814,80 @@ export type Database = {
           },
         ]
       }
+      reminders: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string
+          id: string
+          lead_id: string | null
+          notes: string | null
+          reminder_type: string
+          status: string
+          title: string
+          trip_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          reminder_type?: string
+          status?: string
+          title: string
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          reminder_type?: string
+          status?: string
+          title?: string
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trip_cashflow"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string | null
@@ -900,6 +974,7 @@ export type Database = {
           travel_start_date: string | null
           traveller_code: string
           traveller_name: string
+          trip_stage: string
           updated_at: string | null
           zoho_invoice_ref: string | null
         }
@@ -925,6 +1000,7 @@ export type Database = {
           travel_start_date?: string | null
           traveller_code: string
           traveller_name: string
+          trip_stage?: string
           updated_at?: string | null
           zoho_invoice_ref?: string | null
         }
@@ -950,6 +1026,7 @@ export type Database = {
           travel_start_date?: string | null
           traveller_code?: string
           traveller_name?: string
+          trip_stage?: string
           updated_at?: string | null
           zoho_invoice_ref?: string | null
         }

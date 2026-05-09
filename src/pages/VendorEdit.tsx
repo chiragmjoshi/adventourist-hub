@@ -18,7 +18,7 @@ import StepNav from "@/components/forms/StepNav";
 import UnsavedBadge from "@/components/forms/UnsavedBadge";
 import UnsavedChangesDialog from "@/components/forms/UnsavedChangesDialog";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
-import { useAutoSaveDraft } from "@/components/forms/useAutoSaveDraft";
+// useAutoSaveDraft intentionally not imported — vendor saves are explicit only.
 
 const VENDOR_STEPS = [
   { key: "basic", label: "Basic" },
@@ -242,11 +242,8 @@ const VendorEdit = () => {
     saveMutation.mutate();
   };
 
-  // Auto-save every 60s while dirty (only when name is set, otherwise validation will fail)
-  useAutoSaveDraft(
-    () => { if (form.name.trim()) saveMutation.mutate(); },
-    isDirty && !!form.name.trim(),
-  );
+  // Auto-save disabled: vendor save now requires explicit "Save Vendor" click
+  // (previous interval auto-save caused mid-typing saves & unexpected navigation).
 
   const FieldError = ({ field }: { field: string }) => errors[field] ? <p className="text-xs text-destructive mt-1">{errors[field]}</p> : null;
 
