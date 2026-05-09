@@ -884,9 +884,11 @@ export type Database = {
           cashflow_code: string
           created_at: string | null
           created_by: string | null
+          custom_itinerary_url: string | null
           destination_id: string | null
           gst_billing: boolean | null
           id: string
+          is_customized: boolean | null
           itinerary_id: string | null
           lead_id: string | null
           margin_percent: number | null
@@ -907,9 +909,11 @@ export type Database = {
           cashflow_code?: string
           created_at?: string | null
           created_by?: string | null
+          custom_itinerary_url?: string | null
           destination_id?: string | null
           gst_billing?: boolean | null
           id?: string
+          is_customized?: boolean | null
           itinerary_id?: string | null
           lead_id?: string | null
           margin_percent?: number | null
@@ -930,9 +934,11 @@ export type Database = {
           cashflow_code?: string
           created_at?: string | null
           created_by?: string | null
+          custom_itinerary_url?: string | null
           destination_id?: string | null
           gst_billing?: boolean | null
           id?: string
+          is_customized?: boolean | null
           itinerary_id?: string | null
           lead_id?: string | null
           margin_percent?: number | null
