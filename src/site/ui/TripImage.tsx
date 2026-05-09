@@ -20,13 +20,13 @@ const DEFAULT_GRADIENT = "from-[#FF6F4C] to-[#FDC436]";
 interface TripImageProps {
   path?: string | null;
   alt: string;
-  destination?: string; ?: boolean;
+  destination?: string;
   className?: string;
-  sizes?: string; ?: boolean;
+  sizes?: string;
 }
 
 export default function TripImage({
-  path, alt, destination, , className, sizes, ,
+  path, alt, destination, className,
 }: TripImageProps) {
   const [error, setError] = useState(false);
   const gradient = DESTINATION_GRADIENTS[destination ?? ""] ?? DEFAULT_GRADIENT;

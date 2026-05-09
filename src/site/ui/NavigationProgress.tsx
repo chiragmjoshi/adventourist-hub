@@ -23,16 +23,16 @@ export default function NavigationProgress() {
 
     // Tick to 80% quickly
     let start: number | null = null;
-    const = (ts: number) => {
+    const tick = (ts: number) => {
       if (!start) start = ts;
       const elapsed = ts - start;
       const p = Math.min(80, (elapsed / 400) * 80);
       setProgress(p);
       if (p < 80) {
-        rafRef.current = requestAnimationFrame(fill);
+        rafRef.current = requestAnimationFrame(tick);
       }
     };
-    rafRef.current = requestAnimationFrame(fill);
+    rafRef.current = requestAnimationFrame(tick);
 
     // After 400ms, jump to 100% and fade out
     timerRef.current = setTimeout(() => {
