@@ -34,7 +34,7 @@ export default function TravelStories() {
   return (
     <SiteLayout
       title="Travel Stories & Inspiration | Adventourist"
-      description="Travel stories, tips and inspiration from real Adventourist trips."
+      description="Real travel stories, destination guides and trip inspiration from Adventourist. Bali honeymoons, Ladakh adventures, Thailand escapes, Sri Lanka getaways — told by real travellers."
     >
       <section className="bg-drift py-16 lg:py-20">
         <div className="max-w-3xl mx-auto px-4 text-center">
