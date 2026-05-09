@@ -36,7 +36,7 @@ function captureUTMs(): Record<string, string | undefined> {
 /**
  * Submits a public website lead via the `submit-lead` edge function.
  * The function generates the ADV traveller code, creates a timeline entry,
- * and tags the lead with the appropriate channel (defaults to "website" = organic).
+ * and tags the lead with Platform: Organic, Channel: Website.
  */
 export function useLeadCapture() {
   const [loading, setLoading] = useState(false);
@@ -67,8 +67,8 @@ export function useLeadCapture() {
           group_size: d.group_size || undefined,
           budget_range: d.budget || undefined,
           notes: notesParts.length ? notesParts.join("\n") : undefined,
-          channel: d.page_source || "website",
-          platform: "website",
+          channel: "Website",
+          platform: "Organic",
           ...captureUTMs(),
         },
       });
