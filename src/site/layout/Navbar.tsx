@@ -9,7 +9,7 @@ const navLinks = [
   { label: "Stories", href: "/travel-stories",icon: "🌊" },
   { label: "About",   href: "/about-us",      icon: "❤️" },
   { label: "FAQs",    href: "/faqs",          icon: "❓" },
-  { label: "Contact", href: "/contact",       icon: "⛰️" },
+  { label: "Contact", href: "/contact",       icon: "✉️" },
 ];
 
 export default function Navbar() {
