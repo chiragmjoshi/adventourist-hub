@@ -17,6 +17,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ArrowLeft, ChevronRight, Save, Plus, Trash2, Upload, GripVertical, Check } from "lucide-react";
 import { toast } from "sonner";
 import { formatINR } from "@/lib/formatINR";
+import { format, parseISO, isValid } from "date-fns";
+import StepProgress from "@/components/forms/StepProgress";
+import StepNav from "@/components/forms/StepNav";
 // Travel-date based automations are now scheduled by the rule engine cron
 
 interface VendorLine {
@@ -50,7 +53,26 @@ const TripCashflowEdit = () => {
     travel_start_date: "", travel_end_date: "", booking_date: "",
     pax_count: 1, gst_billing: true, margin_percent: 0, status: "draft",
     assigned_to: "", lead_id: "", pan_card_url: "", zoho_invoice_ref: "", notes: "",
+    is_customized: false, custom_itinerary_url: "",
   });
+
+  const STEPS = [
+    { key: "client", label: "Client & Trip" },
+    { key: "vendors", label: "Vendor Costs" },
+    { key: "pricing", label: "Pricing & Margin" },
+    { key: "docs", label: "Documents & Notes" },
+  ];
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const stepIdx = STEPS.findIndex((s) => s.key === activeTab);
+  const goTo = (k: string) => { setActiveTab(k); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const goNext = () => { setCompletedSteps((p) => new Set(p).add(activeTab)); if (stepIdx < STEPS.length - 1) goTo(STEPS[stepIdx + 1].key); };
+  const goBack = () => { if (stepIdx > 0) goTo(STEPS[stepIdx - 1].key); };
+
+  const fmtDate = (s: string) => {
+    if (!s) return "";
+    const d = parseISO(s);
+    return isValid(d) ? format(d, "dd/MM/yyyy") : "";
+  };
 
   const [vendorLines, setVendorLines] = useState<VendorLine[]>([]);
   const [additionalDocs, setAdditionalDocs] = useState<string[]>([]);
@@ -123,6 +145,8 @@ const TripCashflowEdit = () => {
         pan_card_url: existing.pan_card_url || "",
         zoho_invoice_ref: existing.zoho_invoice_ref || "",
         notes: existing.notes || "",
+        is_customized: (existing as any).is_customized || false,
+        custom_itinerary_url: (existing as any).custom_itinerary_url || "",
       });
     }
   }, [existing]);
@@ -185,6 +209,8 @@ const TripCashflowEdit = () => {
         status, assigned_to: form.assigned_to || null, lead_id: form.lead_id || null,
         pan_card_url: form.pan_card_url || null, zoho_invoice_ref: form.zoho_invoice_ref || null,
         notes: form.notes || null,
+        is_customized: form.is_customized,
+        custom_itinerary_url: form.custom_itinerary_url || null,
       };
 
       let cashflowId = id;
@@ -292,6 +318,7 @@ const TripCashflowEdit = () => {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <StepProgress steps={STEPS} current={activeTab} completed={Array.from(completedSteps)} onJump={goTo} className="mb-5" />
         <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none mb-5">
           {[
             { v: "client", l: "Client & Trip" }, { v: "vendors", l: "Vendor Costs" },
@@ -329,25 +356,67 @@ const TripCashflowEdit = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Itinerary</Label>
-                  <Select value={form.itinerary_id} onValueChange={v => setField("itinerary_id", v)}>
-                    <SelectTrigger className="mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <Label className="text-xs text-muted-foreground">Itinerary {form.is_customized && <span className="text-muted-foreground/60">(optional)</span>}</Label>
+                  <Select value={form.itinerary_id} onValueChange={v => setField("itinerary_id", v)} disabled={form.is_customized}>
+                    <SelectTrigger className={`mt-1 rounded-md ${form.is_customized ? "bg-muted/30" : ""}`}><SelectValue placeholder={form.is_customized ? "Custom itinerary" : "Select"} /></SelectTrigger>
                     <SelectContent>{filteredItineraries.map((i: any) => <SelectItem key={i.id} value={i.id}>{i.headline}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {/* Customized Trip toggle + PDF */}
+              <div className="p-4 bg-muted/20 rounded-lg border border-border/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Customized Trip</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Custom-built trip not based on a pre-defined itinerary. Upload the custom itinerary PDF below.</p>
+                  </div>
+                  <Switch checked={form.is_customized} onCheckedChange={v => { setField("is_customized", v); if (v) setField("itinerary_id", ""); }} />
+                </div>
+                {form.is_customized && (
+                  form.custom_itinerary_url ? (
+                    <div className="flex items-center gap-2 text-xs bg-background rounded-md p-2 border border-border/30">
+                      <span className="truncate flex-1 font-mono">{form.custom_itinerary_url.split("/").pop()}</span>
+                      <a href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/cashflow-docs/${form.custom_itinerary_url}`} target="_blank" rel="noreferrer" className="text-primary hover:underline text-xs shrink-0">View</a>
+                      <button onClick={() => setField("custom_itinerary_url", "")} className="text-destructive hover:underline text-xs shrink-0">Remove</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" id="custom-itin-upload"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 10 * 1024 * 1024) { toast.error("File must be under 10MB"); return; }
+                          const code = existing?.cashflow_code || "new";
+                          const path = `${code}/custom-itinerary/${Date.now()}_${file.name}`;
+                          const { error } = await supabase.storage.from("cashflow-docs").upload(path, file);
+                          if (error) { toast.error("Upload failed"); return; }
+                          setField("custom_itinerary_url", path);
+                          toast.success("Custom itinerary uploaded");
+                        }} />
+                      <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => document.getElementById("custom-itin-upload")?.click()}>
+                        <Upload className="h-3.5 w-3.5 mr-1" />Upload Custom Itinerary (PDF)
+                      </Button>
+                    </div>
+                  )
+                )}
+              </div>
+
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground">Travel Start Date *</Label>
                   <Input type="date" value={form.travel_start_date} onChange={e => setField("travel_start_date", e.target.value)} className="mt-1 rounded-md" />
+                  {form.travel_start_date && <p className="text-[10px] text-muted-foreground mt-1">{fmtDate(form.travel_start_date)}</p>}
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Travel End Date *</Label>
                   <Input type="date" value={form.travel_end_date} onChange={e => setField("travel_end_date", e.target.value)} className="mt-1 rounded-md" />
+                  {form.travel_end_date && <p className="text-[10px] text-muted-foreground mt-1">{fmtDate(form.travel_end_date)}</p>}
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Booking Date *</Label>
                   <Input type="date" value={form.booking_date} onChange={e => setField("booking_date", e.target.value)} className="mt-1 rounded-md" />
+                  {form.booking_date && <p className="text-[10px] text-muted-foreground mt-1">{fmtDate(form.booking_date)}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -376,6 +445,8 @@ const TripCashflowEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(form.status)} onSave={() => saveMutation.mutate(form.status)} saving={saveMutation.isPending} saveLabel="Save" />
         </TabsContent>
 
         {/* Tab 2: Vendor Costs */}
@@ -487,6 +558,8 @@ const TripCashflowEdit = () => {
               </CardContent>
             </Card>
           )}
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(form.status)} onSave={() => saveMutation.mutate(form.status)} saving={saveMutation.isPending} saveLabel="Save" />
         </TabsContent>
 
         {/* Tab 3: Pricing & Margin */}
@@ -508,12 +581,26 @@ const TripCashflowEdit = () => {
           <Card className="border-border/50 shadow-none">
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Margin</CardTitle></CardHeader>
             <CardContent className="px-5 pb-4 space-y-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Margin %</Label>
-                <Input type="number" value={form.margin_percent || ""} onChange={e => setField("margin_percent", parseFloat(e.target.value) || 0)}
-                  className="mt-1 rounded-md text-lg font-semibold h-12" placeholder="Enter margin %" />
-                <p className="text-[10px] text-muted-foreground mt-1">Applied on gross (total vendor cost)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Margin %</Label>
+                  <Input type="number" step="0.01" value={form.margin_percent || ""}
+                    onChange={e => setField("margin_percent", parseFloat(e.target.value) || 0)}
+                    className="mt-1 rounded-md text-lg font-semibold h-12" placeholder="0.0" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Margin (₹)</Label>
+                  <Input type="number" step="1" value={Math.round(marginAmount) || ""}
+                    onChange={e => {
+                      const rs = parseFloat(e.target.value) || 0;
+                      const pct = totalVendorCost > 0 ? (rs / totalVendorCost) * 100 : 0;
+                      setField("margin_percent", Math.round(pct * 100) / 100);
+                    }}
+                    disabled={totalVendorCost === 0}
+                    className={`mt-1 rounded-md text-lg font-semibold h-12 ${totalVendorCost === 0 ? "bg-muted/30" : ""}`} placeholder="0" />
+                </div>
               </div>
+              <p className="text-[10px] text-muted-foreground">Applied on gross (total vendor cost). Edit either field — the other updates automatically.</p>
               <div className="flex justify-between text-sm pt-2">
                 <span className="text-muted-foreground">Margin Amount</span>
                 <span className="font-semibold text-[hsl(var(--ridge))]">{formatINR(marginAmount)}</span>
@@ -555,6 +642,8 @@ const TripCashflowEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(form.status)} onSave={() => saveMutation.mutate(form.status)} saving={saveMutation.isPending} saveLabel="Save" />
         </TabsContent>
 
         {/* Tab 4: Documents & Notes */}
@@ -643,6 +732,8 @@ const TripCashflowEdit = () => {
               <p className="text-[10px] text-muted-foreground mt-1">Enter after generating invoice in Zoho</p>
             </CardContent>
           </Card>
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(form.status)} onSave={() => saveMutation.mutate(form.status)} saving={saveMutation.isPending} saveLabel="Save" />
         </TabsContent>
       </Tabs>
 

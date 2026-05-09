@@ -15,6 +15,12 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, ChevronRight, Save, Eye, Check, Plus, X, Image as ImageIcon, Info } from "lucide-react";
 import { toast } from "sonner";
 import { formatINR } from "@/lib/formatINR";
+import StepProgress from "@/components/forms/StepProgress";
+import StepNav from "@/components/forms/StepNav";
+import ImageUploader from "@/components/forms/ImageUploader";
+import MultiImageUploader from "@/components/forms/MultiImageUploader";
+import RichTextEditor from "@/components/forms/RichTextEditor";
+import TestimonialPicker from "@/components/forms/TestimonialPicker";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -28,7 +34,6 @@ const LandingPageEdit = () => {
   const [activeTab, setActiveTab] = useState("content");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [useItineraryInclusions, setUseItineraryInclusions] = useState(true);
-  const [galleryInput, setGalleryInput] = useState("");
 
   const [form, setForm] = useState({
     name: "", slug: "", destination_id: "", itinerary_id: "",
@@ -38,12 +43,26 @@ const LandingPageEdit = () => {
     channel: "", platform: "", campaign_type: "", ad_group: "",
     gallery: [] as string[], why_adventourist: "",
     custom_inclusions: "", custom_exclusions: "",
+    testimonial_ids: [] as string[],
     seo_title: "", seo_description: "", is_active: false,
     form_title: "Enquire for Free",
     form_subtitle: "Our travel experts will call you, ask your queries without hesitation.",
     form_terms_label: "", form_submit_text: "Submit",
     form_after_submit_message: "Thank you! We'll call you within 24 hours.",
   });
+
+  const STEPS = [
+    { key: "content", label: "Page Content" },
+    { key: "trip", label: "Trip Details" },
+    { key: "attribution", label: "Attribution" },
+    { key: "gallery", label: "Gallery & Media" },
+    { key: "seo", label: "SEO" },
+  ];
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const stepIdx = STEPS.findIndex((s) => s.key === activeTab);
+  const goTo = (k: string) => { setActiveTab(k); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const goNext = () => { setCompletedSteps((p) => new Set(p).add(activeTab)); if (stepIdx < STEPS.length - 1) goTo(STEPS[stepIdx + 1].key); };
+  const goBack = () => { if (stepIdx > 0) goTo(STEPS[stepIdx - 1].key); };
 
   const { data: existing } = useQuery({
     queryKey: ["landing_page", id], enabled: !isNew,
@@ -91,6 +110,7 @@ const LandingPageEdit = () => {
         form_terms_label: (existing as any).form_terms_label || "",
         form_submit_text: (existing as any).form_submit_text || "Submit",
         form_after_submit_message: (existing as any).form_after_submit_message || "Thank you! We'll call you within 24 hours.",
+        testimonial_ids: (existing as any).testimonial_ids || [],
       });
       if ((existing as any).custom_inclusions || (existing as any).custom_exclusions) setUseItineraryInclusions(false);
     }
@@ -134,6 +154,7 @@ const LandingPageEdit = () => {
         form_title: form.form_title, form_subtitle: form.form_subtitle,
         form_terms_label: form.form_terms_label || null, form_submit_text: form.form_submit_text,
         form_after_submit_message: form.form_after_submit_message,
+        testimonial_ids: form.testimonial_ids,
       };
       if (publish) payload.published_at = new Date().toISOString();
 
@@ -188,6 +209,7 @@ const LandingPageEdit = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <StepProgress steps={STEPS} current={activeTab} completed={Array.from(completedSteps)} onJump={goTo} className="mb-5" />
         <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none mb-5">
           {[
             { v: "content", l: "Page Content" }, { v: "trip", l: "Trip Details" },
@@ -220,9 +242,15 @@ const LandingPageEdit = () => {
                   className="mt-1 rounded-md" placeholder="Discover Singapore's iconic skyline, world-class attractions and vibrant culture" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Hero Image URL</Label>
-                <Input value={form.hero_image} onChange={e => setField("hero_image", e.target.value)} className="mt-1 rounded-md" placeholder="https://..." />
-                {form.hero_image && <img src={form.hero_image} alt="Hero" className="mt-2 h-24 w-auto rounded-md object-cover border border-border/30" />}
+                <Label className="text-xs text-muted-foreground">Hero Image</Label>
+                <div className="mt-1">
+                  <ImageUploader
+                    folder={isNew ? "landing-drafts" : `landing-${id}`}
+                    filename="hero"
+                    value={form.hero_image}
+                    onChange={(url) => setField("hero_image", url)}
+                  />
+                </div>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">URL Slug</Label>
@@ -330,6 +358,8 @@ const LandingPageEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(false)} onSave={() => saveMutation.mutate(true)} saving={saveMutation.isPending} saveLabel="Publish" />
         </TabsContent>
 
         {/* TAB 2 — Trip Details */}
@@ -387,11 +417,15 @@ const LandingPageEdit = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground">Custom Inclusions</Label>
-                    <Textarea value={form.custom_inclusions} onChange={e => setField("custom_inclusions", e.target.value)} rows={5} className="mt-1 rounded-md" />
+                    <div className="mt-1">
+                      <RichTextEditor value={form.custom_inclusions} onChange={(v) => setField("custom_inclusions", v)} placeholder="Override the itinerary's inclusions for this campaign..." />
+                    </div>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Custom Exclusions</Label>
-                    <Textarea value={form.custom_exclusions} onChange={e => setField("custom_exclusions", e.target.value)} rows={5} className="mt-1 rounded-md" />
+                    <div className="mt-1">
+                      <RichTextEditor value={form.custom_exclusions} onChange={(v) => setField("custom_exclusions", v)} placeholder="Override the itinerary's exclusions for this campaign..." />
+                    </div>
                   </div>
                 </div>
               )}
@@ -406,6 +440,20 @@ const LandingPageEdit = () => {
               <p className="text-[10px] text-muted-foreground mt-1">Default: "At Adventourist, we create personal, life-enriching journeys..."</p>
             </CardContent>
           </Card>
+
+          <Card className="border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Testimonials</CardTitle></CardHeader>
+            <CardContent className="px-5 pb-5">
+              <p className="text-[10px] text-muted-foreground mb-3">Pick testimonials to show on this landing page. Manage testimonials on each Destination.</p>
+              <TestimonialPicker
+                selectedIds={form.testimonial_ids}
+                onChange={(ids) => setField("testimonial_ids", ids)}
+                destinationId={form.destination_id || undefined}
+              />
+            </CardContent>
+          </Card>
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(false)} onSave={() => saveMutation.mutate(true)} saving={saveMutation.isPending} saveLabel="Publish" />
         </TabsContent>
 
         {/* TAB 3 — Attribution */}
@@ -469,39 +517,27 @@ const LandingPageEdit = () => {
               </CardContent>
             </Card>
           )}
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(false)} onSave={() => saveMutation.mutate(true)} saving={saveMutation.isPending} saveLabel="Publish" />
         </TabsContent>
 
         {/* TAB 4 — Gallery & Media */}
         <TabsContent value="gallery" className="space-y-5">
           <Card className="border-border/50 shadow-none">
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Gallery Images</CardTitle></CardHeader>
-            <CardContent className="px-5 pb-5 space-y-3">
-              <p className="text-[10px] text-muted-foreground">Images appear in the gallery section of the landing page. Max 10 images.</p>
-
-              <div className="grid grid-cols-4 gap-3">
-                {form.gallery.map((url, i) => (
-                  <div key={i} className="relative group">
-                    <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-24 object-cover rounded-lg border border-border/30" onError={e => (e.currentTarget.src = "/placeholder.svg")} />
-                    <button onClick={() => setField("gallery", form.gallery.filter((_, j) => j !== i))}
-                      className="absolute top-1 right-1 bg-background/90 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3 text-destructive" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {form.gallery.length < 10 && (
-                <div className="flex gap-2">
-                  <Input value={galleryInput} onChange={e => setGalleryInput(e.target.value)} className="rounded-md text-xs" placeholder="Image URL"
-                    onKeyDown={e => { if (e.key === "Enter" && galleryInput.trim()) { setField("gallery", [...form.gallery, galleryInput.trim()]); setGalleryInput(""); } }} />
-                  <Button variant="outline" size="sm" className="rounded-md text-xs shrink-0" onClick={() => { if (galleryInput.trim()) { setField("gallery", [...form.gallery, galleryInput.trim()]); setGalleryInput(""); } }}>
-                    <Plus className="h-3.5 w-3.5 mr-1" />Add
-                  </Button>
-                </div>
-              )}
-              <p className="text-[10px] text-muted-foreground">{form.gallery.length}/10 images</p>
+            <CardContent className="px-5 pb-5">
+              <p className="text-[10px] text-muted-foreground mb-3">Images appear in the gallery section of the landing page. Max 10 images.</p>
+              <MultiImageUploader
+                folder={isNew ? "landing-drafts" : `landing-${id}`}
+                prefix="gallery"
+                values={form.gallery}
+                onChange={(urls) => setField("gallery", urls)}
+                max={10}
+              />
             </CardContent>
           </Card>
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(false)} onSave={() => saveMutation.mutate(true)} saving={saveMutation.isPending} saveLabel="Publish" />
         </TabsContent>
 
         {/* TAB 5 — SEO */}
@@ -540,6 +576,8 @@ const LandingPageEdit = () => {
               </div>
             </CardContent>
           </Card>
+          <StepNav isFirst={stepIdx === 0} isLast={stepIdx === STEPS.length - 1} onBack={goBack} onNext={goNext}
+            onSaveDraft={() => saveMutation.mutate(false)} onSave={() => saveMutation.mutate(true)} saving={saveMutation.isPending} saveLabel="Publish" />
         </TabsContent>
       </Tabs>
     </AppLayout>
