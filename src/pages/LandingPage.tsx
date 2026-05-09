@@ -7,7 +7,7 @@ import { Menu, X, MapPin, Calendar, DollarSign, Sun, Users, Tag, ChevronDown, Ch
 
 /* ─────────────── helpers ─────────────── */
 const waLink = (msg: string) =>
-  `https://wa.me/919999999999?text=${encodeURIComponent(msg)}`;
+  `https://wa.me/919930400694?text=${encodeURIComponent(msg)}`;
 
 /* ─────────────── component ─────────────── */
 const LandingPage = () => {
@@ -79,16 +79,27 @@ const LandingPage = () => {
   /* ─── form submit ─── */
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("leads").insert({
-        name: formData.name, email: formData.email, mobile: formData.mobile,
-        travel_date: formData.travel_date || null,
-        destination_id: page?.destination_id || null, itinerary_id: (page as any)?.itinerary_id || null,
-        landing_page_id: page?.id, channel: page?.channel || null, platform: page?.platform || null,
-        campaign_type: page?.campaign_type || null, ad_group: page?.ad_group || null,
-        sales_status: "new_lead", disposition: "not_contacted", traveller_code: "",
-        notes: formData.message ? `Pax: ${formData.pax}\n${formData.message}` : `Pax: ${formData.pax}`,
+      const { data, error } = await supabase.functions.invoke("submit-lead", {
+        body: {
+          name: formData.name,
+          mobile: formData.mobile,
+          email: formData.email || undefined,
+          travel_date: formData.travel_date || undefined,
+          notes: formData.message
+            ? `Pax: ${formData.pax}\n${formData.message}`
+            : `Pax: ${formData.pax}`,
+          destination_name: (page as any)?.destinations?.name || undefined,
+          landing_page_id: page?.id || undefined,
+          channel: page?.channel || "Website",
+          platform: page?.platform || "Paid",
+          campaign_type: page?.campaign_type || undefined,
+          ad_group: page?.ad_group || undefined,
+          landing_url: window.location.pathname + window.location.search,
+          referrer_url: document.referrer || undefined,
+        },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => setSubmitted(true),
   });
