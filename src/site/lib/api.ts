@@ -43,7 +43,7 @@ function mapItinerary(row: any): CMSItinerary {
     pictures: gallery.map((file_path) => ({ file_path })),
     days_data: itineraryDays.map((d) => ({
       title: d.title ?? "",
-      detail: d.detail ?? "",
+      detail: d.detail ?? (d as any).description ?? "",
     })),
     inclusion: row.inclusions ?? undefined,
     exclusion: row.exclusions ?? undefined,
