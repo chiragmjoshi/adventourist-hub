@@ -87,9 +87,33 @@ export function monthName(monthNum: number): string {
 
 const WA_NUMBER = "919930400694";
 
-export function waLink(context?: string): string {
-  const text = context
-    ? `Hi! I'm interested in the ${context} trip. Can you help me plan it?`
-    : "Hi! I'm interested in planning a trip with Adventourist.";
-  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`;
+export interface WALinkOptions {
+  /** Trip / itinerary headline shown to the customer. */
+  trip?: string;
+  /** Trip slug, used in the source token only. */
+  slug?: string;
+  /** Source tag — gets embedded as [src:xxx] so inbound WA messages are traceable. */
+  source?: string;
+  /** Override the entire prompt body (still gets the source token appended). */
+  message?: string;
+}
+
+/**
+ * Build a WhatsApp deep link with a trackable source token.
+ * Usage:  waLink({ trip: "Bali Break", slug: "bali-break", source: "home_trip_card" })
+ * Backwards-compatible: `waLink("Bali Break")` still works.
+ */
+export function waLink(opts: string | WALinkOptions = {}): string {
+  const o: WALinkOptions = typeof opts === "string" ? { trip: opts } : opts;
+  const base =
+    o.message
+      ? o.message
+      : o.trip
+        ? `Hi! I'm interested in the "${o.trip}" trip. Can you help me plan it?`
+        : "Hi! I'm interested in planning a trip with Adventourist.";
+  const tokenParts: string[] = [];
+  if (o.source) tokenParts.push(`src:${o.source}`);
+  if (o.slug)   tokenParts.push(`trip:${o.slug}`);
+  const token = tokenParts.length ? ` [${tokenParts.join("|")}]` : "";
+  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(base + token)}`;
 }

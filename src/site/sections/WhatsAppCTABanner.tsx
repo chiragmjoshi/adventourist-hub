@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { waLink } from "@/site/lib/utils";
 
 export default function WhatsAppCTABanner() {
   return (
@@ -61,7 +62,7 @@ export default function WhatsAppCTABanner() {
           transition={{ delay: 0.3, type: "spring", damping: 18 }}
         >
           <a
-            href="https://wa.me/919930400694?text=Hi!%20I%27d%20like%20to%20plan%20my%20vacation."
+            href={waLink({ source: "home_cta_banner" })}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 bg-abyss text-white font-display font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl hover:bg-drift active:scale-[0.97] transition-all duration-200 animate-bounce-soft"

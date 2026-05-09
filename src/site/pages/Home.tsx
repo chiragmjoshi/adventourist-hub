@@ -11,6 +11,53 @@ import WhatsAppCTABanner from "@/site/sections/WhatsAppCTABanner";
 import HomepageModal from "@/site/sections/HomepageModal";
 import { getItineraries, getMasterData, type CMSItinerary, type CMSDestination } from "@/site/lib/api";
 
+const HOME_JSONLD = [
+  {
+    "@context": "https://schema.org",
+    "@type": "TravelAgency",
+    name: "Adventourist",
+    url: "https://adventourist.in/",
+    logo: "https://adventourist.in/logo/logo-square-color.svg",
+    image: "https://adventourist.in/site-images/bg-home-page.jpg",
+    description: "Premium experiential travel from Mumbai. Personalised itineraries, real experts, zero booking fees.",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Mumbai",
+      addressRegion: "Maharashtra",
+      addressCountry: "IN",
+    },
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        telephone: "+91-99304-00694",
+        contactType: "customer service",
+        areaServed: "IN",
+        availableLanguage: ["English", "Hindi"],
+      },
+    ],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      reviewCount: "250",
+    },
+    sameAs: [
+      "https://instagram.com/adventourist.in",
+      "https://facebook.com/adventourist",
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Adventourist",
+    url: "https://adventourist.in/",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://adventourist.in/trips?destination={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  },
+];
+
 export default function Home() {
   const [trips, setTrips] = useState<CMSItinerary[]>([]);
   const [destinations, setDestinations] = useState<CMSDestination[]>([]);
@@ -23,13 +70,15 @@ export default function Home() {
   return (
     <SiteLayout
       title="Adventourist — Travel Designed For You"
-      description="Premium experiential travel from Mumbai. Personalised itineraries to Bali, Ladakh, Thailand, Sri Lanka, Singapore, Vietnam, Seychelles and more. Zero booking fees."
+      description="Premium experiential travel from Mumbai. Personalised itineraries to Bali, Ladakh, Thailand, Sri Lanka & more. Zero booking fees. 4.8★ on Google."
+      keywords="travel agency Mumbai, Bali honeymoon, Ladakh trips, Thailand packages, Sri Lanka tours, custom itineraries, Adventourist"
+      jsonLd={HOME_JSONLD}
     >
       <HeroSection />
       <BrandValues />
-      <DestinationsGrid apiDestinations={destinations} />
+      <DestinationsGrid apiDestinations={destinations} apiTrips={trips} />
       <HowItWorks />
-      <FeaturedItineraries apiTrips={trips} />
+      <FeaturedItineraries apiTrips={trips} apiDestinations={destinations} />
       <TestimonialsSection />
       <TravelStoriesSection />
       <WhatsAppCTABanner />
