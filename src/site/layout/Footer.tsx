@@ -38,7 +38,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <div className="relative overflow-hidden mb-4" style={{ width: '160px', height: '52px' }}>
               <img                 src="/logo/logo-horizontal-white.svg"
-                alt="Adventourist"                 className="object-contain object-left"
+                alt="Adventourist"                 className="w-full h-full object-contain object-left"
               />
             </div>
             <p className="text-sm text-white/60 leading-relaxed mb-6 font-body">
