@@ -84,7 +84,7 @@ function mapDestination(row: any): CMSDestination {
 const ITINERARY_SELECT = `
   id, slug, headline, about, days, nights, price_per_person,
   hero_image, gallery, highlights, themes, suitable_for, best_months,
-  inclusions, exclusions, status, published_at,
+  inclusions, exclusions, itinerary_days, status, published_at,
   destinations:destination_id(id, name, slug, hero_image, themes, suitable_for, best_months)
 `;
 
