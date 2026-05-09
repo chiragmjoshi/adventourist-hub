@@ -26,6 +26,8 @@ import LandingPageList from "./pages/LandingPageList";
 import LandingPageEdit from "./pages/LandingPageEdit";
 import LandingPageDetail from "./pages/LandingPageDetail";
 import LandingPage from "./pages/LandingPage";
+import StoryList from "./pages/StoryList";
+import StoryEdit from "./pages/StoryEdit";
 import SiteHome from "./site/pages/Home";
 import SiteTripsList from "./site/pages/TripsList";
 import SiteTripDetail from "./site/pages/TripDetail";
@@ -99,6 +101,9 @@ const App = () => {
             <Route path="/admin/landing-pages/new" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
             <Route path="/admin/landing-pages/edit/:id" element={<ProtectedRoute><LandingPageEdit /></ProtectedRoute>} />
             <Route path="/admin/landing-pages/:id" element={<ProtectedRoute><LandingPageDetail /></ProtectedRoute>} />
+            <Route path="/admin/stories" element={<ProtectedRoute><StoryList /></ProtectedRoute>} />
+            <Route path="/admin/stories/new" element={<ProtectedRoute><StoryEdit /></ProtectedRoute>} />
+            <Route path="/admin/stories/:id/edit" element={<ProtectedRoute><StoryEdit /></ProtectedRoute>} />
             <Route path="/admin/trip-cashflow" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["operations", "admin", "super_admin", "finance"]} pageName="Trip Cashflow"><TripCashflowList /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/admin/trip-cashflow/new" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
             <Route path="/admin/trip-cashflow/edit/:id" element={<ProtectedRoute><TripCashflowEdit /></ProtectedRoute>} />
