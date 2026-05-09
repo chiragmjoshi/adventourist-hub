@@ -405,7 +405,7 @@ function ItineraryCard({ trip, index }: { trip: CMSItinerary; index: number }) {
             View Trip →
           </Link>
           <a
-            href={waLink(trip.headline)}
+            href={waLink({ trip: trip.headline, slug: trip.slug, source: `trips_grid_${trip.slug}` })}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 inline-flex items-center justify-center gap-1 font-body text-sm font-semibold text-white bg-[#25D366] hover:bg-[#22c55e] rounded-lg py-2.5 px-3 transition-colors"
