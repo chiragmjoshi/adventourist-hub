@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 const ItineraryList = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [filterDest, setFilterDest] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [search, setSearch] = useState("");
@@ -51,10 +53,44 @@ const ItineraryList = () => {
         if (!it.headline?.toLowerCase().includes(q) && !it.slug?.toLowerCase().includes(q)) return false;
       }
       if (filterDest !== "all" && it.destination_id !== filterDest) return false;
-      if (filterStatus !== "all" && it.status !== filterStatus) return false;
+      if (filterStatus !== "all") {
+        if (it.status !== filterStatus) return false;
+      } else {
+        // Default view hides archived itineraries
+        if (it.status === "archived") return false;
+      }
       return true;
     });
   }, [itineraries, search, filterDest, filterStatus]);
+
+  const handlePreview = (it: any) => {
+    if (it.slug) window.open(`/preview/itineraries/${it.slug}`, "_blank");
+    else toast.error("This itinerary has no slug to preview");
+  };
+
+  const handleDuplicate = async (it: any) => {
+    const { id, created_at, published_at, ...rest } = it as any;
+    const copy = {
+      ...rest,
+      headline: `${it.headline} (Copy)`,
+      slug: `${it.slug || "itinerary"}-copy-${Date.now().toString(36)}`,
+      status: "draft",
+      published_at: null,
+    };
+    delete (copy as any).destinations;
+    const { error } = await supabase.from("itineraries").insert(copy);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Itinerary duplicated");
+    queryClient.invalidateQueries({ queryKey: ["itineraries"] });
+  };
+
+  const handleArchive = async (it: any) => {
+    const newStatus = it.status === "archived" ? "draft" : "archived";
+    const { error } = await supabase.from("itineraries").update({ status: newStatus }).eq("id", it.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(newStatus === "archived" ? "Itinerary archived" : "Itinerary restored");
+    queryClient.invalidateQueries({ queryKey: ["itineraries"] });
+  };
 
   return (
     <AppLayout title="Itineraries">
@@ -181,9 +217,11 @@ const ItineraryList = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => navigate(`/itineraries/edit/${it.id}`)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
-                        <DropdownMenuItem><Eye className="h-3.5 w-3.5 mr-2" />Preview</DropdownMenuItem>
-                        <DropdownMenuItem><Copy className="h-3.5 w-3.5 mr-2" />Duplicate</DropdownMenuItem>
-                        <DropdownMenuItem><Archive className="h-3.5 w-3.5 mr-2" />Archive</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handlePreview(it)}><Eye className="h-3.5 w-3.5 mr-2" />Preview</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicate(it)}><Copy className="h-3.5 w-3.5 mr-2" />Duplicate</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleArchive(it)}>
+                          <Archive className="h-3.5 w-3.5 mr-2" />{it.status === "archived" ? "Unarchive" : "Archive"}
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
