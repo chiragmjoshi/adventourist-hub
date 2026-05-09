@@ -1,154 +1,101 @@
-## Goal
+# Stories admin module
 
-Bring the Home page in line with the reference screenshots from `new.adventourist.in`, fix layout bugs (overlapping text, broken images, color drift), wire all itinerary/destination data to the CMS API, add proper SEO/schema, and ensure every lead captured from the website is tagged so it's filterable in CMS Lead Management.
+Add a complete editorial CMS for travel stories that mirrors the existing admin patterns (Itineraries, Landing Pages). The `stories` table is already in place — we still need a public Storage bucket and the routes/UI.
 
----
+## What I noticed in your spec vs the existing codebase
+- The brief asks for **react-quill**. Your admin already uses **TipTap** (`src/components/forms/RichTextEditor.tsx`) for every other rich field (itinerary descriptions, landing-page copy, etc.). I'll **extend the existing TipTap editor** with link / image / blockquote / H3 toolbar buttons rather than introducing a second editor. Same toolbar behaviour, zero new dependency, consistent look-and-feel.
+- Auto-save (`useAutoSaveDraft`) and unsaved-changes guard (`useUnsavedChanges` + `UnsavedChangesDialog`) hooks already exist and are used by `LandingPageEdit` — I'll reuse them.
+- `ImageUploader` already supports any bucket — I'll point it at the new `stories` bucket.
 
-## 1. Hero Section — match reference exactly
+## 1. Database — Storage bucket only
 
-Issues today: rotating destination card has empty/broken image (no `width/height` on `<img>`), floating "From ₹45,000" badge clips outside the card, "Talk to a Travel Expert" pill isn't horizon-yellow with WhatsApp green icon, scroll cue uses two `hidden` classes (Tailwind conflict).
+Migration:
+- Create public bucket `stories` (5 MB image cap enforced client-side).
+- RLS on `storage.objects`:
+  - Public `SELECT` for `bucket_id='stories'`.
+  - Authenticated `INSERT/UPDATE/DELETE` for `bucket_id='stories'`.
 
-Fixes:
-- Replace bare `<img>` tags missing dimensions with `w-full h-full object-cover` so images actually render.
-- Move the "✈ From ₹45,000" badge to top-left of the image card (matches reference), "⚡ 2hr Response" stays bottom-right, both inside the card bounds on lg.
-- Restyle the secondary CTA as a horizon-yellow outlined pill with the WhatsApp glyph (reference uses subtle yellow border).
-- Headline: keep three-line stack ("Travel" / "Designed" italic blaze / "For You.") but tighten line-height to `0.92` and ensure responsive font scales down on mobile (clamp 2.75rem min).
-- Trust-badge row stays under a divider — add proper `gap-x-8 gap-y-4` so 4 stats don't wrap awkwardly.
-- Fix scroll cue: replace `hidden lg:flex` collision.
+Table is unchanged.
 
-## 2. Featured Itineraries ("Our Picks For You") — wire to CMS, fix card
+## 2. Routes (`src/App.tsx`)
 
-Issues today: cards show a grey gradient because the image has no dimensions; "WhatsApp" button uses an emoji instead of the icon; tags are hardcoded to destination name only.
+```
+/admin/stories            → StoryList
+/admin/stories/new        → StoryEdit
+/admin/stories/:id/edit   → StoryEdit
+```
 
-Fixes:
-- Make the trip card image a true `aspect-[4/5]` block with `<img class="w-full h-full object-cover">`.
-- Card layout to mirror reference: image fills top ~70%, gradient overlay, title + duration overlaid; below, a single muted destination chip (`Rajasthan`, `Himachal Pradesh`), `FROM ₹xx,xxx /person` price block, then two equal-width buttons: black "View Trip →" and green "💬 WhatsApp" (use proper WhatsApp SVG, not emoji).
-- Bind to live CMS itineraries via `getItineraries()` already in place; show top 6, sorted by `pricing_per_person` ascending or by API-returned order.
-- WhatsApp deep link must include the trip slug + title + page source so the lead can be traced back: `wa.me/91...?text=Hi! I'm interested in {title} ({slug}) from the website`.
-- Below the 6-card grid, add the horizontal destination filter pill row visible in reference (All Trips · Bali · Leh Ladakh · Thailand · …) sourced from `getMasterData().destinations` — clicking jumps to `/trips?destination=...`.
+All wrapped in `ProtectedRoute`.
 
-## 3. Destinations Grid ("Explore Destinations")
+## 3. Sidebar (`src/components/AppSidebar.tsx`)
 
-Reference shows a 3-column bento with one tall hero tile (Bali) on the left spanning 2 rows, and 5 smaller tiles on the right (Leh Ladakh, Thailand, Sri Lanka, Singapore, More).
+Add a "Stories" item between **Landing Pages** and **Trip Cashflow**, icon `BookOpen` (lucide), gated by `hasPermission("itineraries")` (same content-team permission as Itineraries — no new role needed).
 
-Fixes:
-- Pull destinations from CMS `getMasterData().destinations` already wired; map first 5 + "More" tile.
-- Use destination's first picture from CMS, fallback to local images.
-- Use real itinerary counts (group itineraries by `destination.id` from the same `getItineraries` call already fetched on Home).
-- Larger overlaid label sizing on the hero tile (text-4xl), matching the reference.
+## 4. List page — `src/pages/StoryList.tsx`
 
-## 4. How It Works — fix dashed connector
+Standard admin shell (`AppLayout`), matches the look of `ItineraryList` / `LandingPageList`:
 
-The horizontal dashed line currently sits behind step circles using a magic-number left/right offset. Replace with a clean `flex` row where the dashes are a separate full-width track between the icons, vertically centered on the circle midpoint. No content overlap.
+- Header: "Stories" + subtitle, **[+ New Story]** primary button (Blaze) → `/admin/stories/new`.
+- Filters row (sticky):
+  - Search by title/excerpt
+  - Category dropdown (All + 6 categories)
+  - Status dropdown (All / Published / Draft)
+- Table columns: **Title** (with cover thumbnail) · **Category** badge · **Author** · **Status** badge (green=Published, grey=Draft) · **Views** with `Eye` icon · **Published** date · **Actions** (Edit link, inline `Switch` to toggle `is_published`, `Trash2` with confirm `AlertDialog`).
+- Sort: `published_at desc nulls last, created_at desc`.
+- Empty state card: "No stories yet. Create your first one." + CTA button.
+- Toggle published switch updates `is_published`; if turning on and `published_at` is null, sets it to `now()`.
 
-## 5. Brand Values ("We plan trips like a trusted friend would.")
+Uses TanStack Query + `supabase` client. Toast feedback via `sonner`.
 
-Reference uses 4 cream cards on a cream background (`#EEE5D5`) with a soft dashed border. Currently it uses cream cards on a white background — change the section background to cream so cards visually nest.
+## 5. Editor page — `src/pages/StoryEdit.tsx`
 
-Match icon tile colors exactly (Personalised = blaze, Expert = lagoon teal, Transparent = abyss, With You = horizon yellow) and keep the soft emoji glyphs.
+Two-column sticky layout (`grid-cols-12 gap-6`, left `col-span-8`, right `col-span-4 sticky top-20 self-start`).
 
-## 6. Testimonials — fix marquee + alignment
+### Left panel (editor)
+- **Title** — large input, `font-display` (Inter Tight already mapped), auto-suggests slug on blur if slug field is empty.
+- **Slug** — input with prefix label `adventourist.in/travel-stories/`. Manual edits stick. Slugify on the fly (`a-z0-9-`).
+- **Excerpt** — `Textarea` with live `value.length / 200` counter; hard cap at 200.
+- **Cover Image** — `ImageUploader` with `bucket="stories" folder={id ?? "drafts"} filename="cover"`.
+- **Content** — extended `RichTextEditor`:
+  - New toolbar buttons: **H3**, **Link** (prompt for URL → `editor.chain().toggleLink`), **Image** (opens hidden file input → uploads to `stories` bucket → `setImage`), **Blockquote**.
+  - Adds `@tiptap/extension-link` + `@tiptap/extension-image` + `Blockquote` (already in StarterKit) extensions to the editor when an `enableMedia` prop is true so other usages stay unchanged.
+  - Min height 480px.
 
-Issues: cards have inconsistent padding, name/destination text crops mid-line on small cards, marquee duplicate items don't seamlessly loop on smaller viewports.
+### Right panel (settings, sticky)
+- **Status** — segmented `Draft | Published` toggle. Toggling to Published sets `published_at = now()` if null (on save).
+- **Action buttons** — `[Save Draft]` (outline) and `[Publish]` (Blaze) — Publish forces `is_published=true`.
+- **Author** — `Select`: Minal Joshi / Pinky Prajapati / Team Adventourist.
+- **Category** — `Select`: Destination Guide / Travel Tips / Client Story / Food & Culture / Adventure / Honeymoon.
+- **Tags** — comma-separated `Input` rendered as removable Blaze pill chips below the field; stored as `text[]`.
+- **Destination** — `Select` populated from `destinations` table (`is_active=true`), optional, "— None —" first item.
+- **Read time** — number `Input`. A `Recalculate from content` icon button derives `Math.max(1, ceil(wordCount / 200))` from the current HTML's plain text.
+- **SEO** (collapsible `Collapsible` from shadcn, closed by default):
+  - SEO Title (`/60` counter)
+  - SEO Description (`/155` counter)
+  - OG Image — `ImageUploader` (`bucket=stories folder=… filename=og`)
 
-Fixes:
-- Fixed card width `w-[340px]` with `min-h-[280px]`.
-- Quote glyph in blaze tint, 5 horizon stars, body line-clamped to 4 lines, footer = circle avatar + name + destination, never overlapping.
-- Stats row underneath stays as-is.
+### Save / autosave / guards
+- `useAutoSaveDraft` (existing hook) writes to localStorage every 60s when dirty; toast "Draft auto-saved" surfaces inline (use sonner; existing pattern in `LandingPageEdit`).
+- `useUnsavedChanges` + `UnsavedChangesDialog` block route changes when dirty.
+- For new records: first save calls `insert`, navigates to `/admin/stories/:id/edit`, replacing history (so subsequent autosaves and image uploads use the real id as the storage folder).
+- Slug uniqueness is enforced by the DB; on conflict the toast says "This slug is already taken — try another."
+- "Published" header chip + small "Last saved hh:mm" indicator next to the Save button.
 
-## 7. Travel Stories
+## 6. Public site link-up (out of scope for this change but worth flagging)
+`/travel-stories` will start showing rows where `is_published=true`. This change only ships the admin; the public page already exists and currently doesn't query the DB — happy to wire it next if you want.
 
-Already very close to reference — only fixes:
-- Featured (left) image was rendering empty: add `w-full h-full object-cover`.
-- Right column cards: 3 horizontal cards with thumbnail left, content right (matches reference exactly), category in horizon-yellow uppercase.
+## File summary
+- `supabase/migrations/<timestamp>_stories_storage.sql` (new)
+- `src/App.tsx` — add 3 routes
+- `src/components/AppSidebar.tsx` — add nav item
+- `src/pages/StoryList.tsx` (new)
+- `src/pages/StoryEdit.tsx` (new)
+- `src/components/forms/RichTextEditor.tsx` — opt-in `enableMedia` prop adding H3/Link/Image/Blockquote buttons + image-upload bucket prop
+- 1 new dependency: `@tiptap/extension-link` (Image extension is already part of `@tiptap/extension-image` if not present, will install both as needed)
 
-## 8. WhatsApp CTA Banner ("250+ families…")
+## Open question
+Confirm the autosave behaviour:
+- **A.** Auto-save to localStorage every 60s (your existing pattern — never touches the DB while drafting), then DB-save only on explicit `Save Draft` / `Publish`. **(Recommended — matches Itinerary/Landing-page editors.)**
+- **B.** Auto-save directly to the database every 60s (writes a real `is_published=false` row even mid-edit).
 
-Matches reference closely. Just confirm:
-- Background `#FF6F4C` with topographic overlay.
-- Black pill button with green WhatsApp icon. Sub-copy in white/75.
-
-## 9. Footer
-
-Already close to reference. Add the social icons (Instagram, Facebook), confirm copy is `© 2026 Adventourist. Crafted with ❤ for explorers everywhere.` and right-side `Mumbai, Maharashtra, India`.
-
----
-
-## 10. SEO / Schema / Tags
-
-Upgrade `SiteLayout.tsx` from a 2-tag setter to a full SEO head manager (no extra deps — direct `document.head` mutation, idempotent):
-- `<title>` — page-specific.
-- `<meta name="description">` — page-specific, ≤160 chars.
-- `<meta name="keywords">` — destination/trip names where relevant.
-- Open Graph: `og:title`, `og:description`, `og:image`, `og:url`, `og:type`.
-- Twitter: `twitter:card=summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`.
-- `<link rel="canonical">` per route.
-- JSON-LD `<script type="application/ld+json">` injected per page:
-  - Home: `Organization` + `WebSite` + `TravelAgency` (name, url, logo, sameAs Instagram/Facebook, contactPoint with phone & WhatsApp, address Mumbai).
-  - Trip detail: `TouristTrip` (already exists; verify).
-  - FAQs page: `FAQPage`.
-- Update `index.html` with sane defaults for OG/Twitter so social previews work even on first load.
-- Single H1 per page (Hero), all other section titles H2.
-- Add descriptive `alt` text on every image (currently several are empty `alt=""`).
-- Lazy-load below-fold images with `loading="lazy"` and `decoding="async"`.
-
-Home-page meta:
-- Title: `Adventourist — Travel Designed For You | Premium Trips from Mumbai` (≤60 chars target — trim if needed).
-- Description: `Premium experiential travel from Mumbai. Personalised itineraries to Bali, Ladakh, Thailand, Sri Lanka & more. Zero booking fees. 4.8★ on Google.`
-
----
-
-## 11. Lead tagging — every public form lands in CMS Lead Management with traceable source
-
-The CMS `leads` table is shared. Today `useLeadCapture` already sets `channel='website'` and `platform=page_source`. Tighten so every entry point passes a distinct `page_source`, and store extra metadata in `notes` so the CMS Lead Management screen can filter/route them:
-
-| Form / CTA                              | page_source value           |
-|-----------------------------------------|-----------------------------|
-| Hero "Plan My Trip"                     | `home_hero`                 |
-| HomepageModal (auto-popup)              | `home_modal`                |
-| PlanTripModal (footer/banner CTA)       | `plan_trip_modal`           |
-| Featured trip card "WhatsApp"           | `home_trip_card_{slug}`     |
-| Trip detail enquiry form                | `trip_detail_{slug}`        |
-| Contact page form                       | `contact_page`              |
-| WhatsApp FAB (deep link)                | `whatsapp_fab`              |
-
-For WhatsApp deep links there is no form submission — instead, every WhatsApp link will pass `?text=...` containing a trackable token like `[src:home_hero]` so the inbound message is identifiable in chat (and the existing AISensy integration can parse it).
-
-Also store the trip context on lead `notes` when the visitor came from a specific itinerary card so sales sees "Interested in: Bali Break (5D/4N) — ₹57,000" automatically.
-
----
-
-## 12. Verification
-
-- Visually compare each section against the 9 reference screenshots after build.
-- Open `/` on desktop and mobile preview, confirm no overlapping text and all images render.
-- Submit each form once and verify a row appears in `leads` with the correct `platform` value.
-- View source on `/` and confirm the JSON-LD `Organization` block is present, `og:image` resolves, and there's exactly one `<h1>`.
-
----
-
-## Out of scope for this pass
-
-- Any other public page (Trips list, Trip detail, About, Contact, FAQs, Stories, Team, Policy) — they'll be polished in a follow-up.
-- Backend schema changes — we're using the existing `leads` columns.
-- Auto-popup modal timing tuning beyond what's already there.
-
----
-
-## Files I'll touch
-
-- `src/site/SiteLayout.tsx` — full SEO/JSON-LD manager
-- `src/site/sections/HeroSection.tsx`
-- `src/site/sections/BrandValues.tsx`
-- `src/site/sections/DestinationsGrid.tsx`
-- `src/site/sections/HowItWorks.tsx`
-- `src/site/sections/FeaturedItineraries.tsx` (+ new destination filter strip)
-- `src/site/sections/TestimonialsSection.tsx`
-- `src/site/sections/TravelStoriesSection.tsx`
-- `src/site/sections/WhatsAppCTABanner.tsx`
-- `src/site/layout/Footer.tsx` (small social-icon fix)
-- `src/site/hooks/useLeadCapture.ts` (richer tagging)
-- `src/site/sections/HomepageModal.tsx`, `PlanTripModal.tsx`, `components/contact/ContactForm.tsx` (pass distinct `page_source`)
-- `src/site/lib/utils.ts` `waLink()` — accept `source` + trip context, embed `[src:...]` token
-- `src/site/pages/Home.tsx` — pass itinerary list down to DestinationsGrid for real counts
-- `index.html` — default OG/Twitter meta + favicon
+Reply A or B and I'll implement.
