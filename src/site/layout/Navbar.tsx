@@ -17,6 +17,8 @@ export default function Navbar() {
   const [mounted,  setMounted]  = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = useLocation().pathname;
+  const isHome = pathname === "/";
+  const overlay = isHome && !scrolled;
 
   useEffect(() => {
     setMounted(true);
@@ -37,7 +39,11 @@ export default function Navbar() {
       {/* ── Fixed top nav bar ── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white shadow-md" : "bg-white/80 backdrop-blur-md"
+          overlay
+            ? "bg-transparent"
+            : scrolled
+              ? "bg-white shadow-md"
+              : "bg-white/80 backdrop-blur-md"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -54,10 +60,21 @@ export default function Navbar() {
                 alt="Adventourist — Travel Designed For You"
                 width={320}
                 height={88}
-                className="hidden md:block h-16 lg:h-20 w-auto"
+                className={`hidden md:block h-16 lg:h-20 w-auto ${overlay ? "hidden" : ""}`}
                 fetchPriority="high"
                 decoding="async"
               />
+              {overlay && (
+                <img
+                  src="/logo/logo-horizontal-white.svg"
+                  alt="Adventourist — Travel Designed For You"
+                  width={320}
+                  height={88}
+                  className="hidden md:block h-16 lg:h-20 w-auto"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              )}
               <img
                 src="/logo/logo-square-color.svg"
                 alt="Adventourist"
@@ -75,7 +92,11 @@ export default function Navbar() {
                 <Link key={link.href}
                   to={link.href}
                   className={`relative font-body text-base font-medium transition-colors duration-200 group ${
-                    pathname === link.href ? "text-blaze" : "text-ink hover:text-blaze"
+                    pathname === link.href
+                      ? "text-blaze"
+                      : overlay
+                        ? "text-white hover:text-horizon"
+                        : "text-ink hover:text-blaze"
                   }`}
                 >
                   {link.label}
@@ -104,11 +125,11 @@ export default function Navbar() {
             <button
               onClick={() => setIsOpen(true)}
               aria-label="Open menu"
-              className="xl:hidden flex flex-col gap-1.5 p-2 rounded-md hover:bg-drift/50 transition-colors"
+              className={`xl:hidden flex flex-col gap-1.5 p-2 rounded-md transition-colors ${overlay ? "hover:bg-white/10" : "hover:bg-drift/50"}`}
             >
-              <span className="block h-0.5 w-6 bg-ink" />
-              <span className="block h-0.5 w-6 bg-ink" />
-              <span className="block h-0.5 w-4 bg-ink" />
+              <span className={`block h-0.5 w-6 ${overlay ? "bg-white" : "bg-ink"}`} />
+              <span className={`block h-0.5 w-6 ${overlay ? "bg-white" : "bg-ink"}`} />
+              <span className={`block h-0.5 w-4 ${overlay ? "bg-white" : "bg-ink"}`} />
             </button>
           </div>
         </div>
