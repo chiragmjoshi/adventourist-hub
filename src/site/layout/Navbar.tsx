@@ -55,18 +55,19 @@ export default function Navbar() {
               className="flex-shrink-0 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-horizon rounded-sm"
               aria-label="Adventourist Home"
             >
-              <img
-                src="/logo/logo-horizontal-color.svg"
-                alt="Adventourist — Travel Designed For You"
-                width={320}
-                height={88}
-                className={`hidden md:block h-16 lg:h-20 w-auto ${overlay ? "hidden" : ""}`}
-                fetchPriority="high"
-                decoding="async"
-              />
-              {overlay && (
+              {overlay ? (
                 <img
                   src="/logo/logo-horizontal-white.svg"
+                  alt="Adventourist — Travel Designed For You"
+                  width={320}
+                  height={88}
+                  className="hidden md:block h-16 lg:h-20 w-auto"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              ) : (
+                <img
+                  src="/logo/logo-horizontal-color.svg"
                   alt="Adventourist — Travel Designed For You"
                   width={320}
                   height={88}
