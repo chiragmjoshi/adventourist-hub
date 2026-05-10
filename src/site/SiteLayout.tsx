@@ -97,20 +97,31 @@ export default function SiteLayout({
   }, [pathname]);
 
   // Animation safety net — if framer-motion / observers haven't revealed an
-  // element after 500ms, force it visible so content is never trapped at opacity 0.
+  // element shortly after it enters the viewport, force it visible.
   useEffect(() => {
-    const t = window.setTimeout(() => {
+    const reveal = () => {
       const root = document.querySelector(".site-root");
       if (!root) return;
+      const vh = window.innerHeight;
       root.querySelectorAll<HTMLElement>("*").forEach((el) => {
         const inline = el.style.opacity;
-        if (inline !== "" && parseFloat(inline) < 0.2) {
+        if (inline === "" || parseFloat(inline) >= 0.95) return;
+        const r = el.getBoundingClientRect();
+        if (r.top < vh && r.bottom > 0) {
           el.style.opacity = "1";
           el.style.transform = "none";
         }
       });
-    }, 500);
-    return () => window.clearTimeout(t);
+    };
+    const t1 = window.setTimeout(reveal, 500);
+    const onScroll = () => window.requestAnimationFrame(reveal);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.clearTimeout(t1);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, [pathname]);
 
   return (
