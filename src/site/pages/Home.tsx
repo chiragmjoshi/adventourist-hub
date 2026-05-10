@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import SiteLayout from "@/site/SiteLayout";
 import HeroSection from "@/site/sections/HeroSection";
+import HeroTrustStrip from "@/site/sections/HeroTrustStrip";
 import BrandValues from "@/site/sections/BrandValues";
 import DestinationsGrid from "@/site/sections/DestinationsGrid";
 import HowItWorks from "@/site/sections/HowItWorks";
@@ -74,6 +75,7 @@ export default function Home() {
       jsonLd={HOME_JSONLD}
     >
       <HeroSection />
+      <HeroTrustStrip />
       <BrandValues />
       <DestinationsGrid apiDestinations={destinations} apiTrips={trips} />
       <HowItWorks />
