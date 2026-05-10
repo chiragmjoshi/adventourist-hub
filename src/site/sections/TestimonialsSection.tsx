@@ -53,7 +53,8 @@ export default function TestimonialsSection() {
           {marqueeItems.map((t, i) => (
             <article
               key={i}
-              className="flex-shrink-0 w-[340px] min-h-[300px] bg-white rounded-2xl p-6 shadow-sm border border-ink/5 flex flex-col"
+              className="flex-shrink-0 w-[340px] min-h-[300px] bg-white rounded-2xl p-6 flex flex-col"
+              style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)", border: "1px solid rgba(0,0,0,0.06)" }}
             >
               <p className="font-display font-black text-5xl text-blaze/30 leading-none mb-1 select-none" aria-hidden="true">"</p>
               <StarRating />
