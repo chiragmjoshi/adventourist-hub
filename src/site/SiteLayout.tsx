@@ -96,6 +96,23 @@ export default function SiteLayout({
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
 
+  // Animation safety net — if framer-motion / observers haven't revealed an
+  // element after 500ms, force it visible so content is never trapped at opacity 0.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const root = document.querySelector(".site-root");
+      if (!root) return;
+      root.querySelectorAll<HTMLElement>("*").forEach((el) => {
+        const inline = el.style.opacity;
+        if (inline !== "" && parseFloat(inline) < 0.2) {
+          el.style.opacity = "1";
+          el.style.transform = "none";
+        }
+      });
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [pathname]);
+
   return (
     <div className="site-root min-h-screen flex flex-col bg-white">
       <Navbar />
