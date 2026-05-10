@@ -10,13 +10,29 @@ interface Tile {
   isMore?: boolean;
 }
 
+const DEST_IMAGES: Record<string, string> = {
+  "Bali":       "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
+  "Thailand":   "https://images.unsplash.com/photo-1528181304800-259b08848526?w=800&q=80",
+  "Sri Lanka":  "https://images.unsplash.com/photo-1578005343432-bf1ab1b5e6f4?w=800&q=80",
+  "Vietnam":    "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&q=80",
+  "Africa":     "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=800&q=80",
+  "Europe":     "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&q=80",
+  "Leh Ladakh": "https://images.unsplash.com/photo-1571536802807-30451e3955d8?w=1200&q=80",
+  "Rajasthan":  "https://images.unsplash.com/photo-1477587458883-47145ed31dfe?w=1200&q=80",
+  "Kerala":     "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80",
+  "Himachal":   "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80",
+  "Singapore":  "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&q=80",
+};
+
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80";
+
 const FALLBACK: Tile[] = [
-  { name: "Bali",       count: 8, image: "/site-images/bg-home-page.jpg",     isHero: true },
-  { name: "Leh Ladakh", count: 6, image: "/site-images/search-images-8.jpg" },
-  { name: "Thailand",   count: 5, image: "/site-images/singapore.jpg" },
-  { name: "Sri Lanka",  count: 4, image: "/site-images/malaysia.jpg" },
-  { name: "Singapore",  count: 3, image: "/site-images/dubai.jpg" },
-  { name: "More",       count: 0, image: "/site-images/bg-home-page.jpg", isMore: true },
+  { name: "Bali",       count: 8, image: DEST_IMAGES["Bali"],       isHero: true },
+  { name: "Leh Ladakh", count: 6, image: DEST_IMAGES["Leh Ladakh"] },
+  { name: "Thailand",   count: 5, image: DEST_IMAGES["Thailand"] },
+  { name: "Sri Lanka",  count: 4, image: DEST_IMAGES["Sri Lanka"] },
+  { name: "Vietnam",    count: 3, image: DEST_IMAGES["Vietnam"] },
+  { name: "More",       count: 0, image: DEST_IMAGES["Europe"], isMore: true },
 ];
 
 interface Props {
@@ -37,13 +53,13 @@ function buildTiles({ apiDestinations, apiTrips }: Props): Tile[] {
   const tiles = apiDestinations.slice(0, 5).map((d, i): Tile => ({
     name:  d.name,
     count: counts.get(d.id) || 0,
-    image: getCMSImageUrl(d.pictures?.[0]?.file_path),
+    image: getCMSImageUrl(d.pictures?.[0]?.file_path) || DEST_IMAGES[d.name] || FALLBACK_IMG,
     isHero: i === 0,
   }));
   tiles.push({
     name: "More",
     count: 0,
-    image: getCMSImageUrl(apiDestinations[5]?.pictures?.[0]?.file_path) || "/site-images/bg-home-page.jpg",
+    image: getCMSImageUrl(apiDestinations[5]?.pictures?.[0]?.file_path) || DEST_IMAGES["Europe"] || FALLBACK_IMG,
     isMore: true,
   });
   return tiles;
@@ -53,7 +69,7 @@ export default function DestinationsGrid({ apiDestinations, apiTrips }: Props) {
   const tiles = buildTiles({ apiDestinations, apiTrips });
 
   return (
-    <section className="bg-white py-20 lg:py-24">
+    <section className="bg-white pt-16 lg:pt-20 pb-20 lg:pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mb-10"
