@@ -4,6 +4,23 @@ import { useState } from "react";
 import { waLink } from "@/site/lib/utils";
 import { getCMSImageUrl, type CMSItinerary, type CMSDestination } from "@/site/lib/api";
 
+const DEST_TRIP_IMAGES: Record<string, string> = {
+  "Bali":            "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&q=80",
+  "Thailand":        "https://images.unsplash.com/photo-1528181304800-259b08848526?w=1200&q=80",
+  "Sri Lanka":       "https://images.unsplash.com/photo-1578005343432-bf1ab1b5e6f4?w=1200&q=80",
+  "Vietnam":         "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1200&q=80",
+  "Africa":          "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1200&q=80",
+  "Europe":          "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1200&q=80",
+  "Leh Ladakh":      "https://images.unsplash.com/photo-1571536802807-30451e3955d8?w=1200&q=80",
+  "Rajasthan":       "https://images.unsplash.com/photo-1477587458883-47145ed31dfe?w=1200&q=80",
+  "Kerala":          "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80",
+  "Himachal Pradesh":"https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80",
+  "Himachal":        "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80",
+  "South India":     "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80",
+  "Northeast India": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80",
+};
+const TRIP_FALLBACK = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80";
+
 interface TripCard {
   slug: string;
   title: string;
@@ -16,24 +33,26 @@ interface TripCard {
 
 function mapAPITrip(t: CMSItinerary): TripCard {
   const imgPath = t.thumbnail?.file_path ?? t.pictures?.[0]?.file_path;
+  const cmsImg = getCMSImageUrl(imgPath);
+  const destName = t.destination?.name ?? "";
   return {
     slug:        t.slug,
     title:       t.headline,
     duration:    t.days_and_nights ?? "",
     budgetFrom:  t.pricing_per_person ? `₹${t.pricing_per_person.toLocaleString("en-IN")}` : "On Request",
     rawPrice:    t.pricing_per_person ? `₹${t.pricing_per_person.toLocaleString("en-IN")}` : undefined,
-    destination: t.destination?.name ?? "",
-    image:       getCMSImageUrl(imgPath),
+    destination: destName,
+    image:       cmsImg || DEST_TRIP_IMAGES[destName] || TRIP_FALLBACK,
   };
 }
 
 const FALLBACK_TRIPS: TripCard[] = [
-  { slug: "colors-of-rajasthan",   title: "Colors of Rajasthan in 9 Nights & 10 Days",          duration: "10 Days · 9 Nights", budgetFrom: "₹44,999", destination: "Rajasthan",        image: "/site-images/bg-home-page.jpg" },
-  { slug: "wildlife-of-rajasthan", title: "Wildlife of Rajasthan in 5 Nights & 6 Days",         duration: "6 Days · 5 Nights",  budgetFrom: "₹24,999", destination: "Rajasthan",        image: "/site-images/search-images-8.jpg" },
-  { slug: "offbeat-himachal",      title: "Offbeat Himachal: Kasol & Jibhi in 4 Nights & 5 Days", duration: "5 Days · 4 Nights",  budgetFrom: "₹14,999", destination: "Himachal Pradesh", image: "/site-images/singapore.jpg" },
-  { slug: "dharamshala-dalhousie", title: "Getaway to Dharamshala & Dalhousie in 6 Nights & 7 Days", duration: "7 Days · 6 Nights",  budgetFrom: "₹27,999", destination: "Himachal Pradesh", image: "/site-images/dubai.jpg" },
-  { slug: "royal-karnataka",       title: "Royal Retreat of Karnataka in 3 Nights & 4 Days",     duration: "4 Days · 3 Nights",  budgetFrom: "₹14,999", destination: "South India",      image: "/site-images/singapore.jpg" },
-  { slug: "north-east-vacation",   title: "North East Vacation in 8 Nights & 9 Days",            duration: "9 Days · 8 Nights",  budgetFrom: "₹39,999", destination: "Northeast India",  image: "/site-images/search-images-8.jpg" },
+  { slug: "colors-of-rajasthan",   title: "Colors of Rajasthan in 9 Nights & 10 Days",          duration: "10 Days · 9 Nights", budgetFrom: "₹44,999", destination: "Rajasthan",        image: DEST_TRIP_IMAGES["Rajasthan"] },
+  { slug: "wildlife-of-rajasthan", title: "Wildlife of Rajasthan in 5 Nights & 6 Days",         duration: "6 Days · 5 Nights",  budgetFrom: "₹24,999", destination: "Rajasthan",        image: DEST_TRIP_IMAGES["Rajasthan"] },
+  { slug: "offbeat-himachal",      title: "Offbeat Himachal: Kasol & Jibhi in 4 Nights & 5 Days", duration: "5 Days · 4 Nights",  budgetFrom: "₹14,999", destination: "Himachal Pradesh", image: DEST_TRIP_IMAGES["Himachal"] },
+  { slug: "dharamshala-dalhousie", title: "Getaway to Dharamshala & Dalhousie in 6 Nights & 7 Days", duration: "7 Days · 6 Nights",  budgetFrom: "₹27,999", destination: "Himachal Pradesh", image: DEST_TRIP_IMAGES["Himachal"] },
+  { slug: "royal-karnataka",       title: "Royal Retreat of Karnataka in 3 Nights & 4 Days",     duration: "4 Days · 3 Nights",  budgetFrom: "₹14,999", destination: "South India",      image: DEST_TRIP_IMAGES["Kerala"] },
+  { slug: "north-east-vacation",   title: "North East Vacation in 8 Nights & 9 Days",            duration: "9 Days · 8 Nights",  budgetFrom: "₹39,999", destination: "Northeast India",  image: DEST_TRIP_IMAGES["Himachal"] },
 ];
 
 function TripCardImage({ src, alt }: { src: string; alt: string }) {
@@ -44,7 +63,7 @@ function TripCardImage({ src, alt }: { src: string; alt: string }) {
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setImgSrc("/site-images/bg-home-page.jpg")}
+      onError={() => setImgSrc(TRIP_FALLBACK)}
       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
     />
   );
@@ -70,7 +89,7 @@ export default function FeaturedItineraries({ apiTrips, apiDestinations }: Props
     : ["Bali", "Leh Ladakh", "Thailand", "Sri Lanka", "Singapore", "Vietnam", "Seychelles", "Himachal", "Uttarakhand", "Azerbaijan", "North East"];
 
   return (
-    <section className="bg-white py-20 lg:py-24">
+    <section className="bg-white pt-16 lg:pt-20 pb-20 lg:pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -107,7 +126,7 @@ export default function FeaturedItineraries({ apiTrips, apiDestinations }: Props
               className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-ink/10 flex flex-col"
             >
               {/* Image */}
-              <div className="relative aspect-[5/4] overflow-hidden">
+              <div className="relative h-[220px] overflow-hidden">
                 <TripCardImage src={trip.image} alt={trip.title} />
                 <div className="absolute inset-0 bg-gradient-to-t from-abyss/85 via-abyss/15 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-5">

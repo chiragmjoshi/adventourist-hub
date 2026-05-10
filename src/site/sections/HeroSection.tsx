@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
 
+const HERO_BG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80";
+
 const destinations = [
-  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",   region: "India",         image: "/site-images/search-images-8.jpg" },
-  { name: "Bali",       tagline: "Island of the Gods",      region: "Indonesia",     image: "/site-images/bg-home-page.jpg" },
-  { name: "Singapore",  tagline: "The Lion City",           region: "Southeast Asia",image: "/site-images/singapore.jpg" },
-  { name: "Dubai",      tagline: "Where Dreams Are Built",  region: "UAE",           image: "/site-images/dubai.jpg" },
+  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",   region: "India", image: "https://images.unsplash.com/photo-1571536802807-30451e3955d8?w=1200&q=80" },
+  { name: "Rajasthan",  tagline: "Land of Kings",           region: "India", image: "https://images.unsplash.com/photo-1477587458883-47145ed31dfe?w=1200&q=80" },
+  { name: "Kerala",     tagline: "God's Own Country",       region: "India", image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80" },
+  { name: "Himachal",   tagline: "Where Mountains Whisper", region: "India", image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80" },
 ];
 
 export default function HeroSection() {
@@ -22,30 +24,17 @@ export default function HeroSection() {
 
   return (
     <section className="relative w-full min-h-[92vh] bg-abyss overflow-hidden -mt-16 lg:-mt-20">
-      {/* Cinematic image stage */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current}
-          initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.02 }}
-          transition={{ opacity: { duration: 1.1, ease: "easeInOut" }, scale: { duration: 6.5, ease: "linear" } }}
-          className="absolute inset-0"
-        >
-          <img
-            src={dest.image}
-            alt={`${dest.name} — ${dest.tagline}`}
-            className="w-full h-full object-cover"
-            loading="eager"
-          />
-        </motion.div>
-      </AnimatePresence>
+      {/* Full-bleed background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${HERO_BG})` }}
+        aria-hidden="true"
+      />
+      {/* Dark overlay */}
+      <div className="absolute inset-0" style={{ backgroundColor: "rgba(26, 29, 46, 0.65)" }} />
+      <div className="absolute inset-0 bg-gradient-to-t from-abyss via-abyss/30 to-transparent" />
 
-      {/* Gradient scrim for legibility */}
-      <div className="absolute inset-0 bg-gradient-to-t from-abyss via-abyss/40 to-abyss/30" />
-      <div className="absolute inset-0 bg-gradient-to-r from-abyss/70 via-transparent to-transparent" />
-
-      {/* Giant translucent wordmark — magazine depth */}
+      {/* Giant translucent wordmark */}
       <div className="hidden md:flex absolute inset-x-0 top-[18%] justify-center pointer-events-none select-none px-4">
         <span
           className="font-display font-black tracking-tight text-drift/[0.10] leading-none whitespace-nowrap"
@@ -56,9 +45,8 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* Content stack — bottom-left */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 lg:pt-40 pb-12 lg:pb-16 min-h-[92vh] flex flex-col justify-end">
-        {/* Eyebrow chip */}
+      {/* Content stack */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 lg:pt-40 pb-8 lg:pb-10 min-h-[92vh] flex flex-col justify-end">
         <div className="inline-flex items-center gap-2 self-start bg-white/10 backdrop-blur-md border border-white/30 rounded-full px-4 py-2 mb-6">
           <span className="block w-6 h-px bg-horizon" />
           <span className="font-body text-white/90 text-xs sm:text-sm tracking-wide">
@@ -66,19 +54,17 @@ export default function HeroSection() {
           </span>
         </div>
 
-        {/* Headline */}
         <h1 className="font-display font-black leading-[0.92] mb-6 max-w-4xl">
           <span className="block text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>Travel</span>
           <span className="block text-blaze italic" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>Designed</span>
           <span className="block text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>For You.</span>
         </h1>
 
-        <p className="font-body text-base sm:text-lg text-white/75 max-w-xl leading-relaxed mb-8">
+        <p className="font-body text-base sm:text-lg text-white/85 max-w-xl leading-relaxed mb-8">
           We don't sell packages. We plan vacations around you — your time, your pace, your people.
         </p>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-12">
+        <div className="flex flex-col sm:flex-row gap-3 mb-10">
           <Link
             to="/trips"
             className="inline-flex items-center justify-center gap-2 bg-blaze text-white font-display font-bold text-base px-7 py-4 rounded-full hover:bg-blaze/90 active:scale-[0.97] transition-all shadow-lg shadow-blaze/30"
@@ -103,40 +89,52 @@ export default function HeroSection() {
           </a>
         </div>
 
-        {/* Bottom strip — destination label + dots */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pt-6 border-t border-white/15">
+        {/* Destination strip — 200px image carousel */}
+        <div className="relative h-[200px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={`label-${current}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.45 }}
-            >
-              <p className="font-body text-white/60 text-xs uppercase tracking-[0.2em] mb-1">
+            <motion.img
+              key={`img-${current}`}
+              src={dest.image}
+              alt={`${dest.name} — ${dest.tagline}`}
+              initial={{ opacity: 0, scale: 1.06 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.7 }}
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="eager"
+            />
+          </AnimatePresence>
+          <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/40 to-abyss/10" />
+
+          <div className="relative z-10 h-full flex items-end justify-between gap-4 p-5 lg:p-6">
+            <div>
+              <p className="font-body text-white/70 text-[11px] uppercase tracking-[0.2em] mb-1">
                 Now showing · {dest.region}
               </p>
               <p className="font-display font-bold text-white text-2xl sm:text-3xl">
-                {dest.name} <span className="text-white/50 font-normal italic text-lg sm:text-xl">— {dest.tagline}</span>
+                {dest.name}{" "}
+                <span className="text-white/70 font-normal italic text-base sm:text-lg">
+                  — {dest.tagline}
+                </span>
               </p>
-            </motion.div>
-          </AnimatePresence>
+            </div>
 
-          <div className="flex items-center gap-3">
-            {destinations.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                aria-label={`Show ${destinations[i].name}`}
-                className="p-2 -m-2"
-              >
-                <span
-                  className={`block h-1.5 rounded-full transition-all duration-300 ${
-                    i === current ? "w-10 bg-blaze" : "w-1.5 bg-white/40 hover:bg-white/70"
-                  }`}
-                />
-              </button>
-            ))}
+            <div className="flex items-center gap-3 pb-1">
+              {destinations.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrent(i)}
+                  aria-label={`Show ${destinations[i].name}`}
+                  className="p-2 -m-2"
+                >
+                  <span
+                    className={`block h-1.5 rounded-full transition-all duration-300 ${
+                      i === current ? "w-10 bg-blaze" : "w-1.5 bg-white/40 hover:bg-white/70"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

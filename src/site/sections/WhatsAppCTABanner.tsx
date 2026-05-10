@@ -47,11 +47,11 @@ export default function WhatsAppCTABanner() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="font-body text-white/75 text-base lg:text-lg mb-10"
+          className="font-body font-bold text-white text-base lg:text-lg mb-10"
         >
           One conversation. A real expert. Your trip, planned around you.
           <br />
-          <span className="text-white/50 text-sm">Responds within 2 hrs · Mon–Sat, 9am–9pm IST · No spam, no pressure.</span>
+          <span className="text-white/90 font-normal text-sm">Responds within 2 hrs · Mon–Sat, 9am–9pm IST · No spam, no pressure.</span>
         </motion.p>
 
         {/* CTA */}

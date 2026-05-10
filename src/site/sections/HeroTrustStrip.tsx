@@ -17,10 +17,10 @@ export default function HeroTrustStrip() {
                 i > 0 ? "md:border-l md:border-white/10 md:pl-6" : ""
               }`}
             >
-              <p className="font-display font-black text-2xl sm:text-3xl text-horizon leading-none">
+              <p className="font-display font-black text-2xl sm:text-3xl text-blaze leading-none">
                 {s.num}
               </p>
-              <p className="font-body text-xs sm:text-sm text-white/60 mt-2 tracking-wide">
+              <p className="font-body text-xs sm:text-sm text-white/80 mt-2 tracking-wide">
                 {s.label}
               </p>
             </div>

@@ -39,7 +39,7 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function HowItWorks() {
   return (
-    <section className="bg-horizon topo-texture py-20 lg:py-28 overflow-hidden">
+    <section className="bg-lagoon topo-texture py-20 lg:py-28 overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <motion.div
@@ -71,7 +71,7 @@ export default function HowItWorks() {
               transition={{ duration: 0.55, delay: i * 0.12, ease }}
               className="relative z-10 flex flex-col items-center text-center"
             >
-              <div className="w-16 h-16 rounded-full bg-abyss flex items-center justify-center mb-6 shadow-lg shadow-black/20 ring-4 ring-horizon">
+              <div className="w-16 h-16 rounded-full bg-abyss flex items-center justify-center mb-6 shadow-lg shadow-black/20 ring-4 ring-lagoon">
                 <span className="font-display font-black text-white text-xl">{s.number}</span>
               </div>
               <div className="text-abyss/60 mb-4">{s.icon}</div>
