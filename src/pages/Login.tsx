@@ -40,11 +40,6 @@ const Login = () => {
           </p>
           <div className="flex items-center gap-6 text-xs font-medium text-abyss/70">
             <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold text-blaze">250+</span>
-              <span className="uppercase tracking-wider">Trips</span>
-            </div>
-            <span className="text-abyss/20">·</span>
-            <div className="flex flex-col items-center">
               <span className="text-2xl font-bold text-blaze">4.8★</span>
               <span className="uppercase tracking-wider">Google</span>
             </div>

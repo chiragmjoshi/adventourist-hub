@@ -26,7 +26,7 @@ const TEAM = [
 ];
 
 const STATS = [
-  { icon: "👥", value: "250+", label: "Happy Clients" },
+  { icon: "🗓️", value: "Since 2018", label: "Crafting Journeys" },
   { icon: "⭐", value: "4.8★", label: "Google Rating" },
   { icon: "📍", value: "Mumbai", label: "Based In" },
   { icon: "🎯", value: "₹0", label: "Extra Booking Fees" },

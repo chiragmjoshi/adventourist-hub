@@ -1,6 +1,6 @@
 # Adventourist
 > Boutique travel planning company. Mumbai, India. Founded 2018 by Minal Joshi.
-> Tagline: "Travel Designed For You" | 4.8★ Google | 250+ trips | Zero booking fees
+> Tagline: "Travel Designed For You" | 4.8★ Google | Crafting journeys since 2018 | Zero booking fees
 
 ## About
 Adventourist crafts personalised, hassle-free holidays for families, couples, and friend groups.
