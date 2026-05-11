@@ -1,8 +1,8 @@
 const stats = [
-  { num: "250+", label: "Families Travelled" },
-  { num: "4.8★", label: "Google Rating" },
-  { num: "50+",  label: "Destinations" },
-  { num: "₹0",   label: "Booking Fees" },
+  { num: "Since 2018", label: "Crafting Journeys" },
+  { num: "4.8★",       label: "Google Rating" },
+  { num: "50+",        label: "Destinations" },
+  { num: "₹0",         label: "Booking Fees" },
 ];
 
 export default function HeroTrustStrip() {

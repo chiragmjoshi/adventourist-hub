@@ -63,7 +63,7 @@ const team = [
 ] as const;
 
 const stats = [
-  { icon: "👥", value: "250+", label: "Happy Clients" },
+  { icon: "🗓️", value: "Since 2018", label: "Crafting Journeys" },
   { icon: "⭐", value: "4.8★", label: "Google Rating" },
   { icon: "🏝️", value: "50+", label: "Destinations" },
   { icon: "₹0", value: "₹0", label: "Extra Booking Fees", isPlain: true },
@@ -79,7 +79,7 @@ export default function About() {
           name: "About Adventourist",
           url: "https://adventourist.in/about-us",
           description:
-            "Adventourist is a Mumbai-based experiential travel company designing bespoke trips for 250+ families across Bali, Ladakh, Thailand, Sri Lanka, Singapore and beyond.",
+            "Adventourist is a Mumbai-based experiential travel company designing bespoke trips since 2018 across Bali, Ladakh, Thailand, Sri Lanka, Singapore and beyond.",
           isPartOf: { "@type": "WebSite", name: "Adventourist", url: "https://adventourist.in" },
         },
         {
@@ -126,7 +126,7 @@ export default function About() {
   return (
     <SiteLayout
       title="About Adventourist | Travel Designed Around You, Not Sold From a Shelf"
-      description="Mumbai-born experiential travel company. 250+ families, 50+ destinations, 4.8★ on Google. Meet the team and the values behind every Adventourist trip."
+      description="Mumbai-born experiential travel company crafting bespoke trips since 2018. 50+ destinations, 4.8★ on Google. Meet the team and the values behind every Adventourist trip."
       keywords="about adventourist, travel company mumbai, experiential travel india, bespoke itineraries, travel designers"
       jsonLd={jsonLd}
     >
@@ -337,7 +337,7 @@ export default function About() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24 text-center">
           <p className="text-3xl mb-5" aria-hidden>⛺ 🧭 🔥</p>
           <h2 className="font-display font-black text-white text-3xl sm:text-4xl lg:text-5xl leading-tight mb-3">
-            250+ families planned their trip <span className="italic">exactly this way.</span>
+            Crafting bespoke trips <span className="italic">since 2018.</span>
           </h2>
           <p className="font-body text-white/85 text-[16px] mb-2">One conversation. A real expert. Your trip, planned around you.</p>
           <p className="font-body text-white/65 text-[13px] mb-8">Responds within 2 hrs · Mon–Sat, 9am–9pm IST · No spam, no pressure.</p>

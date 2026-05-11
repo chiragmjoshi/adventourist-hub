@@ -76,7 +76,7 @@ export default function TestimonialsSection() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
           <div className="flex flex-wrap justify-center gap-8 lg:gap-16">
             {[
-              { value: "250+",  label: "Happy Travellers" },
+              { value: "Since 2018",  label: "Designing Trips" },
               { value: "4.8 ★", label: "Google Rating" },
               { value: "50+",   label: "Destinations" },
               { value: "₹0",    label: "Extra Booking Fees" },

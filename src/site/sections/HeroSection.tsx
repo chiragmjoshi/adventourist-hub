@@ -7,7 +7,7 @@ const HERO_BG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=
 
 const destinations = [
   { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",   region: "India", image: "https://images.unsplash.com/photo-1571536802807-30451e3955d8?w=1200&q=80" },
-  { name: "Rajasthan",  tagline: "Land of Kings",           region: "India", image: "https://images.unsplash.com/photo-1477587458883-47145ed31dfe?w=1200&q=80" },
+  { name: "Rajasthan",  tagline: "Land of Kings",           region: "India", image: "https://images.unsplash.com/photo-1599661046289-e31897846e41?w=1200&q=80" },
   { name: "Kerala",     tagline: "God's Own Country",       region: "India", image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80" },
   { name: "Himachal",   tagline: "Where Mountains Whisper", region: "India", image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80" },
 ];
@@ -50,7 +50,7 @@ export default function HeroSection() {
         <div className="inline-flex items-center gap-2 self-start bg-white/10 backdrop-blur-md border border-white/30 rounded-full px-4 py-2 mb-6">
           <span className="block w-6 h-px bg-horizon" />
           <span className="font-body text-white/90 text-xs sm:text-sm tracking-wide">
-            250+ Families Trust Us
+            Crafting Journeys Since 2018
           </span>
         </div>
 

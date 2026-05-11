@@ -38,8 +38,8 @@ export default function WhatsAppCTABanner() {
           transition={{ duration: 0.5 }}
           className="font-display font-black text-white text-3xl lg:text-5xl leading-tight mb-4"
         >
-          250+ families planned their trip<br />
-          <span className="italic">exactly this way.</span>
+          Crafting bespoke trips<br />
+          <span className="italic">since 2018.</span>
         </motion.h2>
 
         <motion.p
