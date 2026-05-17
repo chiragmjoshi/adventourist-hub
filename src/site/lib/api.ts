@@ -243,14 +243,76 @@ export interface TravelStory {
   published_at: string | null;
 }
 
-const TRAVEL_STORY_FALLBACK_IMAGES: Record<string, string> = {
-  "travel-stories": "/site-images/search-images-8.jpg",
-  "things-to-do": "/site-images/dubai.jpg",
-  "destination-guides": "/site-images/malaysia.jpg",
+// Deterministic, destination-aware imagery so every story gets a relevant,
+// fast-loading Unsplash thumbnail when no thumbnail_url is set in the DB.
+const _u = (id: string, w = 800) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
+
+const TRAVEL_STORY_DEST_IMAGES: { keys: string[]; image: string }[] = [
+  { keys: ["ladakh", "leh", "pangong", "shanti stupa", "magnetic hill", "hemis", "chadar", "nubra"], image: _u("photo-1571536802807-30451e3955d8") },
+  { keys: ["kashmir", "gulmarg", "sonmarg", "pahalgam", "srinagar"], image: _u("photo-1571536802807-30451e3955d8") },
+  { keys: ["rajasthan", "jaipur", "jodhpur", "jaisalmer", "udaipur", "chittorgarh", "pushkar"], image: _u("photo-1599661046289-e31897846e41") },
+  { keys: ["bhutan", "paro", "thimphu", "punakha"], image: _u("photo-1626621341517-bbf3d9990a23") },
+  { keys: ["himachal", "spiti", "kasol", "manali", "shimla", "dharamshala", "uttarakhand", "rishikesh"], image: _u("photo-1626621341517-bbf3d9990a23") },
+  { keys: ["sri lanka", "srilanka", "ceylon", "colombo", "kandy"], image: _u("photo-1578005343432-bf1ab1b5e6f4") },
+  { keys: ["maldives"], image: _u("photo-1537996194471-e657df975ab4") },
+  { keys: ["andaman", "havelock", "neil island"], image: _u("photo-1537996194471-e657df975ab4") },
+  { keys: ["bali", "indonesia"], image: _u("photo-1537996194471-e657df975ab4") },
+  { keys: ["thailand", "phuket", "krabi", "bangkok", "pattaya"], image: _u("photo-1528181304800-259b08848526") },
+  { keys: ["vietnam", "hanoi", "ho chi minh", "halong"], image: _u("photo-1528360983277-13d401cdc186") },
+  { keys: ["dubai", "uae", "abu dhabi"], image: _u("photo-1525625293386-3f8f99389edd") },
+  { keys: ["singapore"], image: _u("photo-1525625293386-3f8f99389edd") },
+  { keys: ["kerala", "munnar", "alleppey", "kochi", "wayanad"], image: _u("photo-1602216056096-3b40cc0c9944") },
+  { keys: ["assam", "meghalaya", "kaziranga", "shillong", "north bengal", "darjeeling", "sikkim", "northeast"], image: _u("photo-1602216056096-3b40cc0c9944") },
+  { keys: ["tallinn", "estonia", "croatia", "pula", "europe", "italy", "spain", "greece"], image: _u("photo-1499856871958-5b9627545d1a") },
+  { keys: ["africa", "kenya", "tanzania", "south africa", "safari"], image: _u("photo-1516026672322-bc52d61a55d5") },
+];
+
+const TRAVEL_STORY_CATEGORY_POOL: Record<string, string[]> = {
+  "travel-stories": [
+    _u("photo-1571536802807-30451e3955d8"),
+    _u("photo-1599661046289-e31897846e41"),
+    _u("photo-1626621341517-bbf3d9990a23"),
+    _u("photo-1602216056096-3b40cc0c9944"),
+  ],
+  "things-to-do": [
+    _u("photo-1537996194471-e657df975ab4"),
+    _u("photo-1528181304800-259b08848526"),
+    _u("photo-1578005343432-bf1ab1b5e6f4"),
+    _u("photo-1525625293386-3f8f99389edd"),
+  ],
+  "destination-guides": [
+    _u("photo-1499856871958-5b9627545d1a"),
+    _u("photo-1571536802807-30451e3955d8"),
+    _u("photo-1602216056096-3b40cc0c9944"),
+    _u("photo-1516026672322-bc52d61a55d5"),
+  ],
 };
 
-export function travelStoryImage(s: { thumbnail_url?: string | null; category: string }): string {
-  return s.thumbnail_url || TRAVEL_STORY_FALLBACK_IMAGES[s.category] || "/placeholder.svg";
+function _hashSlug(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+export function travelStoryImage(s: {
+  thumbnail_url?: string | null;
+  category: string;
+  focus_keyword?: string | null;
+  title?: string | null;
+  slug?: string | null;
+}): string {
+  if (s.thumbnail_url) return s.thumbnail_url;
+  const hay = `${s.focus_keyword ?? ""} ${s.title ?? ""}`.toLowerCase();
+  if (hay.trim()) {
+    for (const entry of TRAVEL_STORY_DEST_IMAGES) {
+      if (entry.keys.some((k) => hay.includes(k))) return entry.image;
+    }
+  }
+  const pool =
+    TRAVEL_STORY_CATEGORY_POOL[s.category] ??
+    TRAVEL_STORY_CATEGORY_POOL["travel-stories"];
+  return pool[_hashSlug(s.slug ?? s.title ?? "x") % pool.length];
 }
 
 const TRAVEL_STORY_LIST_COLS =
