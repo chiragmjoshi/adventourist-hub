@@ -53,14 +53,20 @@ const TripsKanban = () => {
       const { data, error } = await supabase
         .from("trip_cashflow")
         .select(`
-          id, cashflow_code, traveller_name, traveller_code, trip_stage, status,
-          travel_start_date, travel_end_date, pax_count, lead_id, assigned_to, updated_at,
-          destinations:destination_id(name),
-          leads:lead_id(mobile, email),
-          users:assigned_to(name, avatar_url)
+          id,
+          cashflow_code,
+          traveller_name,
+          traveller_code,
+          travel_start_date,
+          travel_end_date,
+          trip_stage,
+          status,
+          pax_count,
+          destination:destinations!destination_id(name),
+          assignedUser:users!assigned_to(name)
         `)
         .neq("status", "cancelled")
-        .order("travel_start_date", { ascending: true, nullsFirst: false });
+        .order("travel_start_date", { ascending: true });
       if (error) throw error;
       return (data as any[]) || [];
     },
