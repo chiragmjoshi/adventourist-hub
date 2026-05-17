@@ -64,15 +64,6 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
 
     setSubmitted(true);
     return;
-    try {
-      await submitLead({
-        name: form.name,
-        phone: form.phone,
-        destination: form.destination || undefined,
-        page_source: "homepage-modal",
-      });
-    } catch { /* fail silently — UI still confirms */ }
-    setSubmitted(true);
   };
 
   if (!isOpen) return null;
