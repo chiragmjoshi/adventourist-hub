@@ -38,7 +38,8 @@ export function getCrossHostRedirect(
   const adminPath = isAdminPath(pathname);
 
   if (kind === "admin" && !adminPath) {
-    return `https://${PUBLIC_HOST}${pathname}${search}${hash}`;
+    // On the admin host, any non-admin path (including "/") should land in the CMS.
+    return `https://${ADMIN_HOST}/admin${pathname === "/" ? "" : pathname}${search}${hash}`;
   }
 
   if (kind === "public" && adminPath) {
