@@ -89,7 +89,7 @@ const SalesReport = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">{[...Array(5)].map((_, i) => <Card key={i} className="border"><CardContent className="p-5"><div className="h-16 bg-muted animate-pulse rounded" /></CardContent></Card>)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">{[...Array(6)].map((_, i) => <Card key={i} className="border"><CardContent className="p-5"><div className="h-16 bg-muted animate-pulse rounded" /></CardContent></Card>)}</div>
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
