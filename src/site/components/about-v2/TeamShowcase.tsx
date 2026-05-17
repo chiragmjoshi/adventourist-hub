@@ -2,7 +2,7 @@ import { useRef, useState, MouseEvent } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import minalImg from "@/assets/team-minal.jpg";
 import pinkyImg from "@/assets/team-pinky.jpg";
-import mukundImg from "@/assets/team-mukund.jpg";
+import viyaImg from "@/assets/team-viya.jpg";
 
 const TEAM = [
   {
@@ -22,12 +22,12 @@ const TEAM = [
     image: pinkyImg,
   },
   {
-    name: "Mukund Joshi",
-    role: "Co-Founder & CFO",
-    bio: "Keeps the books honest and the partners paid on time. The reason we're proudly zero-debt.",
-    accent: "linear-gradient(140deg,#1A1D2E 0%, #4A5470 100%)",
-    initials: "MJ",
-    image: mukundImg,
+    name: "Viya Joshi",
+    role: "Chief Inspiration Officer",
+    bio: "Seven years old and our toughest critic. If a destination passes Viya's curiosity test, we know it's worth the journey.",
+    accent: "linear-gradient(140deg,#FDC436 0%, #FF6F4C 100%)",
+    initials: "VJ",
+    image: viyaImg,
   },
 ];
 
