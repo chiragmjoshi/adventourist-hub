@@ -70,7 +70,7 @@ const VendorDetail = () => {
 
   if (isLoading || !vendor) return <AppLayout title="Vendor"><div className="text-center py-12 text-sm text-muted-foreground">Loading...</div></AppLayout>;
 
-  const getDestName = (destId: string) => destinations.find((d: any) => d.id === destId)?.name || destId;
+  const getDestName = (destId: string) => destinations.find((d: any) => d.id === destId)?.name || null;
   const contacts = (Array.isArray(vendor.contact_points) ? vendor.contact_points : []) as ContactPoint[];
   const totalVendorCost = trips.reduce((sum: number, t: any) => sum + (t.total_vendor_cost || 0), 0);
   const maskedPan = vendor.pan ? vendor.pan.slice(0, 5) + "****" + vendor.pan.slice(9) : "—";
@@ -120,10 +120,13 @@ const VendorDetail = () => {
               <div>
                 <p className="text-[10px] text-muted-foreground mb-1">Destinations Served</p>
                 <div className="flex flex-wrap gap-1">
-                  {(vendor.serve_destinations || []).map((d: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-[10px] rounded-md bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0">{getDestName(d)}</Badge>
-                  ))}
-                  {(vendor.serve_destinations || []).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                  {((vendor.serve_destinations || []) as string[])
+                    .map((d) => ({ id: d, name: getDestName(d) }))
+                    .filter((x) => !!x.name)
+                    .map((x, i) => (
+                      <Badge key={i} variant="secondary" className="text-[10px] rounded-md bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0">{x.name}</Badge>
+                    ))}
+                  {((vendor.serve_destinations || []) as string[]).filter((d) => !!getDestName(d)).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
                 </div>
               </div>
               <div>
