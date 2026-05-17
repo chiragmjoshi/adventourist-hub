@@ -1,29 +1,15 @@
-## Fix RLS on sequence tables
+## Resume hero image generation
 
-The `generate_vendor_code` trigger runs as the calling user and inserts into `vendor_code_sequence`, which has RLS enabled but no policies — so every vendor insert fails. Same risk exists on `cashflow_code_sequence` and `traveller_code_sequence` (there is no `lead_sequence` table in this project).
+Status: destinations 37/37 ✅, itineraries 3/72, landing_pages 0/11 — 80 remaining.
 
-### Changes
+### Approach
 
-Single migration adding permissive policies for authenticated users on all three sequence tables. Keeping RLS on (rather than disabling) is safer and consistent with the rest of the schema.
+Re-run the existing idempotent script `/tmp/genimg/run.py` (skips records that already have `hero_image`). Each run generates ~30–40 images before the sandbox 10-minute cap, so this will take ~2–3 turns:
 
-```sql
--- vendor_code_sequence
-CREATE POLICY "seq_all_auth" ON public.vendor_code_sequence
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+1. Turn 1: resume → finish remaining itineraries (likely ~35 of 69).
+2. Turn 2: finish itineraries + all 11 landing pages.
+3. Verify final counts (72/72 + 11/11), summarize in `/mnt/documents/image_generation_report.md`.
 
--- cashflow_code_sequence
-CREATE POLICY "seq_all_auth" ON public.cashflow_code_sequence
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+Nothing else changes — same cinematic prompt, `google/gemini-3.1-flash-image-preview` (fast), upload to `legacy-media/hero/{table}/{slug}.png`, PATCH `hero_image` via service-role REST.
 
--- traveller_code_sequence
-CREATE POLICY "seq_all_auth" ON public.traveller_code_sequence
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-```
-
-### Verification
-
-1. Create a test vendor from the Vendors page → confirm row inserts without RLS error.
-2. Confirm `vendor_code` matches `V26XXXX` format (current year prefix `V26`, 4-digit zero-padded sequence).
-3. Check browser console + network tab → no 403 / RLS errors.
-
-No frontend code changes required.
+If you'd prefer I batch the remaining work asynchronously with `nohup` again instead of foreground runs, say so — otherwise I'll start the foreground resume.
