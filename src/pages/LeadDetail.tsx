@@ -675,15 +675,21 @@ const LeadDetail = () => {
                   <CardTitle className="text-sm font-semibold">Internal Notes</CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-4">
-                  <Textarea rows={4} className="rounded-md" placeholder="Add internal notes..."
-                    value={formState.notes ?? l.notes ?? ""}
+                  <Textarea rows={3} className="rounded-md" placeholder="Type a note and click Save — each save is added as a new entry."
+                    value={formState.notes ?? ""}
                     onChange={e => setFormState(prev => ({...prev, notes: e.target.value}))} />
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-[10px] text-muted-foreground">
-                      {(formState.notes ?? l.notes ?? "").length} characters
+                      {(formState.notes ?? "").length} characters
                     </span>
                     <Button variant="outline" size="sm" onClick={handleSaveNotes} className="rounded-md text-xs">Save Notes</Button>
                   </div>
+                  {l.notes && (
+                    <div className="mt-4 pt-3 border-t border-border/50 max-h-60 overflow-y-auto">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Past notes</p>
+                      <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">{l.notes}</pre>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
