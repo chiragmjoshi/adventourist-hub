@@ -57,6 +57,39 @@ const MAP_EMBED_URL =
 export default function Contact() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [waModal, setWaModal] = useState<null | { name: string; role: string; waSource: string }>(null);
+  const [waForm, setWaForm] = useState({ name: "", phone: "" });
+  const [waErr, setWaErr] = useState<string | null>(null);
+  const [waBusy, setWaBusy] = useState(false);
+  const { submitLead } = useLeadCapture();
+
+  const openWaCapture = (m: { name: string; role: string; waSource: string }) => {
+    setWaErr(null);
+    setWaForm({ name: "", phone: "" });
+    setWaModal(m);
+  };
+
+  const submitWaCapture = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waModal) return;
+    const phone = waForm.phone.replace(/[\s\-]/g, "");
+    if (!waForm.name.trim()) { setWaErr("Please enter your name"); return; }
+    if (!/^[6-9]\d{9}$/.test(phone)) { setWaErr("Enter a valid 10-digit Indian mobile"); return; }
+    setWaBusy(true);
+    const firstName = waModal.name.split(" ")[0];
+    const message = `Hi ${firstName}! I'm ${waForm.name.trim()}. I'd like help planning a trip. [src:${waModal.waSource}]`;
+    // 1) Open WhatsApp first so lead is never lost.
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+    // 2) Capture in CMS (fire-and-forget).
+    submitLead({
+      name: waForm.name.trim(),
+      phone,
+      page_source: waModal.waSource,
+      message: `WhatsApp click → ${waModal.name} (${waModal.role})`,
+    }).catch(() => {});
+    setWaBusy(false);
+    setWaModal(null);
+  };
 
   const jsonLd = [
     {
