@@ -397,7 +397,7 @@ const LeadManagement = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Lead Management</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} leads</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{totalCount.toLocaleString()} leads match</p>
         </div>
         <Button onClick={() => setSheetOpen(true)} className="rounded-md">
           <Plus className="h-4 w-4 mr-1.5" />Add Lead
