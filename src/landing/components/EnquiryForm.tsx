@@ -17,19 +17,18 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
     name: "",
     mobile: "",
     email: "",
-    travel_date: "",
-    pax: 2,
-    message: "",
+    pax: "2",
   });
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!form.name || !form.mobile) return;
+    if (!form.name || !form.mobile || !form.email) return;
     setSubmitting(true);
 
     // 1) Open WhatsApp immediately — synchronous, no await
     const destName = page.destinations?.name || "";
-    const waMsg = `Hi! I'm ${form.name}. I enquired about "${page.hero_headline || page.name || "your trip"}"${destName ? ` (${destName})` : ""}. [src:landing_${page.slug}]`;
+    const paxLabel = form.pax === "10+" ? "10+ people" : `${form.pax} ${form.pax === "1" ? "person" : "people"}`;
+    const waMsg = `Hi! My name is ${form.name}. I'm interested in ${page.hero_headline || page.name || "your trip"}${destName ? ` (${destName})` : ""}. We are ${paxLabel} travelling. Please share more details! [src:landing_${page.slug}]`;
     try {
       window.open(waLink(waMsg), "_blank");
     } catch {
@@ -42,11 +41,8 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
         body: {
           name: form.name,
           mobile: form.mobile,
-          email: form.email || undefined,
-          travel_date: form.travel_date || undefined,
-          notes: form.message
-            ? `Pax: ${form.pax}\n${form.message}`
-            : `Pax: ${form.pax}`,
+          email: form.email,
+          notes: `Pax: ${form.pax}`,
           destination_name: destName || undefined,
           landing_page_id: page.id,
           channel: page.channel || "Website",
@@ -98,6 +94,15 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
           style={{ fontSize: "16px" }}
           className={inputCls}
         />
+        <input
+          required
+          type="email"
+          placeholder="Email Address *"
+          value={form.email}
+          onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+          style={{ fontSize: "16px" }}
+          className={inputCls}
+        />
         <div className="flex">
           <span className="h-12 px-3 flex items-center bg-gray-50 border border-r-0 border-gray-200 rounded-l-lg text-sm text-gray-500">
             +91
@@ -105,58 +110,30 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
           <input
             required
             type="tel"
-            placeholder="Mobile *"
+            placeholder="Mobile Number *"
             value={form.mobile}
-            onChange={(e) => setForm((p) => ({ ...p, mobile: e.target.value.replace(/\D/g, "") }))}
+            maxLength={10}
+            pattern="[6-9][0-9]{9}"
+            onChange={(e) => setForm((p) => ({ ...p, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) }))}
             style={{ fontSize: "16px" }}
             className={`${inputCls} rounded-l-none`}
           />
         </div>
-        {!isCompact && (
-          <input
-            type="email"
-            placeholder="Email (optional)"
-            value={form.email}
-            onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-            style={{ fontSize: "16px" }}
-            className={inputCls}
-          />
-        )}
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            type="date"
-            value={form.travel_date}
-            onChange={(e) => setForm((p) => ({ ...p, travel_date: e.target.value }))}
-            style={{ fontSize: "16px" }}
-            className={inputCls}
-          />
-          <select
-            value={form.pax}
-            onChange={(e) => setForm((p) => ({ ...p, pax: parseInt(e.target.value) || 1 }))}
-            style={{ fontSize: "16px" }}
-            className={inputCls}
-          >
-            {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                {n} {n === 1 ? "traveller" : "travellers"}
-              </option>
-            ))}
-          </select>
-        </div>
-        {!isCompact && (
-          <textarea
-            rows={2}
-            placeholder="Message (optional)"
-            value={form.message}
-            onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
-            style={{ fontSize: "16px" }}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[#FF6F4C]/30 focus:border-[#FF6F4C] resize-none bg-white"
-          />
-        )}
+        <select
+          value={form.pax}
+          onChange={(e) => setForm((p) => ({ ...p, pax: e.target.value }))}
+          style={{ fontSize: "16px" }}
+          className={inputCls}
+        >
+          <option value="" disabled>How many people?</option>
+          {["1","2","3","4","5","6","7","8","9","10","10+"].map((n) => (
+            <option key={n} value={n}>{n} {n === "1" ? "traveller" : "travellers"}</option>
+          ))}
+        </select>
         <button
           type="submit"
-          disabled={!form.name || !form.mobile || submitting}
-          className="w-full h-[52px] bg-[#FF6F4C] hover:bg-[#e5603f] disabled:opacity-50 text-white font-bold rounded-lg transition-colors text-base"
+          disabled={!form.name || !form.mobile || !form.email || submitting}
+          className="w-full h-12 bg-[#FF6F4C] hover:bg-[#e5603f] disabled:opacity-50 text-white font-bold rounded-full transition-colors text-base"
         >
           {buttonLabel || page.form_submit_text || "Get Free Quote →"}
         </button>
@@ -171,9 +148,9 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
               href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full h-12 bg-[#25D366] hover:bg-[#1ebe58] text-white font-semibold rounded-lg transition-colors text-base flex items-center justify-center gap-2"
+              className="w-full h-12 bg-[#25D366] hover:bg-[#1ebe58] text-white font-semibold rounded-full transition-colors text-base flex items-center justify-center gap-2"
             >
-              💬 WhatsApp Us Directly
+              💬 Chat on WhatsApp
             </a>
             <p className="text-center text-[11px] text-gray-400 pt-1">🔒 Your details are safe with us</p>
           </>
