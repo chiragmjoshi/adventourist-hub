@@ -1509,31 +1509,31 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
-          email_verified_at: string | null
           id: number
           name: string
           password: string
           remember_token: string | null
+          role_id: number | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
-          email_verified_at?: string | null
           id: number
           name: string
           password: string
           remember_token?: string | null
+          role_id?: number | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
-          email_verified_at?: string | null
           id?: number
           name?: string
           password?: string
           remember_token?: string | null
+          role_id?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1643,31 +1643,6 @@ export type Database = {
           hot_leads: number | null
           sales_status: string | null
           total_leads: number | null
-        }
-        Relationships: []
-      }
-      v_leads_full: {
-        Row: {
-          ad_group: string | null
-          allocated_to_name: string | null
-          campaign_type: string | null
-          channel: string | null
-          created_at: string | null
-          customer_email: string | null
-          customer_id: number | null
-          customer_mobile: number | null
-          customer_name: string | null
-          disposition: string | null
-          id: number | null
-          is_hot: boolean | null
-          itinerary_id: number | null
-          platform: string | null
-          remarks: string | null
-          sales_status: string | null
-          source: string | null
-          travel_date: string | null
-          traveller_code: string | null
-          updated_at: string | null
         }
         Relationships: []
       }
