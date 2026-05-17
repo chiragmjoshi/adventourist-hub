@@ -550,13 +550,6 @@ const LeadDetail = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Customer Tag</span>
-                  <Input className="h-7 text-xs w-32 rounded-md border-border/50" value={getField("customer_tag")}
-                    onChange={e => setFormState(prev => ({...prev, customer_tag: e.target.value}))}
-                    onBlur={() => { if (formState.customer_tag !== undefined) updateLead.mutate({ customer_tag: formState.customer_tag }); }}
-                    placeholder="e.g. hot, vip" />
-                </div>
               </div>
             </CardContent>
           </Card>
