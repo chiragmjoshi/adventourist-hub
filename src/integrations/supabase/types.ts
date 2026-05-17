@@ -247,6 +247,13 @@ export type Database = {
             referencedRelation: "trip_cashflow"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "automations_log_cashflow_id_fkey"
+            columns: ["cashflow_id"]
+            isOneToOne: false
+            referencedRelation: "trip_cashflow_sales_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cashflow_code_sequence: {
@@ -1464,6 +1471,13 @@ export type Database = {
             referencedRelation: "trip_cashflow"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reminders_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trip_cashflow_sales_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       role_permissions: {
@@ -1788,6 +1802,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "trip_cashflow_vendors_cashflow_id_fkey"
+            columns: ["cashflow_id"]
+            isOneToOne: false
+            referencedRelation: "trip_cashflow_sales_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "trip_cashflow_vendors_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -1921,11 +1942,89 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      trip_cashflow_sales_view: {
+        Row: {
+          assigned_to: string | null
+          booking_date: string | null
+          cashflow_code: string | null
+          created_at: string | null
+          created_by: string | null
+          custom_itinerary_url: string | null
+          destination_id: string | null
+          gst_billing: boolean | null
+          id: string | null
+          is_customized: boolean | null
+          itinerary_id: string | null
+          lead_id: string | null
+          notes: string | null
+          pan_card_url: string | null
+          pax_count: number | null
+          status: string | null
+          travel_end_date: string | null
+          travel_start_date: string | null
+          traveller_code: string | null
+          traveller_name: string | null
+          trip_stage: string | null
+          updated_at: string | null
+          zoho_invoice_ref: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          booking_date?: string | null
+          cashflow_code?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_itinerary_url?: string | null
+          destination_id?: string | null
+          gst_billing?: boolean | null
+          id?: string | null
+          is_customized?: boolean | null
+          itinerary_id?: string | null
+          lead_id?: string | null
+          notes?: string | null
+          pan_card_url?: string | null
+          pax_count?: number | null
+          status?: string | null
+          travel_end_date?: string | null
+          travel_start_date?: string | null
+          traveller_code?: string | null
+          traveller_name?: string | null
+          trip_stage?: string | null
+          updated_at?: string | null
+          zoho_invoice_ref?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          booking_date?: string | null
+          cashflow_code?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_itinerary_url?: string | null
+          destination_id?: string | null
+          gst_billing?: boolean | null
+          id?: string | null
+          is_customized?: boolean | null
+          itinerary_id?: string | null
+          lead_id?: string | null
+          notes?: string | null
+          pan_card_url?: string | null
+          pax_count?: number | null
+          status?: string | null
+          travel_end_date?: string | null
+          travel_start_date?: string | null
+          traveller_code?: string | null
+          traveller_name?: string | null
+          trip_stage?: string | null
+          updated_at?: string | null
+          zoho_invoice_ref?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       current_user_role: { Args: never; Returns: string }
       generate_adv_traveller_code: { Args: never; Returns: string }
+      get_vendor_safe: { Args: { p_vendor_id: string }; Returns: Json }
       increment_story_views: {
         Args: { story_slug: string }
         Returns: undefined
