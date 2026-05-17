@@ -706,6 +706,7 @@ export type Database = {
           itinerary_id: string | null
           name: string | null
           platform: string | null
+          published_at: string | null
           seo_description: string | null
           seo_title: string | null
           slug: string
@@ -739,6 +740,7 @@ export type Database = {
           itinerary_id?: string | null
           name?: string | null
           platform?: string | null
+          published_at?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug: string
@@ -772,6 +774,7 @@ export type Database = {
           itinerary_id?: string | null
           name?: string | null
           platform?: string | null
+          published_at?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
@@ -958,75 +961,110 @@ export type Database = {
       }
       leads: {
         Row: {
-          ad_group_id: number | null
-          allocated_to: number | null
-          campaign_type_id: number | null
-          channel_id: number | null
-          created_at: string | null
-          customer_id: number
-          disposition_id: number | null
+          ad_group: string | null
+          assigned_to: string | null
+          campaign_type: string | null
+          channel: string | null
+          created_at: string
+          destination_id: string | null
+          disposition: string
           email: string | null
-          id: number
+          id: string
           is_hot: boolean
-          itinerary_id: number | null
+          itinerary_id: string | null
+          landing_page_id: string | null
+          landing_url: string | null
+          mobile: string | null
           name: string | null
+          notes: string | null
           platform: string | null
-          platform_id: number | null
-          remarks: string | null
-          sales_status: string | null
-          sales_status_id: number | null
+          referrer_url: string | null
+          sales_status: string
           source: string
-          source_id: number | null
           travel_date: string | null
-          updated_at: string | null
+          traveller_code: string
+          updated_at: string
         }
         Insert: {
-          ad_group_id?: number | null
-          allocated_to?: number | null
-          campaign_type_id?: number | null
-          channel_id?: number | null
-          created_at?: string | null
-          customer_id: number
-          disposition_id?: number | null
+          ad_group?: string | null
+          assigned_to?: string | null
+          campaign_type?: string | null
+          channel?: string | null
+          created_at?: string
+          destination_id?: string | null
+          disposition?: string
           email?: string | null
-          id: number
+          id?: string
           is_hot?: boolean
-          itinerary_id?: number | null
+          itinerary_id?: string | null
+          landing_page_id?: string | null
+          landing_url?: string | null
+          mobile?: string | null
           name?: string | null
+          notes?: string | null
           platform?: string | null
-          platform_id?: number | null
-          remarks?: string | null
-          sales_status?: string | null
-          sales_status_id?: number | null
+          referrer_url?: string | null
+          sales_status?: string
           source?: string
-          source_id?: number | null
           travel_date?: string | null
-          updated_at?: string | null
+          traveller_code?: string
+          updated_at?: string
         }
         Update: {
-          ad_group_id?: number | null
-          allocated_to?: number | null
-          campaign_type_id?: number | null
-          channel_id?: number | null
-          created_at?: string | null
-          customer_id?: number
-          disposition_id?: number | null
+          ad_group?: string | null
+          assigned_to?: string | null
+          campaign_type?: string | null
+          channel?: string | null
+          created_at?: string
+          destination_id?: string | null
+          disposition?: string
           email?: string | null
-          id?: number
+          id?: string
           is_hot?: boolean
-          itinerary_id?: number | null
+          itinerary_id?: string | null
+          landing_page_id?: string | null
+          landing_url?: string | null
+          mobile?: string | null
           name?: string | null
+          notes?: string | null
           platform?: string | null
-          platform_id?: number | null
-          remarks?: string | null
-          sales_status?: string | null
-          sales_status_id?: number | null
+          referrer_url?: string | null
+          sales_status?: string
           source?: string
-          source_id?: number | null
           travel_date?: string | null
-          updated_at?: string | null
+          traveller_code?: string
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_itinerary_id_fkey"
+            columns: ["itinerary_id"]
+            isOneToOne: false
+            referencedRelation: "itineraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       legacy_destinations: {
         Row: {
@@ -1241,6 +1279,78 @@ export type Database = {
           template_id?: number | null
           updated_at?: string
           view_count?: string | null
+        }
+        Relationships: []
+      }
+      legacy_leads: {
+        Row: {
+          ad_group_id: number | null
+          allocated_to: number | null
+          campaign_type_id: number | null
+          channel_id: number | null
+          created_at: string | null
+          customer_id: number
+          disposition_id: number | null
+          email: string | null
+          id: number
+          is_hot: boolean
+          itinerary_id: number | null
+          name: string | null
+          platform: string | null
+          platform_id: number | null
+          remarks: string | null
+          sales_status: string | null
+          sales_status_id: number | null
+          source: string
+          source_id: number | null
+          travel_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ad_group_id?: number | null
+          allocated_to?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at?: string | null
+          customer_id: number
+          disposition_id?: number | null
+          email?: string | null
+          id: number
+          is_hot?: boolean
+          itinerary_id?: number | null
+          name?: string | null
+          platform?: string | null
+          platform_id?: number | null
+          remarks?: string | null
+          sales_status?: string | null
+          sales_status_id?: number | null
+          source?: string
+          source_id?: number | null
+          travel_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ad_group_id?: number | null
+          allocated_to?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at?: string | null
+          customer_id?: number
+          disposition_id?: number | null
+          email?: string | null
+          id?: number
+          is_hot?: boolean
+          itinerary_id?: number | null
+          name?: string | null
+          platform?: string | null
+          platform_id?: number | null
+          remarks?: string | null
+          sales_status?: string | null
+          sales_status_id?: number | null
+          source?: string
+          source_id?: number | null
+          travel_date?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
