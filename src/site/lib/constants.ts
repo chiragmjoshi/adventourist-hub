@@ -1,6 +1,14 @@
 import type { Itinerary, Destination, Testimonial, TravelStory } from "./types";
 
 export const WHATSAPP_NUMBER = "919930400694";
+export const WHATSAPP_NUMBER_DISPLAY = "+91 99304 00694";
+/**
+ * Internal AiSensy WhatsApp Business number used ONLY for outbound API calls
+ * from the automation engine. NEVER show this to customers or use it in any
+ * wa.me link, FAB, navbar or form. Customer-facing WA must always use
+ * `WHATSAPP_NUMBER` / `WHATSAPP_URL`.
+ */
+export const WHATSAPP_AISENSY_NUMBER = "918828116418";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=Hi!%20I%27m%20interested%20in%20planning%20a%20trip.`;
 export const WHATSAPP_URL_PLAN = `https://wa.me/${WHATSAPP_NUMBER}?text=Hi!%20I%27d%20like%20to%20start%20planning%20a%20trip.`;
 export const SUPPORT_EMAIL = "support@adventourist.in";

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { PHONE_DISPLAY, SUPPORT_EMAIL } from "@/site/lib/constants";
 
 const destinations = [
   { label: "Bali",              href: "/trips?destination=Bali" },
@@ -124,8 +125,8 @@ export default function Footer() {
               ))}
             </ul>
             <div className="space-y-1.5 text-xs text-white/40">
-              <p>support@adventourist.in</p>
-              <p>+91 99304 00694</p>
+              <p>{SUPPORT_EMAIL}</p>
+              <p>{PHONE_DISPLAY}</p>
               <p>Mon–Sat, 9AM–9PM IST</p>
             </div>
           </div>

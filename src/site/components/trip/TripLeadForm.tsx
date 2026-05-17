@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input, Textarea, Select } from "@/site/ui/Input";
 import { captureUTM, waLink } from "@/site/lib/utils";
 import { useLeadCapture } from "@/site/hooks/useLeadCapture";
-import { WHATSAPP_NUMBER, GROUP_SIZE_OPTIONS, BUDGET_OPTIONS } from "@/site/lib/constants";
+import { WHATSAPP_NUMBER, WHATSAPP_URL, GROUP_SIZE_OPTIONS, BUDGET_OPTIONS } from "@/site/lib/constants";
 import { formatINRPrice } from "@/site/lib/api";
 
 interface Props {
@@ -51,7 +51,11 @@ export default function TripLeadForm({ tripTitle, tripSlug, destination, pricePe
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    await submitLead({
+    // 1) Open WhatsApp immediately — fire-first so no lead is ever lost.
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWA())}`, "_blank");
+
+    // 2) CRM capture (fire-and-forget — never block WA hand-off).
+    submitLead({
       name: form.name,
       phone: form.phone,
       destination,
@@ -63,9 +67,8 @@ export default function TripLeadForm({ tripTitle, tripSlug, destination, pricePe
       trip_title: tripTitle,
       trip_slug: tripSlug,
       trip_price: pricePerPerson ? formatINRPrice(pricePerPerson) : undefined,
-    });
+    }).catch(() => { /* never block UI on CRM errors */ });
 
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWA())}`, "_blank");
     setSubmitted(true);
   };
 
@@ -123,6 +126,21 @@ export default function TripLeadForm({ tripTitle, tripSlug, destination, pricePe
         >
           {loading ? "Sending…" : "Send via WhatsApp →"}
         </button>
+
+        {/* Parallel path — direct WhatsApp for users who don't want to fill the form */}
+        <div className="flex items-center pt-0.5">
+          <div className="flex-grow h-px bg-ink/10" />
+          <span className="px-3 text-[11px] uppercase tracking-wider text-ink/40 font-body">or</span>
+          <div className="flex-grow h-px bg-ink/10" />
+        </div>
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full h-12 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold rounded-full text-sm flex items-center justify-center gap-2 transition-colors"
+        >
+          💬 Chat directly on WhatsApp
+        </a>
 
         <p className="font-body text-[12px] text-ink/55 text-center pt-1">
           ⚡ Responds in 2 hrs · ✓ No booking fees · 🔒 100% secure

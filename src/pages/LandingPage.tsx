@@ -4,10 +4,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 import { Menu, X, MapPin, Calendar, DollarSign, Sun, Users, Tag, ChevronDown, Check, Phone, MessageCircle } from "lucide-react";
+import { WHATSAPP_NUMBER, WHATSAPP_URL } from "@/site/lib/constants";
 
 /* ─────────────── helpers ─────────────── */
 const waLink = (msg: string) =>
-  `https://wa.me/919930400694?text=${encodeURIComponent(msg)}`;
+  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
 /* ─────────────── component ─────────────── */
 const LandingPage = () => {
@@ -92,6 +93,11 @@ const LandingPage = () => {
   /* ─── form submit ─── */
   const submitMutation = useMutation({
     mutationFn: async () => {
+      // Open WhatsApp immediately so no lead is ever lost — fire BEFORE the
+      // CRM call so a network hiccup can never block the WA hand-off.
+      const waMsg = `Hi! I'm ${formData.name || "interested"}. I enquired about the "${(page as any)?.hero_headline || (page as any)?.name || "trip"}" landing page${(page as any)?.destinations?.name ? ` (${(page as any).destinations.name})` : ""}. [src:landing_${slug}]`;
+      try { window.open(waLink(waMsg), "_blank"); } catch { /* ignore popup blockers */ }
+
       const { data, error } = await supabase.functions.invoke("submit-lead", {
         body: {
           name: formData.name,
@@ -197,6 +203,21 @@ const LandingPage = () => {
               className="w-full h-14 bg-[#FF6F4C] hover:bg-[#e5603f] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-base">
               {submitMutation.isPending ? "Submitting..." : (page as any).form_submit_text || "Submit"}
             </button>
+
+            {/* Parallel path — direct WhatsApp for users who don't want to fill the form */}
+            <div className="relative flex items-center py-1">
+              <div className="flex-grow h-px bg-gray-200" />
+              <span className="px-3 text-[11px] uppercase tracking-wider text-gray-400 font-medium">or</span>
+              <div className="flex-grow h-px bg-gray-200" />
+            </div>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-14 bg-[#25D366] hover:bg-[#1ebe58] text-white font-semibold rounded-lg transition-colors text-base flex items-center justify-center gap-2"
+            >
+              💬 Chat directly on WhatsApp
+            </a>
           </div>
         </>
       )}

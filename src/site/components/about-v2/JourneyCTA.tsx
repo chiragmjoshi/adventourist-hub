@@ -2,6 +2,7 @@ import { useRef, useState, MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import { WHATSAPP_URL } from "@/site/lib/constants";
 
 export default function JourneyCTA() {
   const btnRef = useRef<HTMLAnchorElement>(null);
@@ -60,7 +61,7 @@ export default function JourneyCTA() {
         >
           <motion.a
             ref={btnRef}
-            href="https://wa.me/919004204446"
+            href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
             onMouseMove={handleMove}
