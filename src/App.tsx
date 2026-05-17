@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, lazy, Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -78,6 +78,16 @@ function AdminLoader() {
 
 const queryClient = new QueryClient();
 
+// On the public marketing host we don't need auth — skip AuthProvider entirely
+// so the public site doesn't pay for supabase.auth.getSession + user-profile fetches.
+const IS_PUBLIC_HOST =
+  typeof window !== "undefined" && getHostKind() === "public";
+
+function MaybeAuth({ children }: { children: ReactNode }) {
+  if (IS_PUBLIC_HOST) return <>{children}</>;
+  return <AuthProvider>{children}</AuthProvider>;
+}
+
 const App = () => {
   useEffect(() => {
     // Hostname-based gating: redirect cross-domain traffic before anything renders.
@@ -114,7 +124,7 @@ const App = () => {
       <Sonner />
       <OfflineBanner />
       <BrowserRouter>
-        <AuthProvider>
+        <MaybeAuth>
           {getHostKind() !== "public" && <HealthCheckRunner />}
           <Suspense fallback={<AdminLoader />}>
           <Routes>
@@ -182,7 +192,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
-        </AuthProvider>
+        </MaybeAuth>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
