@@ -185,12 +185,18 @@ const LeadManagement = () => {
   });
 
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", format(dateFrom, "yyyy-MM-dd"), format(dateTo, "yyyy-MM-dd")],
     queryFn: async () => {
+      // Server-side date range filter — keeps payload small even with 11k+ leads in DB.
+      const fromIso = new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0).toISOString();
+      const toIso = new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999).toISOString();
       const { data, error } = await supabase
         .from("leads")
         .select("*, destinations(name), itineraries(headline, destinations(name)), users!leads_assigned_to_fkey(name)")
-        .order("created_at", { ascending: false });
+        .gte("created_at", fromIso)
+        .lte("created_at", toIso)
+        .order("created_at", { ascending: false })
+        .limit(5000);
       if (error) throw error;
       return data;
     },

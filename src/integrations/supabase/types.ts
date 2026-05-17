@@ -1930,6 +1930,7 @@ export type Database = {
         Args: { story_slug: string }
         Returns: undefined
       }
+      is_admin_or_higher: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
