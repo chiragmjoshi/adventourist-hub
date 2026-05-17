@@ -85,7 +85,7 @@ export function monthName(monthNum: number): string {
   return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][monthNum - 1] ?? "";
 }
 
-const WA_NUMBER = "919930400694";
+import { WHATSAPP_NUMBER } from "./constants";
 
 export interface WALinkOptions {
   /** Trip / itinerary headline shown to the customer. */
