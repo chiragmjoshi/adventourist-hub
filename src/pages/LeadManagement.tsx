@@ -134,7 +134,7 @@ const LeadManagement = () => {
 
   /* ── Table ── */
   const [search, setSearch] = useState("");
-  const [pageSize, setPageSize] = useState(25);
+  const PAGE_SIZE = 50;
   const [currentPage, setCurrentPage] = useState(1);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -184,21 +184,76 @@ const LeadManagement = () => {
     },
   });
 
-  const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads", format(dateFrom, "yyyy-MM-dd"), format(dateTo, "yyyy-MM-dd")],
+  /* ── Server-side pagination & filters (PERF-2) ──
+     Pushes all column filters + date range to the DB; fetches one page (50 rows)
+     plus an exact count for the matched set. */
+  const fromIso = useMemo(
+    () => new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0).toISOString(),
+    [dateFrom]
+  );
+  const toIso = useMemo(
+    () => new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999).toISOString(),
+    [dateTo]
+  );
+  const dispKey = useMemo(() => [...activeDispositions].sort().join(","), [activeDispositions]);
+  const statKey = useMemo(() => [...activeStatuses].sort().join(","), [activeStatuses]);
+
+  const applyBaseFilters = useCallback((q: any) => {
+    q = q.gte("created_at", fromIso).lte("created_at", toIso);
+    if (filterDestination !== "all") q = q.eq("destination_id", filterDestination);
+    if (filterChannel !== "all") q = q.eq("channel", filterChannel);
+    if (filterPlatform !== "all") q = q.eq("platform", filterPlatform);
+    if (filterCampaign !== "all") q = q.eq("campaign_type", filterCampaign);
+    if (filterAdGroup !== "all") q = q.eq("ad_group", filterAdGroup);
+    const s = search.trim().replace(/[%(),]/g, "");
+    if (s) {
+      q = q.or(
+        `name.ilike.%${s}%,email.ilike.%${s}%,mobile.ilike.%${s}%,traveller_code.ilike.%${s}%`
+      );
+    }
+    return q;
+  }, [fromIso, toIso, filterDestination, filterChannel, filterPlatform, filterCampaign, filterAdGroup, search]);
+
+  const { data: leadsResult, isLoading } = useQuery({
+    queryKey: ["leads_page", fromIso, toIso, filterDestination, filterChannel, filterPlatform, filterCampaign, filterAdGroup, search, dispKey, statKey, currentPage],
     queryFn: async () => {
-      // Server-side date range filter — keeps payload small even with 11k+ leads in DB.
-      const fromIso = new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0).toISOString();
-      const toIso = new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999).toISOString();
-      const { data, error } = await supabase
+      let q = supabase
         .from("leads")
-        .select("*, destinations(name), itineraries(headline, destinations(name)), users!leads_assigned_to_fkey(name)")
-        .gte("created_at", fromIso)
-        .lte("created_at", toIso)
+        .select(
+          "*, destinations(name), itineraries(headline, destinations(name)), users!leads_assigned_to_fkey(name)",
+          { count: "exact" }
+        );
+      q = applyBaseFilters(q);
+      if (activeDispositions.size > 0) q = q.in("disposition", [...activeDispositions]);
+      if (activeStatuses.size > 0) q = q.in("sales_status", [...activeStatuses]);
+      const fromRow = (currentPage - 1) * PAGE_SIZE;
+      const toRow = fromRow + PAGE_SIZE - 1;
+      const { data, count, error } = await q
         .order("created_at", { ascending: false })
-        .limit(5000);
+        .range(fromRow, toRow);
       if (error) throw error;
-      return data;
+      return { rows: data ?? [], count: count ?? 0 };
+    },
+  });
+  const leads = leadsResult?.rows ?? [];
+  const totalCount = leadsResult?.count ?? 0;
+
+  /* Chip counts — fetched without disposition/status chip filters so chips show
+     accurate totals across the current base filter set. */
+  const { data: chipAgg } = useQuery({
+    queryKey: ["leads_chip_counts", fromIso, toIso, filterDestination, filterChannel, filterPlatform, filterCampaign, filterAdGroup, search],
+    queryFn: async () => {
+      let q = supabase.from("leads").select("disposition, sales_status");
+      q = applyBaseFilters(q);
+      const { data, error } = await q.limit(20000);
+      if (error) throw error;
+      const disp: Record<string, number> = {};
+      const stat: Record<string, number> = {};
+      (data ?? []).forEach((r: any) => {
+        if (r.disposition) disp[r.disposition] = (disp[r.disposition] || 0) + 1;
+        if (r.sales_status) stat[r.sales_status] = (stat[r.sales_status] || 0) + 1;
+      });
+      return { disp, stat };
     },
   });
 
@@ -273,42 +328,13 @@ const LeadManagement = () => {
     return c;
   }, [filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination]);
 
-  const filtered = useMemo(() => {
-    const fromMs = new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0).getTime();
-    const toMs = new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999).getTime();
-    return leads.filter((l: any) => {
-      const q = search.toLowerCase();
-      if (q && !(l.name?.toLowerCase().includes(q) || l.traveller_code?.toLowerCase().includes(q) || l.email?.toLowerCase().includes(q) || l.mobile?.includes(q))) return false;
-      if (l.created_at) {
-        const t = new Date(l.created_at).getTime();
-        if (t < fromMs || t > toMs) return false;
-      }
-      if (filterChannel !== "all" && l.channel !== filterChannel) return false;
-      if (filterPlatform !== "all" && l.platform !== filterPlatform) return false;
-      if (filterCampaign !== "all" && l.campaign_type !== filterCampaign) return false;
-      if (filterAdGroup !== "all" && l.ad_group !== filterAdGroup) return false;
-      if (filterDestination !== "all" && l.destination_id !== filterDestination) return false;
-      if (activeDispositions.size > 0 && !activeDispositions.has(l.disposition)) return false;
-      if (activeStatuses.size > 0 && !activeStatuses.has(l.sales_status)) return false;
-      return true;
-    });
-  }, [leads, search, dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses]);
+  /* Server already filtered + paginated — `leads` IS the current page. */
+  const filtered = leads;
+  const paginated = leads;
 
-  /* Counts are keyed by DB snake_case key (matches l.disposition / l.sales_status) */
-  const dispositionCounts = useMemo(() => {
-    const c: Record<string, number> = {};
-    leads.forEach((l: any) => { if (l.disposition) c[l.disposition] = (c[l.disposition] || 0) + 1; });
-    return c;
-  }, [leads]);
-
-  const statusCounts = useMemo(() => {
-    const c: Record<string, number> = {};
-    leads.forEach((l: any) => { if (l.sales_status) c[l.sales_status] = (c[l.sales_status] || 0) + 1; });
-    return c;
-  }, [leads]);
-
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const dispositionCounts = chipAgg?.disp ?? {};
+  const statusCounts = chipAgg?.stat ?? {};
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   // Reset to page 1 whenever the active filter set changes
   useEffect(() => {
@@ -331,9 +357,9 @@ const LeadManagement = () => {
   };
 
   const handleExport = () => {
-    if (filtered.length === 0) { toast.error("No data to export"); return; }
+    if (leads.length === 0) { toast.error("No data to export"); return; }
     const headers = ["Traveller Code", "Name", "Email", "Mobile", "Destination", "Itinerary", "Disposition", "Sales Status", "Date"];
-    const rows = filtered.map((l: any) => [
+    const rows = leads.map((l: any) => [
       l.traveller_code, l.name, l.email || "", l.mobile || "",
       l.destinations?.name || "", (l as any).itineraries?.headline || "",
       l.disposition || "", l.sales_status || "",
@@ -343,7 +369,7 @@ const LeadManagement = () => {
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `leads_${format(new Date(), "yyyyMMdd")}.csv`; a.click();
-    toast.success("Exported to CSV");
+    toast.success(`Exported ${leads.length} leads (current page) to CSV`);
   };
 
   const anyFiltersActive =
@@ -371,7 +397,7 @@ const LeadManagement = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Lead Management</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} leads</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{totalCount.toLocaleString()} leads match</p>
         </div>
         <Button onClick={() => setSheetOpen(true)} className="rounded-md">
           <Plus className="h-4 w-4 mr-1.5" />Add Lead
@@ -471,13 +497,11 @@ const LeadManagement = () => {
       {/* ── Table toolbar ── */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[72px] h-8 text-xs rounded-md"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {[10, 25, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <span className="text-xs text-muted-foreground">entries</span>
+          <span className="text-xs text-muted-foreground">
+            {totalCount > 0
+              ? `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, totalCount)} of ${totalCount.toLocaleString()} leads`
+              : "No leads match"}
+          </span>
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -648,7 +672,7 @@ const LeadManagement = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <span className="text-xs text-muted-foreground">
-            {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
+            Page {currentPage} of {totalPages} · {totalCount.toLocaleString()} matching
           </span>
           <div className="flex gap-1">
             <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="h-7 text-xs rounded-md">Prev</Button>

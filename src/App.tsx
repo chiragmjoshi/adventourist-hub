@@ -24,6 +24,13 @@ import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
 import { processAutomationQueue } from "./services/automationEngine";
 import { getCrossHostRedirect, getHostKind } from "@/lib/hostname";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { useDBHealthCheck } from "@/hooks/useDBHealthCheck";
+
+function HealthCheckRunner() {
+  useDBHealthCheck();
+  return null;
+}
 
 // Admin pages — lazy loaded to keep public site bundle small
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -101,8 +108,10 @@ const App = () => {
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OfflineBanner />
       <BrowserRouter>
         <AuthProvider>
+          <HealthCheckRunner />
           <Suspense fallback={<AdminLoader />}>
           <Routes>
             {/* Public site */}

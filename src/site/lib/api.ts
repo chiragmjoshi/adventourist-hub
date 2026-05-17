@@ -6,14 +6,52 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const STORAGE_BASE = `${SUPABASE_URL}/storage/v1/object/public`;
 const DEFAULT_BUCKET = "itinerary-images";
 
-/** Resolve a stored image path to a public URL. Accepts full URLs, bucket-prefixed paths, or bare keys. */
-export function getCMSImageUrl(p?: string | null, bucket: string = DEFAULT_BUCKET): string {
+export type CMSImageOptions = {
+  width?: number;
+  height?: number;
+  resize?: "cover" | "contain" | "fill";
+  quality?: number;
+};
+
+/** Append Supabase Storage render transform params to a public URL. */
+function withTransform(url: string, options?: CMSImageOptions): string {
+  if (!options) return url;
+  const params = new URLSearchParams();
+  if (options.width) params.set("width", String(options.width));
+  if (options.height) params.set("height", String(options.height));
+  if (options.resize) params.set("resize", options.resize);
+  if (options.quality) params.set("quality", String(options.quality));
+  const qs = params.toString();
+  if (!qs) return url;
+  // Supabase image transform endpoint lives under /storage/v1/render/image/public/...
+  // We replace /object/public with /render/image/public to enable transforms.
+  const transformed = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+  return `${transformed}${transformed.includes("?") ? "&" : "?"}${qs}`;
+}
+
+/** Resolve a stored image path to a public URL. Accepts full URLs, bucket-prefixed paths, or bare keys.
+ *  Optional second arg may be a bucket name (legacy) or an options object for image transforms. */
+export function getCMSImageUrl(
+  p?: string | null,
+  bucketOrOptions: string | CMSImageOptions = DEFAULT_BUCKET,
+  maybeOptions?: CMSImageOptions
+): string {
   if (!p) return "/site-images/bg-home-page.jpg";
-  if (p.startsWith("http")) return p;
-  const clean = p.startsWith("/") ? p.slice(1) : p;
-  // If the path already includes a bucket segment (e.g. "stories/foo.jpg"), use as-is
-  if (clean.includes("/")) return `${STORAGE_BASE}/${clean}`;
-  return `${STORAGE_BASE}/${bucket}/${clean}`;
+  const bucket = typeof bucketOrOptions === "string" ? bucketOrOptions : DEFAULT_BUCKET;
+  const options =
+    typeof bucketOrOptions === "object" ? bucketOrOptions : maybeOptions;
+
+  let url: string;
+  if (p.startsWith("http")) {
+    url = p;
+  } else {
+    const clean = p.startsWith("/") ? p.slice(1) : p;
+    url = clean.includes("/") ? `${STORAGE_BASE}/${clean}` : `${STORAGE_BASE}/${bucket}/${clean}`;
+  }
+  if (options && url.includes("/storage/v1/object/public/")) {
+    return withTransform(url, options);
+  }
+  return url;
 }
 
 export const formatINRPrice = (n?: number | null): string => {
