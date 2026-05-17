@@ -1,5 +1,6 @@
 import { useState } from "react";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import ContactForm from "@/site/components/contact/ContactForm";
 import { PHONE_DISPLAY, SUPPORT_EMAIL, WHATSAPP_NUMBER } from "@/site/lib/constants";
 import { waLink } from "@/site/lib/utils";
@@ -116,6 +117,25 @@ export default function Contact() {
       keywords="contact adventourist, travel agency mumbai, plan trip whatsapp, bali ladakh thailand experts"
       jsonLd={jsonLd}
     >
+      <SEO
+        title="Contact Us — Plan Your Trip with Adventourist"
+        description="Ready to travel? Contact Adventourist in Mumbai to plan your custom itinerary. WhatsApp, call, or email us — we respond within 24 hours."
+        canonical="/contact"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "ContactPage",
+          url: "https://www.adventourist.in/contact",
+          name: "Contact Adventourist",
+          description: "Get in touch with Adventourist to plan your custom travel experience. Call, WhatsApp, or fill the form — we respond within 24 hours.",
+          mainEntity: {
+            "@type": "TravelAgency",
+            "@id": "https://www.adventourist.in/#organization",
+            name: "Adventourist",
+            telephone: "+919930400694",
+            email: "support@adventourist.in",
+          },
+        }}
+      />
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="bg-drift">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 text-sm font-body text-ink/60">

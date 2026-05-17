@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import HeroSection from "@/site/sections/HeroSection";
 import HeroTrustStrip from "@/site/sections/HeroTrustStrip";
 import BrandValues from "@/site/sections/BrandValues";
@@ -74,6 +75,13 @@ export default function Home() {
       keywords="travel agency Mumbai, Bali honeymoon, Ladakh trips, Thailand packages, Sri Lanka tours, custom itineraries, Adventourist"
       jsonLd={HOME_JSONLD}
     >
+      <SEO
+        title="Adventourist — Premium Experiential Travel from Mumbai"
+        description="Adventourist crafts custom, expert-led travel experiences for curious explorers. Discover curated itineraries, group tours, and honeymoon packages from Mumbai."
+        canonical="/"
+        schema={HOME_JSONLD}
+        keywords="experiential travel, custom itineraries, travel packages Mumbai, group tours India, honeymoon packages, curated travel"
+      />
       <HeroSection />
       <HeroTrustStrip />
       <BrandValues />

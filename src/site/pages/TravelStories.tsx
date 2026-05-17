@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import {
   getAllTravelStories,
   travelStoryImage,
@@ -150,6 +151,11 @@ export default function TravelStories() {
         },
       ]}
     >
+      <SEO
+        title="Travel Stories & Inspiration — Adventourist"
+        description="Real travel stories and trip inspiration — Bali honeymoons, Ladakh adventures, Thailand escapes and Sri Lanka getaways from real travellers."
+        canonical="/travel-stories"
+      />
       <section className="bg-drift py-16 lg:py-20">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <p className="section-label mb-3">Stories From The Road</p>

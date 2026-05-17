@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import DOMPurify from "isomorphic-dompurify";
 import { Share2, Link2, ChevronRight, MessageCircle } from "lucide-react";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
 import {
   getTravelStoryBySlug,
@@ -123,6 +124,14 @@ export default function StoryDetail() {
       ogType="article"
       jsonLd={jsonLd}
     >
+      <SEO
+        title={story.seo_title ?? `${story.title} — Adventourist`}
+        description={story.seo_description ?? story.excerpt ?? `${story.title} — a travel story from Adventourist.`}
+        canonical={`/travel-stories/${story.slug}`}
+        ogImage={cover}
+        ogType="article"
+        schema={jsonLd as any}
+      />
       {/* Hero */}
       <section className="relative h-[55vh] min-h-[360px] w-full overflow-hidden">
         <img

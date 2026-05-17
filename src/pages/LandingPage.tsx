@@ -6,6 +6,7 @@ import BoldTemplate from "@/landing/templates/BoldTemplate";
 import MinimalTemplate from "@/landing/templates/MinimalTemplate";
 import StoryTemplate from "@/landing/templates/StoryTemplate";
 import { LandingPageData, ItineraryData } from "@/landing/shared";
+import SEO from "@/components/SEO";
 
 const LandingPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -55,7 +56,7 @@ const LandingPage = () => {
     },
   });
 
-  // SEO + GTM
+  // GTM only — SEO handled by <SEO /> component below
   useEffect(() => {
     if (typeof window !== "undefined" && !(window as any).__gtmLoaded) {
       (window as any).__gtmLoaded = true;
@@ -66,23 +67,7 @@ const LandingPage = () => {
       gs.src = "https://www.googletagmanager.com/gtm.js?id=GTM-NDHCWP9";
       document.head.appendChild(gs);
     }
-    if (!page) return;
-    document.title = page.seo_title || page.hero_headline || page.name || "Adventourist";
-    const setMeta = (name: string, content: string) => {
-      let el = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
-      if (!el) {
-        el = document.createElement("meta");
-        name.startsWith("og:") ? el.setAttribute("property", name) : el.setAttribute("name", name);
-        document.head.appendChild(el);
-      }
-      el.setAttribute("content", content);
-    };
-    setMeta("description", page.seo_description || page.hero_subtext || "");
-    setMeta("og:title", page.seo_title || page.hero_headline || "");
-    setMeta("og:description", page.seo_description || page.hero_subtext || "");
-    if (page.hero_image) setMeta("og:image", page.hero_image);
-    setMeta("og:url", `https://www.adventourist.in/l/${slug}`);
-  }, [page, slug]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -116,6 +101,37 @@ const LandingPage = () => {
 
   return (
     <>
+      {page && (
+        <SEO
+          title={(page as any).seo_title || page.hero_headline || page.name || "Adventourist"}
+          description={(page as any).seo_description || page.hero_subtext || ""}
+          canonical={`/l/${slug}`}
+          ogImage={(page as any).hero_image}
+          ogType="article"
+          schema={[
+            {
+              "@context": "https://schema.org",
+              "@type": "TouristTrip",
+              name: page.hero_headline,
+              description: page.hero_subtext,
+              touristType: (page as any).suitable_for?.join?.(", "),
+              offers: {
+                "@type": "Offer",
+                priceCurrency: "INR",
+                seller: { "@type": "TravelAgency", name: "Adventourist" },
+              },
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "Home", item: "https://www.adventourist.in" },
+                { "@type": "ListItem", position: 2, name: page.hero_headline, item: `https://www.adventourist.in/l/${slug}` },
+              ],
+            },
+          ]}
+        />
+      )}
       {isPreview && (
         <div className="bg-yellow-400 text-yellow-900 text-center py-2 text-xs font-medium">
           ⚠️ Preview Mode — This page is not live yet
