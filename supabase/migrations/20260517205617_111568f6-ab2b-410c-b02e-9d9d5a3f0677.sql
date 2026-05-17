@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_cashflow ADD COLUMN IF NOT EXISTS agreed_selling_price numeric;
