@@ -54,6 +54,7 @@ const TripCashflowEdit = () => {
     pax_count: 1, gst_billing: true, margin_percent: 0, status: "draft",
     assigned_to: "", lead_id: "", pan_card_url: "", zoho_invoice_ref: "", notes: "",
     is_customized: false, custom_itinerary_url: "",
+    agreed_selling_price: 0,
   });
 
   const STEPS = [
@@ -147,6 +148,7 @@ const TripCashflowEdit = () => {
         notes: existing.notes || "",
         is_customized: (existing as any).is_customized || false,
         custom_itinerary_url: (existing as any).custom_itinerary_url || "",
+        agreed_selling_price: parseFloat(String((existing as any).agreed_selling_price)) || 0,
       });
     }
   }, [existing]);
@@ -211,6 +213,7 @@ const TripCashflowEdit = () => {
         notes: form.notes || null,
         is_customized: form.is_customized,
         custom_itinerary_url: form.custom_itinerary_url || null,
+        agreed_selling_price: form.agreed_selling_price || null,
       };
 
       let cashflowId = id;
@@ -253,6 +256,7 @@ const TripCashflowEdit = () => {
     },
     onSuccess: (cfId) => {
       queryClient.invalidateQueries({ queryKey: ["trip_cashflow"] });
+      queryClient.invalidateQueries({ queryKey: ["lead_trips"] });
       setLastSaved(new Date());
       toast.success("Cashflow saved");
       // Trip-level automations are handled by the new automation engine
