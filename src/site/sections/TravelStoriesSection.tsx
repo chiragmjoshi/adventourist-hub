@@ -1,43 +1,16 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { getStories, getCMSImageUrl, type CMSStory } from "@/site/lib/api";
+import { getTopTravelStories, travelStoryImage, type TravelStory } from "@/site/lib/api";
 
-interface CardData {
-  category: string;
-  title: string;
-  excerpt?: string;
-  image: string;
-  to: string;
-  readTime: string;
-  external?: boolean;
-}
-
-const FALLBACK_FEATURED: CardData = {
-  category: "Adventure",
-  title: "11 Reasons Why Leh Ladakh Should Be on Every Indian's Bucket List",
-  excerpt:
-    "From the surreal Pangong Lake to the ancient monasteries of Thiksey — Ladakh is not just a destination, it's a transformation.",
-  image: "/site-images/search-images-8.jpg",
-  to: "/travel-stories",
-  readTime: "6 min read",
+const CATEGORY_LABEL: Record<string, string> = {
+  "travel-stories": "Travel Stories",
+  "things-to-do": "Things To Do",
+  "destination-guides": "Destination Guides",
 };
 
-const FALLBACK_SIDE: CardData[] = [
-  { category: "Food & Culture", title: "The Street Food Trail That Changed My Perspective on Vietnam", image: "/site-images/malaysia.jpg", readTime: "4 min read", to: "/travel-stories" },
-  { category: "Honeymoon", title: "We Planned Our Bali Honeymoon in 48 Hours — Here's How", image: "/site-images/bg-home-page.jpg", readTime: "5 min read", to: "/travel-stories" },
-  { category: "Travel Tips", title: "The Only Seychelles Packing List You'll Ever Need", image: "/site-images/dubai.jpg", readTime: "3 min read", to: "/travel-stories" },
-];
-
-function toCard(s: CMSStory): CardData {
-  return {
-    category: s.category,
-    title: s.title,
-    excerpt: s.excerpt,
-    image: getCMSImageUrl(s.cover_image_url),
-    to: `/travel-stories/${s.slug}`,
-    readTime: `${s.read_time_minutes} min read`,
-  };
+function readTime(s: TravelStory) {
+  return `${s.read_time_minutes ?? 5} min read`;
 }
 
 function FeaturedSkeleton() {
@@ -61,19 +34,14 @@ function FeaturedSkeleton() {
 }
 
 export default function TravelStoriesSection() {
-  const [stories, setStories] = useState<CMSStory[] | null>(null);
+  const [stories, setStories] = useState<TravelStory[] | null>(null);
 
   useEffect(() => {
-    getStories().then(setStories);
+    getTopTravelStories(4).then(setStories);
   }, []);
 
-  const useFallback = stories !== null && stories.length === 0;
-  const featured: CardData =
-    stories && stories.length > 0 ? toCard(stories[0]) : FALLBACK_FEATURED;
-  const side: CardData[] =
-    stories && stories.length > 1
-      ? stories.slice(1, 4).map(toCard)
-      : FALLBACK_SIDE;
+  const featured = stories && stories.length > 0 ? stories[0] : null;
+  const side = stories ? stories.slice(1, 4) : [];
 
   return (
     <section className="bg-drift py-20 lg:py-24">
@@ -104,7 +72,7 @@ export default function TravelStoriesSection() {
 
         {stories === null ? (
           <FeaturedSkeleton />
-        ) : (
+        ) : featured ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Featured */}
             <motion.div
@@ -114,9 +82,9 @@ export default function TravelStoriesSection() {
               transition={{ duration: 0.55 }}
               className="group relative overflow-hidden rounded-2xl min-h-[420px] lg:min-h-[560px] flex flex-col justify-end"
             >
-              <Link to={featured.to} className="absolute inset-0 z-20" aria-label={featured.title} />
+              <Link to={`/travel-stories/${featured.slug}`} className="absolute inset-0 z-20" aria-label={featured.title} />
               <img
-                src={featured.image}
+                src={travelStoryImage(featured)}
                 alt={featured.title}
                 loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
@@ -124,17 +92,17 @@ export default function TravelStoriesSection() {
               <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/30 to-transparent" />
               <div className="relative z-10 p-6 lg:p-8">
                 <span className="inline-block font-body text-xs font-semibold uppercase tracking-widest text-horizon mb-3">
-                  {featured.category}
+                  {CATEGORY_LABEL[featured.category] ?? featured.category}
                 </span>
                 <h3 className="font-display font-black text-white text-2xl lg:text-3xl leading-tight mb-3">
                   {featured.title}
                 </h3>
                 {featured.excerpt && (
-                  <p className="font-body text-white/70 text-sm leading-relaxed mb-4 hidden lg:block">
+                  <p className="font-body text-white/70 text-sm leading-relaxed mb-4 hidden lg:block line-clamp-3">
                     {featured.excerpt}
                   </p>
                 )}
-                <p className="font-body text-white/50 text-xs">{featured.readTime}</p>
+                <p className="font-body text-white/50 text-xs">{readTime(featured)}</p>
               </div>
             </motion.div>
 
@@ -142,17 +110,17 @@ export default function TravelStoriesSection() {
             <div className="flex flex-col gap-5">
               {side.map((s, i) => (
                 <motion.div
-                  key={`${s.title}-${i}`}
+                  key={s.id}
                   initial={{ opacity: 0, x: 24 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.08, duration: 0.5 }}
                   className="group relative flex gap-4 bg-white rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300"
                 >
-                  <Link to={s.to} className="absolute inset-0 z-20" aria-label={s.title} />
+                  <Link to={`/travel-stories/${s.slug}`} className="absolute inset-0 z-20" aria-label={s.title} />
                   <div className="relative w-32 flex-shrink-0">
                     <img
-                      src={s.image}
+                      src={travelStoryImage(s)}
                       alt={s.title}
                       loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.08]"
@@ -160,22 +128,18 @@ export default function TravelStoriesSection() {
                   </div>
                   <div className="flex flex-col justify-center py-4 pr-4 min-w-0">
                     <span className="font-body text-[11px] font-semibold uppercase tracking-widest text-horizon mb-1.5">
-                      {s.category}
+                      {CATEGORY_LABEL[s.category] ?? s.category}
                     </span>
                     <h3 className="font-display font-bold text-abyss text-sm lg:text-base leading-snug line-clamp-2">
                       {s.title}
                     </h3>
-                    <p className="font-body text-xs text-ink/40 mt-2">{s.readTime}</p>
+                    <p className="font-body text-xs text-ink/40 mt-2">{readTime(s)}</p>
                   </div>
                 </motion.div>
               ))}
             </div>
           </div>
-        )}
-
-        {useFallback && (
-          <p className="sr-only">No published stories yet — showing curated highlights.</p>
-        )}
+        ) : null}
       </div>
     </section>
   );
