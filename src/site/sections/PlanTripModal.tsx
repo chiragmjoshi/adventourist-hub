@@ -201,6 +201,21 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
                 Plan My Trip →
               </button>
 
+              {/* Parallel path — direct WhatsApp */}
+              <div className="flex items-center py-0.5">
+                <div className="flex-grow h-px bg-ink/10" />
+                <span className="px-3 text-[11px] uppercase tracking-wider text-ink/40 font-body">or</span>
+                <div className="flex-grow h-px bg-ink/10" />
+              </div>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-12 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-colors"
+              >
+                💬 Chat directly on WhatsApp
+              </a>
+
               <div className="flex items-center justify-center gap-4 pt-1">
                 {["⚡ 2hr response", "✓ Free planning", "🔒 No spam"].map((t) => (
                   <span key={t} className="font-body text-xs text-ink/40">{t}</span>
