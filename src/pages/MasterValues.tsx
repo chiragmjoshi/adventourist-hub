@@ -16,14 +16,15 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 const TYPES = [
-  "platform", "channel", "campaign_type", "ad_group", "sales_status",
-  "disposition", "destination_type", "destination_suitable_type", "service_type", "city",
+  "channel", "platform", "campaign_type",
+  "sales_status", "disposition",
+  "destination_type", "destination_suitable_type", "service_type", "city",
 ] as const;
 
 const MasterValues = () => {
-  const [activeTab, setActiveTab] = useState<string>("platform");
+  const [activeTab, setActiveTab] = useState<string>("channel");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ type: "platform", value: "", sort_order: 0 });
+  const [form, setForm] = useState({ type: "channel", value: "", sort_order: 0, parent_value: "" });
   const queryClient = useQueryClient();
 
   const { data: values = [], isLoading } = useQuery({
@@ -41,13 +42,14 @@ const MasterValues = () => {
         type: f.type,
         value: f.value,
         sort_order: f.sort_order,
-      });
+        parent_value: (f.type === "platform" || f.type === "campaign_type") ? (f.parent_value || null) : null,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["master_values"] });
       setDialogOpen(false);
-      setForm({ type: activeTab, value: "", sort_order: 0 });
+      setForm({ type: activeTab, value: "", sort_order: 0, parent_value: "" });
       toast.success("Value added");
     },
     onError: () => toast.error("Failed to add value"),
@@ -62,6 +64,13 @@ const MasterValues = () => {
   });
 
   const filtered = values.filter((v: any) => v.type === activeTab);
+  const channels = values.filter((v: any) => v.type === "channel" && v.is_active);
+  const platforms = values.filter((v: any) => v.type === "platform" && v.is_active);
+  const parentOptions =
+    form.type === "platform" ? channels :
+    form.type === "campaign_type" ? platforms : [];
+  const showParentCol = activeTab === "platform" || activeTab === "campaign_type";
+  const parentLabel = activeTab === "platform" ? "Channel" : activeTab === "campaign_type" ? "Platform" : "";
 
   return (
     <AppLayout title="Master Values">
@@ -76,13 +85,26 @@ const MasterValues = () => {
             <form onSubmit={(e) => { e.preventDefault(); createValue.mutate(form); }} className="space-y-4">
               <div className="space-y-1">
                 <Label>Type</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v, parent_value: "" })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t.replace(/_/g, " ")}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+              {(form.type === "platform" || form.type === "campaign_type") && (
+                <div className="space-y-1">
+                  <Label>{form.type === "platform" ? "Channel" : "Platform"} *</Label>
+                  <Select value={form.parent_value} onValueChange={(v) => setForm({ ...form, parent_value: v })}>
+                    <SelectTrigger><SelectValue placeholder={`Select ${form.type === "platform" ? "channel" : "platform"}`} /></SelectTrigger>
+                    <SelectContent>
+                      {parentOptions.map((p: any) => (
+                        <SelectItem key={p.id} value={p.value}>{p.value}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-1"><Label>Value *</Label><Input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} required /></div>
               <div className="space-y-1"><Label>Sort Order</Label><Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })} /></div>
               <Button type="submit" className="w-full" disabled={createValue.isPending}>{createValue.isPending ? "Adding..." : "Add Value"}</Button>
@@ -102,17 +124,23 @@ const MasterValues = () => {
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow><TableHead className="text-table">Value</TableHead><TableHead className="text-table">Sort Order</TableHead><TableHead className="text-table">Active</TableHead></TableRow>
+                  <TableRow>
+                    <TableHead className="text-table">Value</TableHead>
+                    {showParentCol && <TableHead className="text-table">{parentLabel}</TableHead>}
+                    <TableHead className="text-table">Sort Order</TableHead>
+                    <TableHead className="text-table">Active</TableHead>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow><TableCell colSpan={3} className="text-center py-8">Loading...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={showParentCol ? 4 : 3} className="text-center py-8">Loading...</TableCell></TableRow>
                   ) : filtered.length === 0 ? (
-                    <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No values for this type</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={showParentCol ? 4 : 3} className="text-center py-8 text-muted-foreground">No values for this type</TableCell></TableRow>
                   ) : (
                     filtered.map((v: any) => (
                       <TableRow key={v.id} className="hover:bg-muted/30">
                         <TableCell className="text-table font-medium">{v.value}</TableCell>
+                        {showParentCol && <TableCell className="text-xs text-muted-foreground">{v.parent_value || "—"}</TableCell>}
                         <TableCell className="text-table text-muted-foreground">{v.sort_order}</TableCell>
                         <TableCell><Switch checked={v.is_active} onCheckedChange={(val) => toggleActive.mutate({ id: v.id, is_active: val })} /></TableCell>
                       </TableRow>
