@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { WHATSAPP_NUMBER } from "@/site/lib/constants";
+import { WHATSAPP_NUMBER, WHATSAPP_URL } from "@/site/lib/constants";
 import { captureUTM } from "@/site/lib/utils";
 import { useLeadCapture } from "@/site/hooks/useLeadCapture";
 
@@ -47,6 +47,23 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
       return;
     }
     setError("");
+
+    // 1) Open WhatsApp immediately — fire-first so no lead is ever lost.
+    const waMsg = `Hi! I'm ${form.name}. I just submitted a trip inquiry${form.destination ? ` for ${form.destination}` : ""}. [src:homepage_modal]`;
+    try {
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`, "_blank");
+    } catch { /* ignore popup blockers */ }
+
+    // 2) CRM capture (fire-and-forget — never block WA hand-off).
+    submitLead({
+      name: form.name,
+      phone: form.phone,
+      destination: form.destination || undefined,
+      page_source: "homepage-modal",
+    }).catch(() => { /* never block UI on CRM errors */ });
+
+    setSubmitted(true);
+    return;
     try {
       await submitLead({
         name: form.name,
