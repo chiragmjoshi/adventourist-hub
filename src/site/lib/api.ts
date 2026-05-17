@@ -220,3 +220,97 @@ export async function getStoryBySlug(
   supabase.rpc("increment_story_views", { story_slug: slug }).then(() => {});
   return { ...(data as any), destination: (data as any).destinations ?? undefined };
 }
+
+// ── Travel Stories (new table) ───────────────────────────────────────────────
+export type TravelStoryCategory = "travel-stories" | "things-to-do" | "destination-guides";
+
+export interface TravelStory {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content_html: string | null;
+  category: TravelStoryCategory;
+  tags: string[] | null;
+  author: string | null;
+  thumbnail_url: string | null;
+  read_time_minutes: number | null;
+  views: number | null;
+  status: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  focus_keyword: string | null;
+  published_at: string | null;
+}
+
+const TRAVEL_STORY_FALLBACK_IMAGES: Record<string, string> = {
+  "travel-stories": "/site-images/search-images-8.jpg",
+  "things-to-do": "/site-images/dubai.jpg",
+  "destination-guides": "/site-images/malaysia.jpg",
+};
+
+export function travelStoryImage(s: { thumbnail_url?: string | null; category: string }): string {
+  return s.thumbnail_url || TRAVEL_STORY_FALLBACK_IMAGES[s.category] || "/placeholder.svg";
+}
+
+const TRAVEL_STORY_LIST_COLS =
+  "id,title,slug,excerpt,category,thumbnail_url,read_time_minutes,views,published_at,author,tags,status,seo_title,seo_description,focus_keyword";
+
+export async function getTopTravelStories(limit = 4): Promise<TravelStory[]> {
+  const { data, error } = await supabase
+    .from("travel_stories" as any)
+    .select(TRAVEL_STORY_LIST_COLS)
+    .eq("status", "published")
+    .order("views", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("getTopTravelStories error:", error);
+    return [];
+  }
+  return (data ?? []) as unknown as TravelStory[];
+}
+
+export async function getAllTravelStories(): Promise<TravelStory[]> {
+  const { data, error } = await supabase
+    .from("travel_stories" as any)
+    .select(TRAVEL_STORY_LIST_COLS)
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(200);
+  if (error) {
+    console.error("getAllTravelStories error:", error);
+    return [];
+  }
+  return (data ?? []) as unknown as TravelStory[];
+}
+
+export async function getTravelStoryBySlug(slug: string): Promise<(TravelStory & { content_html: string | null }) | null> {
+  const { data, error } = await supabase
+    .from("travel_stories" as any)
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as unknown as TravelStory;
+}
+
+export async function getRelatedTravelStories(
+  category: string,
+  excludeSlug: string,
+  limit = 3,
+): Promise<TravelStory[]> {
+  const { data, error } = await supabase
+    .from("travel_stories" as any)
+    .select(TRAVEL_STORY_LIST_COLS)
+    .eq("status", "published")
+    .eq("category", category)
+    .neq("slug", excludeSlug)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("getRelatedTravelStories error:", error);
+    return [];
+  }
+  return (data ?? []) as unknown as TravelStory[];
+}
