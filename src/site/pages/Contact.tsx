@@ -3,25 +3,28 @@ import SiteLayout from "@/site/SiteLayout";
 import SEO from "@/components/SEO";
 import ContactForm from "@/site/components/contact/ContactForm";
 import { PHONE_DISPLAY, SUPPORT_EMAIL, WHATSAPP_NUMBER } from "@/site/lib/constants";
-import { waLink } from "@/site/lib/utils";
+import { useLeadCapture } from "@/site/hooks/useLeadCapture";
+import minalImg from "@/assets/team-minal.jpg";
+import pinkyImg from "@/assets/team-pinky.jpg";
+import viyaImg from "@/assets/team-viya.jpg";
 
 const TEAM = [
   {
     name: "Minal Joshi",
     role: "Co-Founder & Lead Travel Expert",
-    image: "/site-images/career-img.png",
+    image: minalImg,
     waSource: "contact_team_minal",
   },
   {
     name: "Pinky Prajapati",
     role: "Travel Expert",
-    image: "/site-images/2151747328.jpg",
+    image: pinkyImg,
     waSource: "contact_team_pinky",
   },
   {
     name: "Travel Team",
     role: "Destination Specialists",
-    image: null,
+    image: viyaImg,
     waSource: "contact_team_general",
   },
 ];
@@ -53,6 +56,39 @@ const MAP_EMBED_URL =
 export default function Contact() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [waModal, setWaModal] = useState<null | { name: string; role: string; waSource: string }>(null);
+  const [waForm, setWaForm] = useState({ name: "", phone: "" });
+  const [waErr, setWaErr] = useState<string | null>(null);
+  const [waBusy, setWaBusy] = useState(false);
+  const { submitLead } = useLeadCapture();
+
+  const openWaCapture = (m: { name: string; role: string; waSource: string }) => {
+    setWaErr(null);
+    setWaForm({ name: "", phone: "" });
+    setWaModal(m);
+  };
+
+  const submitWaCapture = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waModal) return;
+    const phone = waForm.phone.replace(/[\s\-]/g, "");
+    if (!waForm.name.trim()) { setWaErr("Please enter your name"); return; }
+    if (!/^[6-9]\d{9}$/.test(phone)) { setWaErr("Enter a valid 10-digit Indian mobile"); return; }
+    setWaBusy(true);
+    const firstName = waModal.name.split(" ")[0];
+    const message = `Hi ${firstName}! I'm ${waForm.name.trim()}. I'd like help planning a trip. [src:${waModal.waSource}]`;
+    // 1) Open WhatsApp first so lead is never lost.
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+    // 2) Capture in CMS (fire-and-forget).
+    submitLead({
+      name: waForm.name.trim(),
+      phone,
+      page_source: waModal.waSource,
+      message: `WhatsApp click → ${waModal.name} (${waModal.role})`,
+    }).catch(() => {});
+    setWaBusy(false);
+    setWaModal(null);
+  };
 
   const jsonLd = [
     {
@@ -201,15 +237,14 @@ export default function Contact() {
                         <p className="font-body text-sm text-ink/60 truncate">{m.role}</p>
                       </div>
                     </div>
-                    <a
-                      href={waLink({ source: m.waSource, message: `Hi ${m.name.split(" ")[0]}! I'd like help planning a trip.` })}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openWaCapture({ name: m.name, role: m.role, waSource: m.waSource })}
                       className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-full transition-colors flex-shrink-0"
                       aria-label={`WhatsApp ${m.name}`}
                     >
                       WhatsApp
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -368,6 +403,73 @@ export default function Contact() {
           </dl>
         </div>
       </section>
+
+      {/* WhatsApp lead-capture modal — captures CMS lead first, then opens WA */}
+      {waModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wa-modal-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-abyss/60 backdrop-blur-sm p-4"
+          onClick={() => !waBusy && setWaModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-7 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => !waBusy && setWaModal(null)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full hover:bg-drift flex items-center justify-center text-ink/60"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <h3 id="wa-modal-title" className="font-display font-black text-xl text-abyss mb-1">
+              Chat with {waModal.name.split(" ")[0]} on WhatsApp
+            </h3>
+            <p className="font-body text-sm text-ink/60 mb-5">
+              Quick intro — so {waModal.name.split(" ")[0]} can greet you by name and follow up if the chat drops.
+            </p>
+            <form onSubmit={submitWaCapture} className="space-y-3">
+              <div>
+                <label className="block text-xs font-display font-semibold text-abyss mb-1.5">Your name</label>
+                <input
+                  type="text"
+                  value={waForm.name}
+                  onChange={(e) => setWaForm({ ...waForm, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-abyss/15 rounded-lg font-body text-sm focus:outline-none focus:border-blaze focus:ring-2 focus:ring-blaze/20"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-display font-semibold text-abyss mb-1.5">Mobile number</label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="10-digit Indian mobile"
+                  value={waForm.phone}
+                  onChange={(e) => setWaForm({ ...waForm, phone: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-abyss/15 rounded-lg font-body text-sm focus:outline-none focus:border-blaze focus:ring-2 focus:ring-blaze/20"
+                  required
+                />
+              </div>
+              {waErr && <p className="text-xs text-red-600 font-body">{waErr}</p>}
+              <button
+                type="submit"
+                disabled={waBusy}
+                className="w-full bg-[#25D366] hover:bg-[#1ebe58] disabled:opacity-60 text-white font-display font-semibold py-3 rounded-full transition-colors flex items-center justify-center gap-2"
+              >
+                {waBusy ? "Opening WhatsApp…" : `💬 Continue to WhatsApp`}
+              </button>
+              <p className="text-[11px] text-ink/40 text-center font-body">
+                We respond within 2 business hours · Mon–Sat 9AM–9PM IST
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
     </SiteLayout>
   );
 }
