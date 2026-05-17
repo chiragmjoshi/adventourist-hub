@@ -92,9 +92,26 @@ Deno.serve(async (req) => {
   });
 
   try {
-    // Resolve destination
+    // Resolve destination + itinerary
     let destination_id: string | null = null;
-    if (body.destination_name?.trim()) {
+    let itinerary_id: string | null = null;
+
+    // Prefer landing page FKs when a landing_page_id is provided
+    if (body.landing_page_id) {
+      const { data: lp, error: lpErr } = await supabase
+        .from("landing_pages")
+        .select("destination_id, itinerary_id")
+        .eq("id", body.landing_page_id)
+        .maybeSingle();
+      if (lpErr) console.error("submit-lead: landing page lookup", lpErr);
+      if (lp) {
+        destination_id = lp.destination_id ?? null;
+        itinerary_id = lp.itinerary_id ?? null;
+      }
+    }
+
+    // Fallback: resolve destination by name
+    if (!destination_id && body.destination_name?.trim()) {
       const { data: dest, error: destErr } = await supabase
         .from("destinations")
         .select("id")
@@ -102,6 +119,16 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (destErr) console.error("submit-lead: destination lookup", destErr);
       destination_id = dest?.id ?? null;
+    }
+
+    // If we got an itinerary but no destination, hydrate destination from itinerary
+    if (itinerary_id && !destination_id) {
+      const { data: it } = await supabase
+        .from("itineraries")
+        .select("destination_id")
+        .eq("id", itinerary_id)
+        .maybeSingle();
+      destination_id = it?.destination_id ?? null;
     }
 
     // Generate ADV traveller code
@@ -121,6 +148,7 @@ Deno.serve(async (req) => {
       mobile,
       email: body.email ?? null,
       destination_id,
+      itinerary_id,
       travel_date: body.travel_date ?? null,
       group_size: body.group_size ?? null,
       budget_range: body.budget_range ?? null,
