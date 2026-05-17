@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface LeadData {
   name: string;
@@ -69,6 +70,8 @@ export function useLeadCapture() {
           notes: notesParts.length ? notesParts.join("\n") : undefined,
           channel: "Website",
           platform: "Organic",
+          itinerary_slug: d.trip_slug || undefined,
+          page_source: d.page_source || undefined,
           ...captureUTMs(),
         },
       });
@@ -79,6 +82,11 @@ export function useLeadCapture() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
       setError(msg);
+      // Non-blocking — user has already been handed off to WhatsApp.
+      try {
+        toast.error("Couldn't save your details. Please continue on WhatsApp.");
+      } catch { /* toast may not be mounted on every page */ }
+      console.error("submitLead failed:", e);
     } finally {
       setLoading(false);
     }
