@@ -238,15 +238,14 @@ export default function Contact() {
                         <p className="font-body text-sm text-ink/60 truncate">{m.role}</p>
                       </div>
                     </div>
-                    <a
-                      href={waLink({ source: m.waSource, message: `Hi ${m.name.split(" ")[0]}! I'd like help planning a trip.` })}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openWaCapture({ name: m.name, role: m.role, waSource: m.waSource })}
                       className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-full transition-colors flex-shrink-0"
                       aria-label={`WhatsApp ${m.name}`}
                     >
                       WhatsApp
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
