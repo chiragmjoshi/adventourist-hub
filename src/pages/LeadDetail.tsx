@@ -783,149 +783,106 @@ const LeadDetail = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Trip cards */}
-                    <div className="space-y-3">
-                      {trips.map((t: any) => {
-                        const sb = statusBadge(t.status);
-                        const marginPct = t.selling_price_with_gst > 0 ? (t.margin_amount / t.selling_price_with_gst) * 100 : 0;
-                        return (
-                          <Card key={t.id} className="border-border/50 shadow-none">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between mb-1">
-                                <h4 className="text-[15px] font-semibold">{t.destination_name || "—"}</h4>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${sb.cls}`}>{sb.label}</span>
-                              </div>
-                              <p className="text-sm text-foreground/80 truncate">{t.itinerary_headline || "Custom trip"}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                Travel date: {t.travel_start_date ? format(new Date(t.travel_start_date), "dd MMM yyyy") : "Date not set"}
-                              </p>
-                              <Separator className="my-3" />
-                              <div className={`grid ${isSales ? "grid-cols-1" : "grid-cols-3"} gap-3 text-center`}>
-                                <div>
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Selling</p>
-                                  <p className="text-sm font-semibold mt-0.5">{fmtINR(t.selling_price_with_gst || 0)}</p>
-                                </div>
+                    {/* Trip history table */}
+                    <Card className="border-border/50 shadow-none overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-[11px] uppercase tracking-wider">Destination</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Itinerary</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Booking</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Travel</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider text-right">Pax</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider text-right">Selling</TableHead>
+                            {!isSales && <TableHead className="text-[11px] uppercase tracking-wider text-right">Cost</TableHead>}
+                            {!isSales && <TableHead className="text-[11px] uppercase tracking-wider text-right">Margin</TableHead>}
+                            <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Cashflow</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {trips.map((t: any) => {
+                            const sb = statusBadge(t.status);
+                            const marginPct = t.selling_price_with_gst > 0 ? (t.margin_amount / t.selling_price_with_gst) * 100 : 0;
+                            return (
+                              <TableRow key={t.id} className="text-[13px] hover:bg-muted/20 cursor-pointer"
+                                onClick={() => navigate(`/admin/trip-cashflow/${t.id}`)}>
+                                <TableCell className="font-medium">{t.destination_name || "—"}</TableCell>
+                                <TableCell className="max-w-[220px] truncate" title={t.itinerary_headline || ""}>{t.itinerary_headline || "Custom trip"}</TableCell>
+                                <TableCell>{t.booking_date ? format(new Date(t.booking_date), "dd MMM yyyy") : "—"}</TableCell>
+                                <TableCell>{t.travel_start_date ? format(new Date(t.travel_start_date), "dd MMM yyyy") : "—"}</TableCell>
+                                <TableCell className="text-right">{t.pax_count || "—"}</TableCell>
+                                <TableCell className="text-right font-medium">{fmtINR(t.selling_price_with_gst || 0)}</TableCell>
+                                {!isSales && <TableCell className="text-right">{fmtINR(t.total_vendor_cost || 0)}</TableCell>}
                                 {!isSales && (
-                                  <>
-                                    <div>
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost</p>
-                                      <p className="text-sm font-semibold mt-0.5">{fmtINR(t.total_vendor_cost || 0)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Margin</p>
-                                      <p className="text-sm font-semibold mt-0.5">{fmtINR(t.margin_amount || 0)}</p>
-                                      <p className={`text-[10px] mt-0.5 ${marginColor(marginPct)}`}>({marginPct.toFixed(0)}%)</p>
-                                    </div>
-                                  </>
+                                  <TableCell className="text-right">
+                                    <span>{fmtINR(t.margin_amount || 0)}</span>
+                                    <span className={`ml-1 text-[11px] ${marginColor(marginPct)}`}>({marginPct.toFixed(0)}%)</span>
+                                  </TableCell>
                                 )}
-                              </div>
-                              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-                                <span className="font-mono text-xs text-muted-foreground">{t.cashflow_code || "—"}</span>
-                                <button onClick={() => navigate(`/admin/trip-cashflow/${t.id}`)} className="text-xs font-medium hover:underline" style={{ color: "hsl(var(--blaze))" }}>
-                                  View cashflow →
-                                </button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
+                                <TableCell>
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${sb.cls}`}>{sb.label}</span>
+                                </TableCell>
+                                <TableCell className="font-mono text-xs" style={{ color: "hsl(var(--blaze))" }}>{t.cashflow_code || "—"}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </Card>
                   </div>
                 );
               })()}
             </TabsContent>
 
-            <TabsContent value="comments" className="mt-5">
+            <TabsContent value="activity" className="mt-5">
               <Card className="border-border/50 shadow-none">
-                <CardContent className="p-5">
-                  <div className="mb-5">
-                    <Textarea value={commentText} onChange={e => setCommentText(e.target.value)} rows={3}
-                      className="rounded-md mb-2" placeholder="Add an internal comment..." />
-                    <div className="flex justify-end">
-                      <Button size="sm" className="rounded-md bg-[hsl(var(--blaze))] hover:bg-[hsl(var(--blaze))]/90" disabled={!commentText.trim() || addComment.isPending}
-                        onClick={() => addComment.mutate(commentText.trim())}>
-                        Post Comment
-                      </Button>
-                    </div>
-                  </div>
-                  {comments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Add the first comment.</p>
+                <CardHeader className="px-5 pt-4 pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity Timeline</CardTitle>
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetchTimeline()}>
+                    <RefreshCw className="h-3 w-3 mr-1" />Refresh
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-5 pb-5">
+                  {timeline.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">No timeline events yet</p>
                   ) : (
-                    <div className="space-y-4">
-                      {comments.map((c: any) => {
-                        const userName = c.users?.name || "Unknown";
-                        const userInitial = userName[0]?.toUpperCase() || "?";
-                        return (
-                          <div key={c.id} className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 text-white" style={{ backgroundColor: "hsl(var(--blaze))" }}>
-                              {userInitial}
+                    <div className="relative">
+                      <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/60" />
+                      <div className="space-y-4">
+                        {timeline.map((event: any) => (
+                          <div key={event.id} className="flex gap-3 relative">
+                            <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${EVENT_COLORS[event.event_type] || "bg-gray-400"}`}>
+                              {event.event_type === "lead_created" ? <User className="h-3 w-3 text-white" /> :
+                               event.event_type === "status_change" || event.event_type === "file_closed" ? <FileText className="h-3 w-3 text-white" /> :
+                               event.event_type === "disposition_change" ? <MessageSquare className="h-3 w-3 text-white" /> :
+                               <Clock className="h-3 w-3 text-white" />}
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold">{userName}</span>
-                                <span className="text-[11px] text-muted-foreground">
-                                  {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ""}
-                                </span>
+                            <div className="flex-1 min-w-0 pt-0.5">
+                              <p className="text-sm font-medium">{event.note}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-[11px] text-muted-foreground">
+                                      {event.created_at ? formatDistanceToNow(new Date(event.created_at), { addSuffix: true }) : ""}
+                                    </span>
+                                  </TooltipTrigger>
+                                  {event.created_at && <TooltipContent>{format(new Date(event.created_at), "dd MMM yyyy, hh:mm a")}</TooltipContent>}
+                                </Tooltip>
+                                {(event as any).users?.name && (
+                                  <span className="text-[11px] text-muted-foreground">• {(event as any).users.name}</span>
+                                )}
                               </div>
-                              <p className="text-sm text-foreground/80 mt-0.5">{c.comment}</p>
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
-
-          <div className="mt-6">
-            <Card className="border-border/50 shadow-none">
-              <CardHeader className="px-5 pt-4 pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity Timeline</CardTitle>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetchTimeline()}>
-                  <RefreshCw className="h-3 w-3 mr-1" />Refresh
-                </Button>
-              </CardHeader>
-              <CardContent className="px-5 pb-5">
-                {timeline.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">No timeline events yet</p>
-                ) : (
-                  <div className="relative">
-                    <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/60" />
-                    <div className="space-y-4">
-                      {timeline.map((event: any) => (
-                        <div key={event.id} className="flex gap-3 relative">
-                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${EVENT_COLORS[event.event_type] || "bg-gray-400"}`}>
-                            {event.event_type === "lead_created" ? <User className="h-3 w-3 text-white" /> :
-                             event.event_type === "status_change" || event.event_type === "file_closed" ? <FileText className="h-3 w-3 text-white" /> :
-                             event.event_type === "disposition_change" ? <MessageSquare className="h-3 w-3 text-white" /> :
-                             <Clock className="h-3 w-3 text-white" />}
-                          </div>
-                          <div className="flex-1 min-w-0 pt-0.5">
-                            <p className="text-sm font-medium">{event.note}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-[11px] text-muted-foreground">
-                                    {event.created_at ? formatDistanceToNow(new Date(event.created_at), { addSuffix: true }) : ""}
-                                  </span>
-                                </TooltipTrigger>
-                                {event.created_at && <TooltipContent>{format(new Date(event.created_at), "dd MMM yyyy, hh:mm a")}</TooltipContent>}
-                              </Tooltip>
-                              {(event as any).users?.name && (
-                                <span className="text-[11px] text-muted-foreground">• {(event as any).users.name}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
 
