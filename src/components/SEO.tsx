@@ -62,9 +62,11 @@ const SEO = ({
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
       {schemas.map((s, i) => (
-        <script key={i} type="application/ld+json">
-          {JSON.stringify(s)}
-        </script>
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }}
+        />
       ))}
     </Helmet>
   );
