@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send, Briefcase, Plus, Bell } from "lucide-react";
+import { ArrowLeft, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Briefcase, Plus, Bell, FilePlus } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -79,7 +79,6 @@ const LeadDetail = () => {
 
   const [cashflowPrompt, setCashflowPrompt] = useState(false);
   const [formState, setFormState] = useState<Record<string, any>>({});
-  const [commentText, setCommentText] = useState("");
   const [remindOpen, setRemindOpen] = useState(false);
 
   /* ── Queries ── */
@@ -340,12 +339,17 @@ const LeadDetail = () => {
   };
 
   const handleSaveNotes = () => {
-    if (!formState.notes && !(lead as any)?.notes) return;
-    updateLead.mutate({ notes: formState.notes ?? (lead as any)?.notes });
-    setFormState(prev => {
-      const { notes, ...rest } = prev;
-      return rest;
-    });
+    const text = (formState.notes ?? "").trim();
+    if (!text) { toast.info("Nothing to save"); return; }
+    // Append to existing notes so each save becomes a new entry, then clear
+    // the textarea so the user can type a fresh note.
+    const existing = ((lead as any)?.notes || "").trim();
+    const stamp = format(new Date(), "dd MMM yyyy, hh:mm a");
+    const who = profile?.name || "User";
+    const entry = `[${stamp} · ${who}] ${text}`;
+    const merged = existing ? `${entry}\n\n${existing}` : entry;
+    updateLead.mutate({ notes: merged });
+    setFormState(prev => ({ ...prev, notes: "" }));
   };
 
   const handleSaveEnquiry = () => {
@@ -362,38 +366,47 @@ const LeadDetail = () => {
     });
   };
 
-  /* ── Comments (using lead_comments table) ── */
-  const { data: comments = [], refetch: refetchComments } = useQuery({
-    queryKey: ["lead_comments", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("lead_comments" as any)
-        .select("*, users:user_id(name)")
-        .eq("lead_id", id!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as any[];
-    },
-    enabled: !!id,
-  });
-
-  const addComment = useMutation({
-    mutationFn: async (text: string) => {
-      const { error } = await supabase.from("lead_comments" as any).insert({
-        lead_id: id!, user_id: profile?.id, comment: text,
-      } as any);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lead_comments", id] });
-      setCommentText("");
-      toast.success("Comment posted");
-    },
-  });
-
   const handleCreateCashflow = () => {
     // Legacy entry point kept for backwards compat — opens the quick modal.
     setCashflowPrompt(true);
   };
+
+  /* ── New Inquiry — clones the customer onto a fresh lead row ── */
+  const newInquiry = useMutation({
+    mutationFn: async () => {
+      const l: any = lead;
+      const payload: any = {
+        traveller_code: l.traveller_code || "",
+        customer_id: l.customer_id || null,
+        name: l.name || null,
+        email: l.email || null,
+        mobile: l.mobile || null,
+        sales_status: "New Lead",
+        disposition: "Not Contacted",
+        source: "crm",
+        assigned_to: profile?.id || null,
+      };
+      const { data, error } = await supabase
+        .from("leads")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (error) throw error;
+      await supabase.from("lead_timeline").insert({
+        lead_id: data.id,
+        actor_id: profile?.id || null,
+        event_type: "lead_created",
+        note: `New inquiry created by ${profile?.name || "User"} from existing customer`,
+      });
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("New inquiry created");
+      navigate(`/admin/leads/${data.id}`);
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to create inquiry"),
+  });
 
   if (isLoading) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Loading lead...</div></AppLayout>;
   if (!lead) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Lead not found</div></AppLayout>;
@@ -413,6 +426,16 @@ const LeadDetail = () => {
           <span className="font-mono font-semibold" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => newInquiry.mutate()}
+            disabled={newInquiry.isPending}
+            className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
+          >
+            <FilePlus className="h-3.5 w-3.5" />
+            New Inquiry
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -532,13 +555,6 @@ const LeadDetail = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Customer Tag</span>
-                  <Input className="h-7 text-xs w-32 rounded-md border-border/50" value={getField("customer_tag")}
-                    onChange={e => setFormState(prev => ({...prev, customer_tag: e.target.value}))}
-                    onBlur={() => { if (formState.customer_tag !== undefined) updateLead.mutate({ customer_tag: formState.customer_tag }); }}
-                    placeholder="e.g. hot, vip" />
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -586,10 +602,10 @@ const LeadDetail = () => {
           <LeadReminderStrip leadId={id!} />
           <Tabs defaultValue="enquiry">
             <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none">
-              {["enquiry", "trips", "comments"].map(tab => (
+              {["enquiry", "trips", "activity"].map(tab => (
                 <TabsTrigger key={tab} value={tab}
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2.5 pt-1 text-sm capitalize">
-                  {tab === "enquiry" ? "Current Enquiry" : tab === "trips" ? `Trips${trips.length > 0 ? ` (${trips.length})` : ""}` : "Comments"}
+                  {tab === "enquiry" ? "Current Enquiry" : tab === "trips" ? `Trips${trips.length > 0 ? ` (${trips.length})` : ""}` : "Activity"}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -637,29 +653,17 @@ const LeadDetail = () => {
                       <Input type="date" className="h-9 text-xs mt-1 rounded-md" value={getField("travel_date") || ""} onChange={e => setFormState(prev => ({...prev, travel_date: e.target.value}))} />
                     </div>
                     <div>
+                      <Label className="text-xs text-muted-foreground">Pax</Label>
+                      <Input type="number" min={1} className="h-9 text-xs mt-1 rounded-md" value={getField("pax_count") || ""} onChange={e => setFormState(prev => ({...prev, pax_count: e.target.value ? Number(e.target.value) : null}))} />
+                    </div>
+                    <div>
                       <Label className="text-xs text-muted-foreground">Created On</Label>
                       <p className="text-sm mt-1.5">{l.created_at ? format(new Date(l.created_at), "dd MMM yyyy, hh:mm a") : "—"}</p>
                     </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Proposed Price</Label>
-                      <Input className="h-9 text-xs mt-1 rounded-md" placeholder="₹" />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Vendor Cost Price</Label>
-                      <Input className="h-9 text-xs mt-1 rounded-md" placeholder="₹" />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Margin</Label>
-                      <p className="text-sm mt-1.5 font-medium">—</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Vendor</Label>
-                      <Select value="" onValueChange={() => {}}>
-                        <SelectTrigger className="h-9 text-xs mt-1 rounded-md"><SelectValue placeholder="Select vendor" /></SelectTrigger>
-                        <SelectContent>{vendors.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
                   </div>
+                  <p className="text-[11px] text-muted-foreground mt-3">
+                    Cost, margin and vendor live on the Trip Cashflow — see the <span className="font-medium">Trips</span> tab.
+                  </p>
                   <div className="flex justify-end mt-5">
                     <Button size="sm" onClick={handleSaveEnquiry} className="rounded-md">Save Changes</Button>
                   </div>
@@ -671,15 +675,21 @@ const LeadDetail = () => {
                   <CardTitle className="text-sm font-semibold">Internal Notes</CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-4">
-                  <Textarea rows={4} className="rounded-md" placeholder="Add internal notes..."
-                    value={formState.notes ?? l.notes ?? ""}
+                  <Textarea rows={3} className="rounded-md" placeholder="Type a note and click Save — each save is added as a new entry."
+                    value={formState.notes ?? ""}
                     onChange={e => setFormState(prev => ({...prev, notes: e.target.value}))} />
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-[10px] text-muted-foreground">
-                      {(formState.notes ?? l.notes ?? "").length} characters
+                      {(formState.notes ?? "").length} characters
                     </span>
                     <Button variant="outline" size="sm" onClick={handleSaveNotes} className="rounded-md text-xs">Save Notes</Button>
                   </div>
+                  {l.notes && (
+                    <div className="mt-4 pt-3 border-t border-border/50 max-h-60 overflow-y-auto">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Past notes</p>
+                      <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">{l.notes}</pre>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -773,149 +783,106 @@ const LeadDetail = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Trip cards */}
-                    <div className="space-y-3">
-                      {trips.map((t: any) => {
-                        const sb = statusBadge(t.status);
-                        const marginPct = t.selling_price_with_gst > 0 ? (t.margin_amount / t.selling_price_with_gst) * 100 : 0;
-                        return (
-                          <Card key={t.id} className="border-border/50 shadow-none">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between mb-1">
-                                <h4 className="text-[15px] font-semibold">{t.destination_name || "—"}</h4>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${sb.cls}`}>{sb.label}</span>
-                              </div>
-                              <p className="text-sm text-foreground/80 truncate">{t.itinerary_headline || "Custom trip"}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                Travel date: {t.travel_start_date ? format(new Date(t.travel_start_date), "dd MMM yyyy") : "Date not set"}
-                              </p>
-                              <Separator className="my-3" />
-                              <div className={`grid ${isSales ? "grid-cols-1" : "grid-cols-3"} gap-3 text-center`}>
-                                <div>
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Selling</p>
-                                  <p className="text-sm font-semibold mt-0.5">{fmtINR(t.selling_price_with_gst || 0)}</p>
-                                </div>
+                    {/* Trip history table */}
+                    <Card className="border-border/50 shadow-none overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-[11px] uppercase tracking-wider">Destination</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Itinerary</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Booking</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Travel</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider text-right">Pax</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider text-right">Selling</TableHead>
+                            {!isSales && <TableHead className="text-[11px] uppercase tracking-wider text-right">Cost</TableHead>}
+                            {!isSales && <TableHead className="text-[11px] uppercase tracking-wider text-right">Margin</TableHead>}
+                            <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-wider">Cashflow</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {trips.map((t: any) => {
+                            const sb = statusBadge(t.status);
+                            const marginPct = t.selling_price_with_gst > 0 ? (t.margin_amount / t.selling_price_with_gst) * 100 : 0;
+                            return (
+                              <TableRow key={t.id} className="text-[13px] hover:bg-muted/20 cursor-pointer"
+                                onClick={() => navigate(`/admin/trip-cashflow/${t.id}`)}>
+                                <TableCell className="font-medium">{t.destination_name || "—"}</TableCell>
+                                <TableCell className="max-w-[220px] truncate" title={t.itinerary_headline || ""}>{t.itinerary_headline || "Custom trip"}</TableCell>
+                                <TableCell>{t.booking_date ? format(new Date(t.booking_date), "dd MMM yyyy") : "—"}</TableCell>
+                                <TableCell>{t.travel_start_date ? format(new Date(t.travel_start_date), "dd MMM yyyy") : "—"}</TableCell>
+                                <TableCell className="text-right">{t.pax_count || "—"}</TableCell>
+                                <TableCell className="text-right font-medium">{fmtINR(t.selling_price_with_gst || 0)}</TableCell>
+                                {!isSales && <TableCell className="text-right">{fmtINR(t.total_vendor_cost || 0)}</TableCell>}
                                 {!isSales && (
-                                  <>
-                                    <div>
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost</p>
-                                      <p className="text-sm font-semibold mt-0.5">{fmtINR(t.total_vendor_cost || 0)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Margin</p>
-                                      <p className="text-sm font-semibold mt-0.5">{fmtINR(t.margin_amount || 0)}</p>
-                                      <p className={`text-[10px] mt-0.5 ${marginColor(marginPct)}`}>({marginPct.toFixed(0)}%)</p>
-                                    </div>
-                                  </>
+                                  <TableCell className="text-right">
+                                    <span>{fmtINR(t.margin_amount || 0)}</span>
+                                    <span className={`ml-1 text-[11px] ${marginColor(marginPct)}`}>({marginPct.toFixed(0)}%)</span>
+                                  </TableCell>
                                 )}
-                              </div>
-                              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-                                <span className="font-mono text-xs text-muted-foreground">{t.cashflow_code || "—"}</span>
-                                <button onClick={() => navigate(`/admin/trip-cashflow/${t.id}`)} className="text-xs font-medium hover:underline" style={{ color: "hsl(var(--blaze))" }}>
-                                  View cashflow →
-                                </button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
+                                <TableCell>
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${sb.cls}`}>{sb.label}</span>
+                                </TableCell>
+                                <TableCell className="font-mono text-xs" style={{ color: "hsl(var(--blaze))" }}>{t.cashflow_code || "—"}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </Card>
                   </div>
                 );
               })()}
             </TabsContent>
 
-            <TabsContent value="comments" className="mt-5">
+            <TabsContent value="activity" className="mt-5">
               <Card className="border-border/50 shadow-none">
-                <CardContent className="p-5">
-                  <div className="mb-5">
-                    <Textarea value={commentText} onChange={e => setCommentText(e.target.value)} rows={3}
-                      className="rounded-md mb-2" placeholder="Add an internal comment..." />
-                    <div className="flex justify-end">
-                      <Button size="sm" className="rounded-md bg-[hsl(var(--blaze))] hover:bg-[hsl(var(--blaze))]/90" disabled={!commentText.trim() || addComment.isPending}
-                        onClick={() => addComment.mutate(commentText.trim())}>
-                        Post Comment
-                      </Button>
-                    </div>
-                  </div>
-                  {comments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Add the first comment.</p>
+                <CardHeader className="px-5 pt-4 pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity Timeline</CardTitle>
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetchTimeline()}>
+                    <RefreshCw className="h-3 w-3 mr-1" />Refresh
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-5 pb-5">
+                  {timeline.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">No timeline events yet</p>
                   ) : (
-                    <div className="space-y-4">
-                      {comments.map((c: any) => {
-                        const userName = c.users?.name || "Unknown";
-                        const userInitial = userName[0]?.toUpperCase() || "?";
-                        return (
-                          <div key={c.id} className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 text-white" style={{ backgroundColor: "hsl(var(--blaze))" }}>
-                              {userInitial}
+                    <div className="relative">
+                      <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/60" />
+                      <div className="space-y-4">
+                        {timeline.map((event: any) => (
+                          <div key={event.id} className="flex gap-3 relative">
+                            <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${EVENT_COLORS[event.event_type] || "bg-gray-400"}`}>
+                              {event.event_type === "lead_created" ? <User className="h-3 w-3 text-white" /> :
+                               event.event_type === "status_change" || event.event_type === "file_closed" ? <FileText className="h-3 w-3 text-white" /> :
+                               event.event_type === "disposition_change" ? <MessageSquare className="h-3 w-3 text-white" /> :
+                               <Clock className="h-3 w-3 text-white" />}
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold">{userName}</span>
-                                <span className="text-[11px] text-muted-foreground">
-                                  {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ""}
-                                </span>
+                            <div className="flex-1 min-w-0 pt-0.5">
+                              <p className="text-sm font-medium">{event.note}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-[11px] text-muted-foreground">
+                                      {event.created_at ? formatDistanceToNow(new Date(event.created_at), { addSuffix: true }) : ""}
+                                    </span>
+                                  </TooltipTrigger>
+                                  {event.created_at && <TooltipContent>{format(new Date(event.created_at), "dd MMM yyyy, hh:mm a")}</TooltipContent>}
+                                </Tooltip>
+                                {(event as any).users?.name && (
+                                  <span className="text-[11px] text-muted-foreground">• {(event as any).users.name}</span>
+                                )}
                               </div>
-                              <p className="text-sm text-foreground/80 mt-0.5">{c.comment}</p>
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
-
-          <div className="mt-6">
-            <Card className="border-border/50 shadow-none">
-              <CardHeader className="px-5 pt-4 pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity Timeline</CardTitle>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => refetchTimeline()}>
-                  <RefreshCw className="h-3 w-3 mr-1" />Refresh
-                </Button>
-              </CardHeader>
-              <CardContent className="px-5 pb-5">
-                {timeline.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">No timeline events yet</p>
-                ) : (
-                  <div className="relative">
-                    <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/60" />
-                    <div className="space-y-4">
-                      {timeline.map((event: any) => (
-                        <div key={event.id} className="flex gap-3 relative">
-                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${EVENT_COLORS[event.event_type] || "bg-gray-400"}`}>
-                            {event.event_type === "lead_created" ? <User className="h-3 w-3 text-white" /> :
-                             event.event_type === "status_change" || event.event_type === "file_closed" ? <FileText className="h-3 w-3 text-white" /> :
-                             event.event_type === "disposition_change" ? <MessageSquare className="h-3 w-3 text-white" /> :
-                             <Clock className="h-3 w-3 text-white" />}
-                          </div>
-                          <div className="flex-1 min-w-0 pt-0.5">
-                            <p className="text-sm font-medium">{event.note}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-[11px] text-muted-foreground">
-                                    {event.created_at ? formatDistanceToNow(new Date(event.created_at), { addSuffix: true }) : ""}
-                                  </span>
-                                </TooltipTrigger>
-                                {event.created_at && <TooltipContent>{format(new Date(event.created_at), "dd MMM yyyy, hh:mm a")}</TooltipContent>}
-                              </Tooltip>
-                              {(event as any).users?.name && (
-                                <span className="text-[11px] text-muted-foreground">• {(event as any).users.name}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
 
