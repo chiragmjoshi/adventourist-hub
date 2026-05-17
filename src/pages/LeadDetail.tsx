@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send, Briefcase, Plus, Bell } from "lucide-react";
+import { ArrowLeft, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Briefcase, Plus, Bell, FilePlus } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -79,7 +79,6 @@ const LeadDetail = () => {
 
   const [cashflowPrompt, setCashflowPrompt] = useState(false);
   const [formState, setFormState] = useState<Record<string, any>>({});
-  const [commentText, setCommentText] = useState("");
   const [remindOpen, setRemindOpen] = useState(false);
 
   /* ── Queries ── */
@@ -362,38 +361,47 @@ const LeadDetail = () => {
     });
   };
 
-  /* ── Comments (using lead_comments table) ── */
-  const { data: comments = [], refetch: refetchComments } = useQuery({
-    queryKey: ["lead_comments", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("lead_comments" as any)
-        .select("*, users:user_id(name)")
-        .eq("lead_id", id!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as any[];
-    },
-    enabled: !!id,
-  });
-
-  const addComment = useMutation({
-    mutationFn: async (text: string) => {
-      const { error } = await supabase.from("lead_comments" as any).insert({
-        lead_id: id!, user_id: profile?.id, comment: text,
-      } as any);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lead_comments", id] });
-      setCommentText("");
-      toast.success("Comment posted");
-    },
-  });
-
   const handleCreateCashflow = () => {
     // Legacy entry point kept for backwards compat — opens the quick modal.
     setCashflowPrompt(true);
   };
+
+  /* ── New Inquiry — clones the customer onto a fresh lead row ── */
+  const newInquiry = useMutation({
+    mutationFn: async () => {
+      const l: any = lead;
+      const payload: any = {
+        traveller_code: l.traveller_code || "",
+        customer_id: l.customer_id || null,
+        name: l.name || null,
+        email: l.email || null,
+        mobile: l.mobile || null,
+        sales_status: "New Lead",
+        disposition: "Not Contacted",
+        source: "crm",
+        assigned_to: profile?.id || null,
+      };
+      const { data, error } = await supabase
+        .from("leads")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (error) throw error;
+      await supabase.from("lead_timeline").insert({
+        lead_id: data.id,
+        actor_id: profile?.id || null,
+        event_type: "lead_created",
+        note: `New inquiry created by ${profile?.name || "User"} from existing customer`,
+      });
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("New inquiry created");
+      navigate(`/admin/leads/${data.id}`);
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to create inquiry"),
+  });
 
   if (isLoading) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Loading lead...</div></AppLayout>;
   if (!lead) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Lead not found</div></AppLayout>;
