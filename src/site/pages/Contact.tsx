@@ -131,7 +131,7 @@ export default function Contact() {
           <p className="text-blaze font-display font-semibold tracking-[0.2em] text-xs uppercase mb-4">
             Get In Touch
           </p>
-          <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-abyss leading-[1.05]">
+          <h1 className="font-display font-black text-3xl sm:text-5xl lg:text-6xl text-abyss leading-[1.1]">
             Let's Plan Your{" "}
             <span className="text-blaze italic font-black">Trip Together</span>
           </h1>

@@ -27,7 +27,7 @@ export default function HeroCinematic() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/80" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
 
-      <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-24 sm:px-10 lg:px-20 lg:pb-32">
+      <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-32 sm:px-10 sm:pb-24 lg:px-20 lg:pb-32">
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -37,7 +37,7 @@ export default function HeroCinematic() {
           About Adventourist
         </motion.p>
         <h1
-          className="max-w-5xl text-[2.6rem] leading-[1.05] tracking-tight sm:text-6xl lg:text-[6.5rem]"
+          className="max-w-5xl text-[2rem] leading-[1.08] tracking-tight sm:text-6xl sm:leading-[1.05] lg:text-[6.5rem]"
           style={{ fontFamily: "'Fraunces', serif", fontWeight: 400 }}
         >
           {words.map((word, wi) => (
