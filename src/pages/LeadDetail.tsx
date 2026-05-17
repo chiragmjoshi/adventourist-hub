@@ -394,8 +394,6 @@ const LeadDetail = () => {
     // Legacy entry point kept for backwards compat — opens the quick modal.
     setCashflowPrompt(true);
   };
-    navigate("/admin/trip-cashflow");
-  };
 
   if (isLoading) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Loading lead...</div></AppLayout>;
   if (!lead) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Lead not found</div></AppLayout>;
