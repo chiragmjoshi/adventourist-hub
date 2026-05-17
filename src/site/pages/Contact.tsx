@@ -188,7 +188,7 @@ export default function Contact() {
                       className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-full transition-colors flex-shrink-0"
                       aria-label={`WhatsApp ${m.name}`}
                     >
-                      Chat
+                      WhatsApp
                     </a>
                   </li>
                 ))}
