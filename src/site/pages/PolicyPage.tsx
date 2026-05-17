@@ -739,7 +739,7 @@ export const RefundPolicy = () => (
           {
             type: "ol",
             items: [
-              "**Contact us immediately** via WhatsApp ([+91 9930 4006 94](https://wa.me/919930400694)) or email ([bookings@adventourist.in](mailto:bookings@adventourist.in)) with your booking reference.",
+              `**Contact us immediately** via WhatsApp ([${WHATSAPP_NUMBER_DISPLAY}](https://wa.me/${WHATSAPP_NUMBER})) or email ([bookings@adventourist.in](mailto:bookings@adventourist.in)) with your booking reference.`,
               "**Submit in writing:** Cancellation requests must be made in writing (WhatsApp or email). Verbal requests cannot be processed.",
               "**Cancellation date:** The date we receive your written request determines the applicable cancellation charges.",
               "**Confirmation:** We will acknowledge your request within 24–48 hours and provide details of any refund due.",
@@ -968,7 +968,7 @@ export const PaymentPolicy = () => (
             type: "callout",
             tone: "warning",
             title: "Beware of Fraud",
-            text: "Always confirm bank details with us via WhatsApp or phone before making large transfers. We will never ask you to pay to personal accounts or via unusual methods. Our official WhatsApp number is [+91 9930 4006 94](https://wa.me/919930400694).",
+            text: `Always confirm bank details with us via WhatsApp or phone before making large transfers. We will never ask you to pay to personal accounts or via unusual methods. Our official WhatsApp number is [${WHATSAPP_NUMBER_DISPLAY}](https://wa.me/${WHATSAPP_NUMBER}).`,
           },
         ],
       },
