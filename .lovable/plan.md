@@ -1,106 +1,51 @@
-# Two-part fix: customer identity + close-the-loop UX
+## Lead Management — filter & search UX fixes
 
-## Part 1 — Email as canonical customer identity
+Four problems to fix on `/admin/leads`. All changes are scoped to `src/pages/LeadManagement.tsx` and `src/components/DateRangePicker.tsx`.
 
-**Today's behaviour**
+### 1. Date picker — add "All Time" + "Custom Range"
 
-- `traveller_code` is the soft grouping key (e.g. `JA2200002`).
-- Nothing prevents the same email from getting a second code — Minal Patel has `JA2200002` *and* `MA2400034` for `aaravconsultancy1@gmail.com`. That's why her cashflow didn't appear on the newer lead.
+`DateRangePicker.tsx` presets are extended:
 
-**Target rule**
+- **This Month**
+- **Last Month**
+- **Last 3 Months**
+- **Last 6 Months** (current default)
+- **Last 12 Months**
+- **This Year**
+- **All Time** — sets `from = 2020-01-01` (or min `created_at` from DB; static date is simpler), `to = today`. Trigger button shows "All time" instead of the date range.
+- **Custom Range** — keeps the popover open so the user picks two dates on the calendar; only closes on second click. Today the popover auto-closes the moment a `from` is picked, which breaks custom selection. Fix: only close when `range.from && range.to` are both set AND a preset wasn't used; keep open otherwise.
 
-> **One email = one traveller_code. Multiple leads and multiple trips are allowed under that single code.**
+Display: when `from <= 2020-01-01`, the trigger button reads "All time" instead of "Jan 1, 2020 – May 18, 2026".
 
-### Changes
+### 2. Search should ignore the date filter
 
-1. **Lead creation lookup (front + edge function)**
-   - Before assigning a new traveller_code, check `leads` for the same `email` (case-insensitive). If found, reuse that lead's `traveller_code` for the new lead.
-   - Apply in:
-     - `supabase/functions/submit-lead/index.ts` (public form submissions)
-     - The CMS "Add Lead" insert path (Lead Management new-lead flow)
-   - Only generate a fresh code via `generate_traveller_code` trigger when the email is brand new (or empty).
+Today, the search box (`name / email / mobile / traveller_code`) is AND-ed with the date range. So searching "Minal" while the range is "Last 6 Months" misses older leads.
 
-2. **Cashflow lookup unchanged**
-   - Already widened to match by email/mobile across leads (shipped in the last fix), so it keeps working through the transition while old duplicates are being cleaned.
+Fix: when `search.trim().length > 0`, drop the `gte/lte created_at` clauses in both `applyBaseFilters` (leads page query) and the chip-count query. Show a subtle hint chip next to the search input: "Searching across all dates" with a small × to clear the search.
 
-3. **Backfill duplicates (one-time data migration)**
-   - For each `email` that appears under more than one `traveller_code`: pick the **oldest** code, rewrite the other leads (and their cashflows / timeline events) to point at the canonical code.
-   - Run the script once, log every change to a small audit table so it's reversible.
-   - Skip rows where email is `NULL` / empty — those stay as-is.
+This matches user mental model: typing in search = global lookup, filters = browsing.
 
-4. **Soft guard, not hard constraint**
-   - We will **not** add a unique DB constraint on `email`, because the same person can legitimately have multiple leads (repeat traveller — that's the point). The uniqueness lives at the application layer: "if email exists, reuse its code".
+### 3. Remove "More / Less" — show all filters inline
 
----
+The bar has room for the Ad Group filter. Remove `moreFilters` state and the toggle button; always render Destination, Platform, Channel, Campaign, **Ad Group** in one row. On <1280px screens the bar wraps to two rows naturally (`flex-wrap`).
 
-## Part 2 — "File Closed" → quick Trip Cashflow modal
+### 4. Persist filters & search across navigation
 
-**Today's behaviour**
+Today, opening a lead and clicking Back resets everything because state is component-local. Two practical options — recommend **(b)**:
 
-When sales_status flips to **File Closed**, a dialog asks "Create cashflow?". Clicking it inserts a near-empty `trip_cashflow` row and the user has to open the full edit page separately. The full edit page has vendors, margins, GST, etc. — that's an ops job, not a sales job at close time.
+- **(a)** URL query params (`?from=…&to=…&q=…&dest=…&disp=…`). Bookmarkable & shareable but more code.
+- **(b) sessionStorage**, key `leadmgmt.filters.v1` — restored on mount, written on every change. Survives back-navigation within the session, cleared on browser close. Minimal code, no URL noise. Reset button also clears the storage entry.
 
-**Target flow**
+Will implement **(b)**. Stored shape:
 
-```
-Lead → Notes / disposition updated → Tagged
-    → Sales marks "File Closed"
-    → Quick Cashflow modal opens (sales-friendly fields only)
-    → On submit: trip_cashflow row created in stage `trip_sold`
-    → Ops team later opens Trip Cashflow page to add vendors / margins / docs
+```ts
+{ dateFrom, dateTo, filterDestination, filterPlatform, filterChannel,
+  filterCampaign, filterAdGroup, search, activeDispositions: string[],
+  activeStatuses: string[], currentPage }
 ```
 
-### Quick Cashflow modal — fields only the salesperson knows
+On mount: `useState` initializers read from sessionStorage and fall back to current defaults. A single `useEffect` writes the snapshot whenever any of those values change. `resetFilters()` also calls `sessionStorage.removeItem(...)`.
 
-Prefilled from lead where possible:
+### Out of scope
 
-- Traveller name (prefilled, read-only)
-- Traveller code (prefilled, read-only)
-- Destination (prefilled, editable dropdown)
-- Itinerary (prefilled, editable dropdown filtered by destination)
-- **Travel start date** (prefilled from `lead.travel_date`)
-- **Travel end date** (auto = start + itinerary.nights when available; editable)
-- **Booking date** (defaults to today)
-- **Pax count** (prefilled from `lead.pax_count`, defaults to 1)
-- **Selling price (final, agreed with customer)** — single number
-- **GST billing?** yes/no toggle (defaults to yes)
-- Notes (optional)
-
-**Not in the modal** (kept on the full Trip Cashflow page for ops):
-- Vendor line items, cost-per-pax, margin %, payment status, invoice URLs, PAN card.
-
-### Actions in the modal
-
-- **Save Cashflow** — inserts `trip_cashflow` with `trip_stage = 'trip_sold'`, `status = 'draft'`, populated with the fields above, `lead_id` set, and a `lead_timeline` "cashflow_created" event.
-- **Skip for now** — closes the lead without creating any cashflow row (no orphan shells).
-- After save, the existing trip-start / trip-end reminders auto-creation continues to fire (unchanged).
-
----
-
-## Technical details
-
-### Files to touch
-
-- `src/pages/LeadDetail.tsx` — replace the existing `<Dialog>` (lines 928–941) with a new `<QuickCashflowModal>`. Remove the old `handleCreateCashflow` shell-insert.
-- `src/components/QuickCashflowModal.tsx` *(new)* — modal component with the field set above; uses lookups already cached by `AppLayout` prefetch.
-- `src/pages/LeadManagement.tsx` (or wherever new leads are created in CMS) — add email lookup before insert.
-- `supabase/functions/submit-lead/index.ts` — add email lookup before insert; reuse existing `traveller_code` if found.
-
-### Data migration
-
-- New SQL migration `merge_duplicate_traveller_codes`:
-  - CTE finds `email → oldest traveller_code` per email.
-  - Updates `leads`, `trip_cashflow`, `lead_timeline.metadata` (only where traveller_code is stored) and any other table that references the obsolete code.
-  - Writes affected pairs to a new `traveller_code_merges` audit table `(email, old_code, new_code, merged_at)`.
-- Run once via migration tool, then leave the script in place for future re-runs (idempotent).
-
-### No UI/styling change beyond the modal
-
-Existing brand tokens (Blaze / Abyss / Ridge), spacing, and dialog patterns are reused. Active design system stays untouched.
-
----
-
-## What I'll need from you before implementing
-
-1. Confirm the **field list** for the Quick Cashflow modal above. Add or remove any field? (e.g. do you want "advance received" captured here too?)
-2. Confirm the **backfill** is OK to run on production data. The audit table makes it reversible, but I want explicit go-ahead before touching live rows.
-3. For the email lookup on lead creation: should it be **case-insensitive and trim whitespace** (recommended), or strict match?
+No UI restyling, no schema changes, no business-logic changes — purely filter/search behaviour and the date picker presets.

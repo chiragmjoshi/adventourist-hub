@@ -13,12 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Search, Download, RotateCcw, ChevronDown, Compass, X, Flame } from "lucide-react";
+import { Plus, Search, Download, RotateCcw, Compass, X, Flame } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, subDays, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
-import DateRangePicker from "@/components/DateRangePicker";
+import DateRangePicker, { ALL_TIME_FROM } from "@/components/DateRangePicker";
 
 /* DB now stores the display value directly (e.g. "Not Contacted").
  * No translation between display labels and DB keys is needed anymore. */
@@ -119,23 +119,44 @@ const LeadManagement = () => {
   // Default = "Last 6 Months to date": start of the month 5 months ago → today.
   const defaultFrom = useMemo(() => startOfMonth(subMonths(new Date(), 5)), []);
   const defaultTo = useMemo(() => new Date(), []);
-  const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
-  const [dateTo, setDateTo] = useState<Date>(defaultTo);
-  const [filterChannel, setFilterChannel] = useState("all");
-  const [filterPlatform, setFilterPlatform] = useState("all");
-  const [filterCampaign, setFilterCampaign] = useState("all");
-  const [filterAdGroup, setFilterAdGroup] = useState("all");
-  const [filterDestination, setFilterDestination] = useState("all");
-  const [moreFilters, setMoreFilters] = useState(false);
+
+  /* Persisted filter snapshot — survives back-navigation within the session. */
+  const STORAGE_KEY = "leadmgmt.filters.v1";
+  const persisted = useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }, []);
+  const parseDate = (v: any, fallback: Date): Date => {
+    if (!v) return fallback;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? fallback : d;
+  };
+
+  const [dateFrom, setDateFrom] = useState<Date>(() => parseDate(persisted?.dateFrom, defaultFrom));
+  const [dateTo, setDateTo] = useState<Date>(() => parseDate(persisted?.dateTo, defaultTo));
+  const [filterChannel, setFilterChannel] = useState<string>(persisted?.filterChannel ?? "all");
+  const [filterPlatform, setFilterPlatform] = useState<string>(persisted?.filterPlatform ?? "all");
+  const [filterCampaign, setFilterCampaign] = useState<string>(persisted?.filterCampaign ?? "all");
+  const [filterAdGroup, setFilterAdGroup] = useState<string>(persisted?.filterAdGroup ?? "all");
+  const [filterDestination, setFilterDestination] = useState<string>(persisted?.filterDestination ?? "all");
 
   /* ── Quick filters (multi-select) ── */
-  const [activeDispositions, setActiveDispositions] = useState<Set<string>>(new Set());
-  const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
+  const [activeDispositions, setActiveDispositions] = useState<Set<string>>(
+    () => new Set(Array.isArray(persisted?.activeDispositions) ? persisted.activeDispositions : [])
+  );
+  const [activeStatuses, setActiveStatuses] = useState<Set<string>>(
+    () => new Set(Array.isArray(persisted?.activeStatuses) ? persisted.activeStatuses : [])
+  );
 
   /* ── Table ── */
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState<string>(persisted?.search ?? "");
   const PAGE_SIZE = 50;
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState<number>(persisted?.currentPage ?? 1);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   /* ── Form ── */
@@ -199,13 +220,17 @@ const LeadManagement = () => {
   const statKey = useMemo(() => [...activeStatuses].sort().join(","), [activeStatuses]);
 
   const applyBaseFilters = useCallback((q: any) => {
-    q = q.gte("created_at", fromIso).lte("created_at", toIso);
+    const s = search.trim().replace(/[%(),]/g, "");
+    // When the user is actively searching, ignore the date window so leads
+    // outside the current range still surface. Other column filters still apply.
+    if (!s) {
+      q = q.gte("created_at", fromIso).lte("created_at", toIso);
+    }
     if (filterDestination !== "all") q = q.eq("destination_id", filterDestination);
     if (filterChannel !== "all") q = q.eq("channel", filterChannel);
     if (filterPlatform !== "all") q = q.eq("platform", filterPlatform);
     if (filterCampaign !== "all") q = q.eq("campaign_type", filterCampaign);
     if (filterAdGroup !== "all") q = q.eq("ad_group", filterAdGroup);
-    const s = search.trim().replace(/[%(),]/g, "");
     if (s) {
       q = q.or(
         `name.ilike.%${s}%,email.ilike.%${s}%,mobile.ilike.%${s}%,traveller_code.ilike.%${s}%`
@@ -341,12 +366,38 @@ const LeadManagement = () => {
     setCurrentPage(1);
   }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search]);
 
+  /* Persist current filter snapshot to sessionStorage on any change. */
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          dateFrom: dateFrom.toISOString(),
+          dateTo: dateTo.toISOString(),
+          filterChannel,
+          filterPlatform,
+          filterCampaign,
+          filterAdGroup,
+          filterDestination,
+          activeDispositions: [...activeDispositions],
+          activeStatuses: [...activeStatuses],
+          search,
+          currentPage,
+        })
+      );
+    } catch {
+      /* sessionStorage full or unavailable — ignore */
+    }
+  }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search, currentPage]);
+
   const resetFilters = () => {
     setDateFrom(startOfMonth(subMonths(new Date(), 5)));
     setDateTo(new Date());
     setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
     setFilterAdGroup("all"); setFilterDestination("all");
     setActiveDispositions(new Set()); setActiveStatuses(new Set()); setCurrentPage(1);
+    setSearch("");
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
   };
 
   const toggleChip = (set: Set<string>, setFn: (s: Set<string>) => void, val: string) => {
@@ -405,7 +456,7 @@ const LeadManagement = () => {
       </div>
 
       {/* ── Smart Filter Bar — single compact row ── */}
-      <div className="flex items-center gap-2 mb-4 px-3 py-2 border border-border/50 rounded-lg bg-background h-12">
+      <div className="flex items-center flex-wrap gap-2 mb-4 px-3 py-2 border border-border/50 rounded-lg bg-background">
         <DateRangePicker
           from={dateFrom}
           to={dateTo}
@@ -421,14 +472,8 @@ const LeadManagement = () => {
             .map((v: any) => ({ value: v.value, label: v.value }))} />
         <SmallSelect label="Campaign" value={filterCampaign} onChange={setFilterCampaign}
           options={mvByType("campaign_type").map((v: any) => ({ value: v.value, label: v.value }))} />
-
-        {moreFilters && (
-          <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
-            options={mvByType("ad_group").map((v: any) => ({ value: v.value, label: v.value }))} />
-        )}
-        <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 px-2" onClick={() => setMoreFilters(!moreFilters)}>
-          {moreFilters ? "Less" : "More"} <ChevronDown className={`h-3 w-3 transition-transform ${moreFilters ? "rotate-180" : ""}`} />
-        </Button>
+        <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
+          options={mvByType("ad_group").map((v: any) => ({ value: v.value, label: v.value }))} />
 
         {anyFiltersActive && (
           <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 whitespace-nowrap">
@@ -502,6 +547,18 @@ const LeadManagement = () => {
               ? `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, totalCount)} of ${totalCount.toLocaleString()} leads`
               : "No leads match"}
           </span>
+          {search.trim().length > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+              Searching across all dates
+              <button
+                onClick={() => setSearch("")}
+                className="hover:text-amber-900"
+                title="Clear search"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
