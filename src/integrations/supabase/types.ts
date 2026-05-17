@@ -1037,6 +1037,69 @@ export type Database = {
           },
         ]
       }
+      travel_stories: {
+        Row: {
+          author: string | null
+          category: string | null
+          content_html: string | null
+          created_at: string | null
+          excerpt: string | null
+          focus_keyword: string | null
+          id: string
+          published_at: string | null
+          read_time_minutes: number | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          status: string | null
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          views: number | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          content_html?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          focus_keyword?: string | null
+          id?: string
+          published_at?: string | null
+          read_time_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          status?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          content_html?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          focus_keyword?: string | null
+          id?: string
+          published_at?: string | null
+          read_time_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          status?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Relationships: []
+      }
       traveller_code_sequence: {
         Row: {
           last_sequence: number
