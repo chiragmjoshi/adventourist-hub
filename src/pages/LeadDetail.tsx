@@ -16,11 +16,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send, Briefcase, Plus } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send, Briefcase, Plus, Bell } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { evaluateRulesForLead } from "@/services/automationEngine";
+import AddReminderModal from "@/components/reminders/AddReminderModal";
+import LeadReminderStrip from "@/components/reminders/LeadReminderStrip";
+import {
+  tomorrowAt, inHours, fromDateAt, dispKey,
+} from "@/lib/reminderHelpers";
 
 /* ── Timeline event colors ── */
 const EVENT_COLORS: Record<string, string> = {
@@ -73,13 +78,14 @@ const LeadDetail = () => {
   const [cashflowPrompt, setCashflowPrompt] = useState(false);
   const [formState, setFormState] = useState<Record<string, any>>({});
   const [commentText, setCommentText] = useState("");
+  const [remindOpen, setRemindOpen] = useState(false);
 
   /* ── Queries ── */
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("leads")
-        .select("*, destinations(name), itineraries(headline), users!leads_assigned_to_fkey(name)")
+        .select("*, destinations(name), itineraries(headline, nights), users!leads_assigned_to_fkey(name)")
         .eq("id", id!).single();
       if (error) throw error;
       return data;
