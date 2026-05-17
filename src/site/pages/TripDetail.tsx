@@ -441,6 +441,9 @@ export default function TripDetail() {
         </section>
       )}
 
+      {/* Spacer so floating CTA doesn't cover footer content on mobile */}
+      <div aria-hidden className="lg:hidden h-20" />
+
       {/* Mobile floating CTA */}
       <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40 flex gap-2">
         <a
