@@ -914,6 +914,7 @@ export type Database = {
           destination_id: string | null
           disposition: string | null
           email: string | null
+          follow_up_date: string | null
           id: string
           is_hot: boolean
           itinerary_id: string | null
@@ -942,6 +943,7 @@ export type Database = {
           destination_id?: string | null
           disposition?: string | null
           email?: string | null
+          follow_up_date?: string | null
           id?: string
           is_hot?: boolean
           itinerary_id?: string | null
@@ -970,6 +972,7 @@ export type Database = {
           destination_id?: string | null
           disposition?: string | null
           email?: string | null
+          follow_up_date?: string | null
           id?: string
           is_hot?: boolean
           itinerary_id?: string | null
