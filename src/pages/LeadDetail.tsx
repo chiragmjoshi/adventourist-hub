@@ -424,6 +424,16 @@ const LeadDetail = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => newInquiry.mutate()}
+            disabled={newInquiry.isPending}
+            className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
+          >
+            <FilePlus className="h-3.5 w-3.5" />
+            New Inquiry
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setRemindOpen(true)}
             className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
           >
