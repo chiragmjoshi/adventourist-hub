@@ -1,8 +1,13 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { waLink } from "@/site/lib/utils";
 
 export default function WhatsAppFAB() {
   const [hovered, setHovered] = useState(false);
+  const { pathname } = useLocation();
+  // Hide on mobile for pages that already have their own bottom CTA bar
+  // (trip detail has a sticky "Plan This Trip + WhatsApp" footer on mobile).
+  const hideOnMobile = pathname.startsWith("/trips/") && pathname !== "/trips";
 
   return (
     <a
@@ -12,7 +17,7 @@ export default function WhatsAppFAB() {
       aria-label="Chat on WhatsApp"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="fixed bottom-6 right-5 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-[#25D366] shadow-lg hover:shadow-xl transition-shadow"
+      className={`fixed bottom-6 right-5 z-50 ${hideOnMobile ? "hidden lg:flex" : "flex"} items-center justify-center w-14 h-14 rounded-full bg-[#25D366] shadow-lg hover:shadow-xl transition-shadow`}
     >
       {/* Pulse ring */}
       <span className="absolute inset-0 rounded-full bg-[#25D366] animate-pulse-ring" />
