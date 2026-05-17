@@ -1,51 +1,57 @@
 ## Goal
+Clean up the production lead and customer database before going live: fix typo emails, delete internal/test leads, and remove obviously-fake mobile numbers.
 
-Repair the destination → itinerary → lead data chain across the editor, edge function, and lead views. No schema changes needed — `leads.destination_id`, `leads.itinerary_id`, `landing_pages.destination_id`, `landing_pages.itinerary_id` all already exist.
+## 1. Fix typo emails (auto-correct in place)
 
-## What's actually broken (after audit)
+Apply targeted UPDATEs to both `leads.email` and `customers.email` for well-known typos. No row deletion — just text replacement.
 
-| # | Spot | Status today |
-|---|---|---|
-| 1 | ItineraryEdit — destination dropdown | Selecting a destination does NOT auto-populate `best_months / themes / suitable_for / hero_image`. The destinations query only fetches `id, name, about`, so even the "About" info box is the only thing wired. |
-| 2 | `submit-lead` edge function | When `landing_page_id` is provided, the function does NOT look up the landing page. It never sets `itinerary_id`, and `destination_id` only resolves from a typed-in name. So landing-page-form leads land with both FKs null. |
-| 3 | LeadManagement "Add Lead" dialog | Destination→Itinerary cascade works one way only. If user picks an itinerary first (no destination chosen), `destination_id` stays empty. |
-| 4 | Lead list (LeadManagement table) | Join + render already correct — verify only. |
-| 5 | LeadDetail "Current Enquiry" tab | Selects exist but: not clickable links, no empty-state CTA, and picking an itinerary does not auto-fill `destination_id`. |
+| Typo pattern | Corrected to |
+|---|---|
+| `…@gmail.co` (missing `m`) | `…@gmail.com` |
+| `…@gmail.con` | `…@gmail.com` |
+| `…@gmailc.com` | `…@gmail.com` |
+| `…@gmai.com` | `…@gmail.com` |
+| `…@yahoo.co` (only when no further TLD) | `…@yahoo.com` |
 
-## Fixes
+Affected rows (verified):
+- `leads`: 7 rows (e.g. `udaichib200@gmail.co`, `shankarawate557@gmai.com`, `smahima112@yahoo.co`, `moinhashmi9839@gmai.com`, `rajivmalhotra22110@gmail.co`)
+- `customers`: 17 rows (mostly `@gmail.con` variants + `@gmailc.com`)
 
-### 1. `src/pages/ItineraryEdit.tsx`
-- Expand the destinations query to select `id, name, about, best_months, themes, suitable_for, hero_image`.
-- On `destination_id` change, look up the selected destination and merge into form state **only for empty fields**:
-  - `best_months` empty → `monthsToNames(dest.best_months)`
-  - `themes` empty → `dest.themes`
-  - `suitable_for` empty → `dest.suitable_for`
-  - `hero_image` empty → keep blank but show a small preview of `dest.hero_image` labelled "Using destination image" beside the hero uploader.
-- Existing About info box already binds to `selectedDest.about` — confirm it re-renders on change (it does, since `selectedDest` is derived from `form.destination_id`).
-- Skip auto-merge when loading an existing itinerary (only run on user-initiated change).
+Other obvious junk (`thisistest@gmail.com`, `Test@test.com`, `rup@pradeep.com`) is not corrected — those rows are deleted in step 2.
 
-### 2. `supabase/functions/submit-lead/index.ts`
-- If `body.landing_page_id` is present, fetch `landing_pages` row (`destination_id, itinerary_id`) with the service-role client and use those values as the primary source.
-- Fallback chain for `destination_id`: landing page → name lookup.
-- Add `itinerary_id` to the insert payload (currently absent entirely).
-- No body-schema changes needed for clients — landing page already passes `landing_page_id`.
+## 2. Delete internal / test leads
 
-### 3. `src/pages/LeadManagement.tsx` (Add Lead dialog)
-- When user picks an itinerary, if `form.destination_id` is empty, set it from `itineraries.find(...).destination_id`. Keep current destination→itinerary filter cascade.
-- Insert already includes both FKs — no change there.
+Delete from `leads` (and their `lead_timeline`, `lead_tracking`, `automations_log`, `lead_comments` rows) where they match clearly-internal/test signatures. Real customers with similar names (e.g. "Pradeep Kumar Jain", "Chirag Mittal", "Minali Sanghvi") are kept.
 
-### 4. Lead list — verify only
-- Query already does `*, destinations(name), itineraries(headline), users!leads_assigned_to_fkey(name)` and the cells already render `destinations.name` and truncated `itineraries.headline` with em-dash fallback. No code change unless the manual test fails.
+Deletion targets (~24 leads):
+- Any lead with email ending in `@adventourist.in` → 5 leads (Minal Joshi ×4, Pradeep ×1)
+- Email `thisistest@gmail.com` → 7 leads ("Pradeep Tets")
+- Email `Test@test.com` → 1 lead ("Test")
+- Email `rup@pradeep.com` → 1 lead ("Rup 4 Pradeep Test")
+- Email `minal.rathod@gmail.com` with name "Minal Chirag Joshi" → 8 leads (test submissions by Minal)
+- Name `Chirag Joshi` with NULL email → 2 leads
 
-### 5. `src/pages/LeadDetail.tsx` (Current Enquiry tab)
-- Wrap the displayed destination name and itinerary headline as `<Link>`s to `/destinations/:id` and `/itineraries/:id/edit` respectively.
-- When the itinerary `<Select>` changes, also patch `destination_id` from `itineraries.find(i => i.id === v).destination_id` if currently empty.
-- If both `destination_id` and `itinerary_id` are null, render an empty-state row: "No destination or itinerary linked" + an inline searchable itinerary picker that, on select, updates both FKs in one save.
+NOT deleted (look like real customers, please confirm if any should also go):
+- "Pradeep" with `pradeep.m1967@gmail.com`, `pg34157@gmail.com`, `sarfaraz1791@gmail.com`, `praddep@gmailc.com` — these are external leads named Pradeep, not the internal Pradeep
+- "Chirag" with `chiragshah20011@rediffmail.com` (4 leads) — looks like an external customer
+- "Rupesh Tiwari" `rupeshtiwari1998@gmail.com`, "Tejinder Pal Singh", "Minal Singh", "Minal Patel" (aaravconsultancy1) — appear external
+- "Rupesh", "Rupesh Khiste", "Rupesh Shinde"
 
-## Out of scope
-- No DB migrations (columns already exist).
-- No changes to landing page editor save (it already persists both FKs — verified line 154 of `LandingPageEdit.tsx`).
-- No changes to public-site itinerary enquiry path (it routes through the same `submit-lead` function with `landing_page_id`; once #2 is fixed it inherits the FKs).
+If you want any of these also removed, tell me which and I'll add them.
 
-## Manual verification checklist
-After implementation, walk through the 6 end-to-end steps from the brief and report pass/fail per step.
+## 3. Remove dummy mobile numbers
+
+Set `customers.mobile = NULL` (keep the customer record, just blank the bad number) for:
+- Repeating-digit patterns: `9999999999`, `1111111111`, `0000000000`, `1234567890`, `0123456789` → 2 rows confirmed (`9999999999` ×1, plus repeating-digit checks)
+- Mobile shorter than 10 digits after stripping non-digits → 55 rows (mostly 5-digit fragments like `99870`, `70454`, `92`, `973` — clearly corrupted)
+
+Total: ~57 customer rows get `mobile` blanked. Names/emails/leads preserved.
+
+## Technical notes
+- All three steps run as `supabase--insert` SQL (UPDATE + DELETE), not migrations — schema unchanged.
+- Deletes are done in dependency order: `lead_timeline` → `lead_tracking` → `automations_log` → `lead_comments` → `leads`.
+- Run as one transaction per step so a failure rolls back cleanly.
+- After execution I'll output before/after counts for verification.
+
+## Open question
+Should I also delete the `@adventourist.in` test leads' associated `customers` rows, or keep them (in case they're linked elsewhere)? Default plan: keep customers, only delete leads.
