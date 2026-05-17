@@ -645,6 +645,7 @@ export type Database = {
           slug: string
           stay_days: string | null
           suitable_for: string[]
+          template_id: string
           testimonial_ids: string[]
           time_to_visit: string[]
           updated_at: string
@@ -687,6 +688,7 @@ export type Database = {
           slug: string
           stay_days?: string | null
           suitable_for?: string[]
+          template_id?: string
           testimonial_ids?: string[]
           time_to_visit?: string[]
           updated_at?: string
@@ -729,6 +731,7 @@ export type Database = {
           slug?: string
           stay_days?: string | null
           suitable_for?: string[]
+          template_id?: string
           testimonial_ids?: string[]
           time_to_visit?: string[]
           updated_at?: string

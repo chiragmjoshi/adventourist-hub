@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import Login from "./pages/Login";
 import LandingPage from "./pages/LandingPage";
+import ThankYouPage from "./landing/ThankYouPage";
 import SiteHome from "./site/pages/Home";
 import SiteTripsList from "./site/pages/TripsList";
 import SiteTripDetail from "./site/pages/TripDetail";
@@ -129,6 +130,7 @@ const App = () => {
             <Route path="/refund-and-cancellation-policy" element={<RefundPolicy />} />
             <Route path="/payment-policy" element={<PaymentPolicy />} />
             <Route path="/l/:slug" element={<LandingPage />} />
+            <Route path="/l/:slug/thank-you" element={<ThankYouPage />} />
 
             {/* Admin / CMS */}
             <Route path="/admin/login" element={<Login />} />
