@@ -8,7 +8,11 @@ const BASE_URL = "https://www.adventourist.in";
 const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL ?? "https://ufjhiqdpshrubephgxrs.supabase.co";
 const SUPABASE_ANON =
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  process.env.SUPABASE_ANON_KEY ??
+  // Fallback to publishable anon key so the prebuild script works even when
+  // the build env doesn't expose VITE_* variables to Node scripts.
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmamhpcWRwc2hydWJlcGhneHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTQxNTksImV4cCI6MjA5MTczMDE1OX0.dTstHqJ8EXqL71fQiTcbE8RVOMachuMSg0cvf61g5bo";
 
 interface Entry {
   loc: string;
