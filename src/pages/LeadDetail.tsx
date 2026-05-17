@@ -537,7 +537,7 @@ const LeadDetail = () => {
                         setFormState(prev => ({
                           ...prev,
                           itinerary_id: v,
-                          destination_id: prev.destination_id || (prev as any).destination_id === "" ? (it?.destination_id || prev.destination_id) : prev.destination_id,
+                          destination_id: prev.destination_id || it?.destination_id || "",
                         }));
                       }}>
                         <SelectTrigger className="h-9 text-xs mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
