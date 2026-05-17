@@ -493,6 +493,17 @@ const ItineraryEdit = () => {
                 value={form.hero_image}
                 onChange={(url) => setField("hero_image", url)}
               />
+              {!form.hero_image && (
+                <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 flex items-start gap-2">
+                  <span className="text-base leading-none mt-0.5">⚠️</span>
+                  <div>
+                    <p className="text-[12px] font-semibold text-amber-900">No hero image uploaded</p>
+                    <p className="text-[11px] text-amber-800/80 mt-0.5">
+                      The website will show a destination placeholder. Upload a real photo (landscape, min 1200×800px) for the best impact.
+                    </p>
+                  </div>
+                </div>
+              )}
               {!form.hero_image && (selectedDest as any)?.hero_image && (
                 <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-2">
                   <p className="text-[11px] font-medium text-blue-700 mb-1.5">Using destination image (fallback)</p>
