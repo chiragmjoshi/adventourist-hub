@@ -290,7 +290,12 @@ const TripsKanban = () => {
                             </Badge>
                           )}
                         </div>
-                        <div className="text-[11px] font-mono text-primary mt-0.5">{t.cashflow_code}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 flex-wrap text-[11px] font-mono">
+                          <span className="text-primary">{t.cashflow_code}</span>
+                          {t.traveller_code && t.traveller_code !== t.cashflow_code && (
+                            <span className="text-muted-foreground/70" title="Traveller code">· {t.traveller_code}</span>
+                          )}
+                        </div>
 
                         {(() => {
                           if (!t.travel_start_date) return null;
@@ -349,6 +354,7 @@ const TripsKanban = () => {
                               href={`tel:${t.leads.mobile}`}
                               onClick={() => setLogCall({ trip: t })}
                               className="flex-1"
+                              title={`Call ${t.leads.mobile}`}
                             >
                               <Button size="sm" variant="ghost" className="h-7 w-full text-[11px] gap-1 px-1.5 text-[hsl(var(--ridge))] hover:bg-[hsl(var(--ridge))]/10">
                                 <Phone className="h-3 w-3" /> Call
@@ -359,14 +365,22 @@ const TripsKanban = () => {
                               <Phone className="h-3 w-3" /> No #
                             </Button>
                           )}
-                          <Button
-                            size="sm" variant="ghost"
-                            onClick={() => setLogCall({ trip: t })}
-                            className="h-7 px-1.5 text-[11px] gap-1"
-                            title="Log call"
-                          >
-                            <MessageSquare className="h-3 w-3" />
-                          </Button>
+                          {t.leads?.mobile ? (
+                            <a
+                              href={`https://wa.me/${String(t.leads.mobile).replace(/[^\d]/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Open WhatsApp"
+                            >
+                              <Button size="sm" variant="ghost" className="h-7 px-1.5 text-[11px] gap-1 text-[#25D366] hover:bg-[#25D366]/10">
+                                <MessageSquare className="h-3 w-3" />
+                              </Button>
+                            </a>
+                          ) : (
+                            <Button size="sm" variant="ghost" disabled className="h-7 px-1.5 text-[11px] gap-1 opacity-40" title="No mobile">
+                              <MessageSquare className="h-3 w-3" />
+                            </Button>
+                          )}
                           <Button
                             size="sm" variant="ghost"
                             onClick={() => setRemind({ trip: t })}
@@ -375,19 +389,20 @@ const TripsKanban = () => {
                           >
                             <Bell className="h-3 w-3" />
                           </Button>
-                          {next ? (
+                          {/* "Done" only on manual call stages — other stages advance automatically from lead/trip records */}
+                          {next && (stage.key === "briefing_call" || stage.key === "feedback_call") ? (
                             <Button
                               size="sm" variant="ghost"
                               onClick={() => advanceStage.mutate({ trip: t, target: next })}
                               disabled={advanceStage.isPending}
                               className="h-7 px-1.5 text-[11px] gap-1 text-[hsl(var(--blaze))] hover:bg-[hsl(var(--blaze))]/10"
-                              title="Mark stage done"
+                              title={`Mark ${stage.label} done`}
                             >
                               <CheckCircle2 className="h-3 w-3" />
                             </Button>
-                          ) : (
+                          ) : stage.key === "trip_completed" ? (
                             <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--ridge))] mx-1.5" />
-                          )}
+                          ) : null}
                         </div>
                       </Card>
                     );
