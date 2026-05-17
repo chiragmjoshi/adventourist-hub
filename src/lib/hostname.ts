@@ -40,8 +40,5 @@ export function getCrossHostRedirect(
   if (kind === "admin" && !adminPath) {
     return `https://${PUBLIC_HOST}${pathname}${search}${hash}`;
   }
-  if (kind === "public" && adminPath) {
-    return `https://${ADMIN_HOST}${pathname}${search}${hash}`;
-  }
   return null;
 }
