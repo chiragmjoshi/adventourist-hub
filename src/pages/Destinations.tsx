@@ -20,6 +20,10 @@ import ChipMultiSelect from "@/components/forms/ChipMultiSelect";
 import TestimonialEditor, { TestimonialItem } from "@/components/forms/TestimonialEditor";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthsToNames = (nums: any): string[] =>
+  Array.isArray(nums) ? nums.map((n: any) => MONTHS[Number(n) - 1]).filter(Boolean) : [];
+const monthsToNums = (names: string[]): number[] =>
+  names.map((m) => MONTHS.indexOf(m) + 1).filter((n) => n >= 1);
 
 interface DestForm {
   id?: string;
@@ -77,7 +81,7 @@ const Destinations = () => {
     if (d) {
       setForm({
         id: d.id, name: d.name || "", slug: d.slug || "", about: d.about || "",
-        best_months: d.best_months || [], themes: d.themes || [], suitable_for: d.suitable_for || [],
+        best_months: monthsToNames(d.best_months), themes: d.themes || [], suitable_for: d.suitable_for || [],
         hero_image: d.hero_image || "", gallery: d.gallery || [],
         testimonials: Array.isArray(d.testimonials) ? d.testimonials : [],
         is_active: d.is_active ?? true,
@@ -95,7 +99,7 @@ const Destinations = () => {
         name: f.name,
         slug: f.slug || f.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
         about: f.about || null,
-        best_months: f.best_months,
+        best_months: monthsToNums(f.best_months),
         themes: f.themes,
         suitable_for: f.suitable_for,
         hero_image: f.hero_image || null,
@@ -279,7 +283,7 @@ const Destinations = () => {
                         {d.themes?.map((t: string) => <Badge key={t} variant="secondary" className="text-[11px]">{t}</Badge>)}
                       </div>
                     </TableCell>
-                    <TableCell className="text-table text-muted-foreground">{d.best_months?.join(", ") ?? "—"}</TableCell>
+                    <TableCell className="text-table text-muted-foreground">{monthsToNames(d.best_months).join(", ") || "—"}</TableCell>
                     <TableCell>
                       <Switch checked={d.is_active} onCheckedChange={(v) => toggleActive.mutate({ id: d.id, is_active: v })} />
                     </TableCell>
