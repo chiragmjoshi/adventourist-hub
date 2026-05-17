@@ -155,13 +155,37 @@ const LeadDetail = () => {
       if (tcs.length > 0) orParts.push(`traveller_code.in.(${tcs.join(",")})`);
       let q = supabase
         .from("trip_cashflow")
-        .select("*, itineraries(headline, destinations(name))")
+        .select("*")
         .order("created_at", { ascending: false });
       if (orParts.length > 0) q = q.or(orParts.join(","));
       const { data, error } = await q;
       if (error) throw error;
-      // Step 3: vendor cost sums
+      // Step 3: lookups + vendor cost sums. Keep these separate because
+      // trip_cashflow has UUID reference columns but no DB foreign keys, so
+      // embedded Supabase joins fail and make the Trips tab look empty.
       const ids = (data || []).map((t: any) => t.id);
+      const itineraryIds = Array.from(new Set((data || []).map((t: any) => t.itinerary_id).filter(Boolean)));
+      const destinationIds = Array.from(new Set((data || []).map((t: any) => t.destination_id).filter(Boolean)));
+      const itineraryMap: Record<string, any> = {};
+      const destinationMap: Record<string, any> = {};
+      if (itineraryIds.length > 0) {
+        const { data: irows } = await supabase
+          .from("itineraries")
+          .select("id, headline, destination_id")
+          .in("id", itineraryIds as string[]);
+        (irows || []).forEach((r: any) => {
+          itineraryMap[r.id] = r;
+          if (r.destination_id) destinationIds.push(r.destination_id);
+        });
+      }
+      const uniqueDestinationIds = Array.from(new Set(destinationIds));
+      if (uniqueDestinationIds.length > 0) {
+        const { data: drows } = await supabase
+          .from("destinations")
+          .select("id, name")
+          .in("id", uniqueDestinationIds as string[]);
+        (drows || []).forEach((r: any) => { destinationMap[r.id] = r; });
+      }
       let vendorMap: Record<string, number> = {};
       if (ids.length > 0) {
         const { data: vrows } = await supabase
@@ -174,15 +198,19 @@ const LeadDetail = () => {
       }
       const gstRate = 5; // GST default — matches TripCashflowEdit
       return (data || []).map((t: any) => {
+        const itinerary = t.itinerary_id ? itineraryMap[t.itinerary_id] : null;
+        const destinationId = t.destination_id || itinerary?.destination_id;
+        const agreedPrice = Number(t.agreed_selling_price) || 0;
         const vendorCost = vendorMap[t.id] || 0;
         const totalVendorCost = vendorCost * (Number(t.pax_count) || 1);
         const marginAmount = totalVendorCost * ((Number(t.margin_percent) || 0) / 100);
         const sellingExGst = totalVendorCost + marginAmount;
-        const finalPrice = t.gst_billing ? sellingExGst * (1 + gstRate / 100) : sellingExGst;
+        const calculatedFinalPrice = t.gst_billing ? sellingExGst * (1 + gstRate / 100) : sellingExGst;
+        const finalPrice = agreedPrice > 0 ? agreedPrice : calculatedFinalPrice;
         return {
           ...t,
-          itinerary_headline: t.itineraries?.headline || null,
-          destination_name: t.itineraries?.destinations?.name || null,
+          itinerary_headline: itinerary?.headline || null,
+          destination_name: destinationId ? destinationMap[destinationId]?.name || null : null,
           total_vendor_cost: totalVendorCost,
           margin_amount: marginAmount,
           selling_price_with_gst: finalPrice,
