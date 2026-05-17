@@ -49,16 +49,17 @@ const DestinationReport = () => {
     const name = l.destination?.name || "Unknown";
     if (!destMap[name]) destMap[name] = { name, leads: 0, closed: 0, revenue: 0, margin: 0 };
     destMap[name].leads++;
-    if (l.sales_status === "file_closed") destMap[name].closed++;
+    if (l.sales_status === "File Closed" || l.disposition === "Query Closed") destMap[name].closed++;
   });
   cashflows.forEach((cf) => {
     const name = cf.destination?.name || "Unknown";
     if (!destMap[name]) destMap[name] = { name, leads: 0, closed: 0, revenue: 0, margin: 0 };
     const vc = getVendorCost(cf.id) * (cf.pax_count || 1);
     const mp = Number(cf.margin_percent || 0);
-    const sp = vc / (1 - mp / 100);
+    const marginAmount = vc * (mp / 100);
+    const sp = vc + marginAmount;
     destMap[name].revenue += sp;
-    destMap[name].margin += sp - vc;
+    destMap[name].margin += marginAmount;
   });
   const destData = Object.values(destMap).sort((a, b) => b.leads - a.leads);
 

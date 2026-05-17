@@ -11,8 +11,13 @@ import { Link } from "react-router-dom";
 
 import { formatLabel } from "@/lib/formatLabel";
 
-const STATUSES = ["new_lead", "contacted", "quote_sent", "file_closed"] as const;
-const STATUS_LABELS: Record<string, string> = { new_lead: "New Leads", contacted: "Contacted", quote_sent: "Quote Sent", file_closed: "Files Closed" };
+const STATUSES = ["New Lead", "Contacted", "Quote Sent", "File Closed"] as const;
+const STATUS_LABELS: Record<string, string> = {
+  "New Lead": "New Leads",
+  "Contacted": "Contacted",
+  "Quote Sent": "Quote Sent",
+  "File Closed": "Files Closed",
+};
 const FUNNEL_COLORS = ["hsl(var(--blaze))", "hsl(var(--horizon))", "hsl(var(--lagoon))", "hsl(var(--ridge))"];
 
 const SalesReport = () => {
@@ -44,6 +49,11 @@ const SalesReport = () => {
       value: leads.filter((l) => l.sales_status === s).length,
       prev: prevLeads.filter((l) => l.sales_status === s).length,
     })),
+    {
+      label: "Converted (incl. Query Closed)",
+      value: leads.filter((l) => l.sales_status === "File Closed" || l.disposition === "Query Closed").length,
+      prev: prevLeads.filter((l) => l.sales_status === "File Closed" || l.disposition === "Query Closed").length,
+    },
   ];
 
   const funnelData = STATUSES.map((s, i) => ({
@@ -79,10 +89,10 @@ const SalesReport = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">{[...Array(5)].map((_, i) => <Card key={i} className="border"><CardContent className="p-5"><div className="h-16 bg-muted animate-pulse rounded" /></CardContent></Card>)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">{[...Array(6)].map((_, i) => <Card key={i} className="border"><CardContent className="p-5"><div className="h-16 bg-muted animate-pulse rounded" /></CardContent></Card>)}</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
             {kpis.map((kpi) => {
               const change = pctChange(kpi.value, kpi.prev);
               return (

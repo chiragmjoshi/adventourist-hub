@@ -27,17 +27,22 @@ const ConversionReport = () => {
   }, [from, to]);
 
   const total = leads.length;
-  const contacted = leads.filter((l) => ["contacted", "quote_sent", "file_closed"].includes(l.sales_status)).length;
-  const quoted = leads.filter((l) => ["quote_sent", "file_closed"].includes(l.sales_status)).length;
-  const closed = leads.filter((l) => l.sales_status === "file_closed").length;
-  const lost = leads.filter((l) => l.disposition === "file_lost").length;
+  const contacted = leads.filter((l) =>
+    ["Contacted", "Quote Sent", "File Closed", "Ongoing Discussions", "Follow Up Needed", "Refund Issued"].includes(l.sales_status)
+  ).length;
+  const quoted = leads.filter((l) => ["Quote Sent", "File Closed"].includes(l.sales_status)).length;
+  const closed = leads.filter((l) => l.sales_status === "File Closed" || l.disposition === "Query Closed").length;
+  const lost = leads.filter((l) => ["Plan Dropped", "Not Interested", "Booked Outside", "Ghosted"].includes(l.disposition)).length;
+  const inPipeline = leads.filter((l) =>
+    ["Contacted", "Quote Sent", "Ongoing Discussions", "Follow Up Needed"].includes(l.sales_status)
+  ).length;
   const conversionRate = total > 0 ? ((closed / total) * 100).toFixed(1) : "0";
 
   const funnelData = [
     { stage: "Total Leads", count: total, pct: 100 },
     { stage: "Contacted", count: contacted, pct: total > 0 ? Math.round((contacted / total) * 100) : 0 },
     { stage: "Quote Sent", count: quoted, pct: contacted > 0 ? Math.round((quoted / contacted) * 100) : 0 },
-    { stage: "File Closed", count: closed, pct: quoted > 0 ? Math.round((closed / quoted) * 100) : 0 },
+    { stage: "Converted", count: closed, pct: quoted > 0 ? Math.round((closed / quoted) * 100) : 0 },
   ];
   const funnelColors = ["hsl(var(--lagoon))", "hsl(var(--horizon))", "hsl(var(--blaze))", "hsl(var(--ridge))"];
 
@@ -46,10 +51,10 @@ const ConversionReport = () => {
     const p = l.platform || "Direct";
     if (!acc[p]) acc[p] = { platform: p, total: 0, contacted: 0, quoted: 0, closed: 0, lost: 0 };
     acc[p].total++;
-    if (["contacted", "quote_sent", "file_closed"].includes(l.sales_status)) acc[p].contacted++;
-    if (["quote_sent", "file_closed"].includes(l.sales_status)) acc[p].quoted++;
-    if (l.sales_status === "file_closed") acc[p].closed++;
-    if (l.disposition === "file_lost") acc[p].lost++;
+    if (["Contacted", "Quote Sent", "File Closed", "Ongoing Discussions"].includes(l.sales_status)) acc[p].contacted++;
+    if (["Quote Sent", "File Closed"].includes(l.sales_status)) acc[p].quoted++;
+    if (l.sales_status === "File Closed" || l.disposition === "Query Closed") acc[p].closed++;
+    if (["Plan Dropped", "Not Interested", "Booked Outside", "Ghosted"].includes(l.disposition)) acc[p].lost++;
     return acc;
   }, {});
   const platformData = Object.values(byPlatform).sort((a: any, b: any) => (b.total > 0 ? b.closed / b.total : 0) - (a.total > 0 ? a.closed / a.total : 0));
@@ -59,7 +64,7 @@ const ConversionReport = () => {
     const d = l.destination?.name || "Unknown";
     if (!acc[d]) acc[d] = { dest: d, total: 0, closed: 0 };
     acc[d].total++;
-    if (l.sales_status === "file_closed") acc[d].closed++;
+    if (l.sales_status === "File Closed" || l.disposition === "Query Closed") acc[d].closed++;
     return acc;
   }, {});
   const destData = Object.values(byDest).sort((a: any, b: any) => (b.total > 0 ? b.closed / b.total : 0) - (a.total > 0 ? a.closed / a.total : 0));
@@ -77,9 +82,11 @@ const ConversionReport = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">{[...Array(4)].map((_, i) => <Card key={i}><CardContent className="p-5"><div className="h-16 bg-muted animate-pulse rounded" /></CardContent></Card>)}</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
             <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Conversion Rate</p><p className="text-2xl font-bold mt-1">{conversionRate}%</p></CardContent></Card>
-            <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Files Closed</p><p className="text-2xl font-bold mt-1">{closed}</p></CardContent></Card>
+            <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Converted</p><p className="text-2xl font-bold mt-1">{closed}</p></CardContent></Card>
+            <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">In Pipeline</p><p className="text-2xl font-bold mt-1">{inPipeline}</p></CardContent></Card>
+            <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Lost Leads</p><p className="text-2xl font-bold mt-1">{lost}</p></CardContent></Card>
             <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Lost Rate</p><p className="text-2xl font-bold mt-1">{total > 0 ? ((lost / total) * 100).toFixed(1) : 0}%</p></CardContent></Card>
             <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Best Platform</p><p className="text-2xl font-bold mt-1 truncate">{platformData.length > 0 ? (platformData[0] as any).platform : "—"}</p></CardContent></Card>
           </div>
