@@ -153,16 +153,16 @@ export default function TripDetail() {
         className={`fixed top-16 lg:top-20 left-0 right-0 z-40 bg-white border-b border-abyss/10 transition-transform duration-300 ${stickyVisible ? "translate-y-0" : "-translate-y-full"}`}
         aria-hidden={!stickyVisible}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
-          <p className="font-display font-bold text-sm sm:text-base text-abyss truncate">{trip.headline}</p>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <a
-              href="#lead-form"
-              className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-full"
-            >
-              💬 WhatsApp
-            </a>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3">
+          <p className="font-display font-bold text-sm sm:text-base text-abyss truncate min-w-0 flex-1">{trip.headline}</p>
+          <a
+            href="#lead-form"
+            aria-label="Plan this trip"
+            className="flex-shrink-0 inline-flex items-center gap-1.5 bg-blaze hover:bg-blaze/90 text-white font-display font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-full"
+          >
+            <span className="hidden sm:inline">Plan This Trip</span>
+            <span className="sm:hidden">Plan →</span>
+          </a>
         </div>
       </div>
 
