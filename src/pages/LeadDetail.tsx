@@ -356,6 +356,13 @@ const LeadDetail = () => {
           <span className="font-mono font-semibold" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>
         </div>
         <div className="flex items-center gap-2">
+          <input
+            type="date"
+            title="Follow-up date"
+            value={getField("follow_up_date") || (l as any).follow_up_date || ""}
+            onChange={e => handleStatusChange("follow_up_date", e.target.value || null as any)}
+            className="h-8 text-xs rounded-md border border-border/60 px-2 bg-background"
+          />
           <Select value={getField("disposition") || l.disposition || ""} onValueChange={v => handleStatusChange("disposition", v)}>
             <SelectTrigger className="h-8 text-xs rounded-md w-48 border-border/60">
               <div className="flex items-center gap-1.5 truncate">
