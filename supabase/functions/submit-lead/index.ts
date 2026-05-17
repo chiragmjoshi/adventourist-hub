@@ -39,6 +39,8 @@ interface LeadBody {
   channel?: string;
   platform?: string;
   landing_page_id?: string;
+  itinerary_slug?: string;
+  page_source?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
