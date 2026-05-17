@@ -4,10 +4,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 import { Menu, X, MapPin, Calendar, DollarSign, Sun, Users, Tag, ChevronDown, Check, Phone, MessageCircle } from "lucide-react";
+import { WHATSAPP_NUMBER, WHATSAPP_URL } from "@/site/lib/constants";
 
 /* ─────────────── helpers ─────────────── */
 const waLink = (msg: string) =>
-  `https://wa.me/919930400694?text=${encodeURIComponent(msg)}`;
+  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
 /* ─────────────── component ─────────────── */
 const LandingPage = () => {
