@@ -2,17 +2,15 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
+import { getDestinationImage } from "@/site/lib/destinationImages";
 
-// Use Unsplash auto-format (serves WebP/AVIF) and right-sized widths.
-const HERO_BG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1600&q=70";
-const card = (id: string) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=480&q=60`;
+const HERO_BG = getDestinationImage("bali");
 
 const destinations = [
-  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",   region: "India", image: card("photo-1571536802807-30451e3955d8") },
-  { name: "Rajasthan",  tagline: "Land of Kings",           region: "India", image: card("photo-1599661046289-e31897846e41") },
-  { name: "Kerala",     tagline: "God's Own Country",       region: "India", image: card("photo-1602216056096-3b40cc0c9944") },
-  { name: "Himachal",   tagline: "Where Mountains Whisper", region: "India", image: card("photo-1626621341517-bbf3d9990a23") },
+  { name: "Bali",       tagline: "Island of the Gods",       region: "Indonesia", image: getDestinationImage("bali") },
+  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",    region: "India",     image: getDestinationImage("leh ladakh") },
+  { name: "Singapore",  tagline: "Lion City",                region: "Southeast Asia", image: getDestinationImage("singapore") },
+  { name: "Dubai",      tagline: "City of Gold",             region: "UAE",       image: getDestinationImage("dubai") },
 ];
 
 export default function HeroSection() {
