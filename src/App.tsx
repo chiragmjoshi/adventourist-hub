@@ -113,7 +113,7 @@ const App = () => {
       <OfflineBanner />
       <BrowserRouter>
         <AuthProvider>
-          <HealthCheckRunner />
+          {getHostKind() !== "public" && <HealthCheckRunner />}
           <Suspense fallback={<AdminLoader />}>
           <Routes>
             {/* Legacy URL redirects (WordPress → new site) */}
