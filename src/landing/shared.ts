@@ -39,14 +39,43 @@ export interface LandingPageData {
   form_submit_text?: string | null;
   form_terms_label?: string | null;
   form_after_submit_message?: string | null;
-  destinations?: { name?: string | null; testimonials?: any[] } | null;
+  destination_id?: string | null;
+  itinerary_id?: string | null;
+  destinations?: {
+    id?: string | null;
+    name?: string | null;
+    about?: string | null;
+    hero_image?: string | null;
+    best_months?: number[] | null;
+    themes?: string[] | null;
+    suitable_for?: string[] | null;
+    testimonials?: any[];
+  } | null;
 }
 
 export interface ItineraryData {
   headline?: string | null;
+  about?: string | null;
   itinerary_days?: any[] | null;
   inclusions?: string | null;
   exclusions?: string | null;
+  highlights?: any[] | null;
+  hero_image?: string | null;
+  gallery?: string[] | null;
+  price_per_person?: number | null;
+  nights?: number | null;
+  days?: number | null;
+  flights_included?: boolean | null;
+  stay_included?: boolean | null;
+  transfers_included?: boolean | null;
+  meals_included?: boolean | null;
+  breakfast_included?: boolean | null;
+  sightseeing_included?: boolean | null;
+  support_247?: boolean | null;
+  best_months?: number[] | null;
+  suitable_for?: string[] | null;
+  themes?: string[] | null;
+  destination_type?: string[] | null;
 }
 
 export const FALLBACK_TESTIMONIALS = [

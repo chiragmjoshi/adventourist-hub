@@ -18,10 +18,16 @@ const LandingPage = () => {
     queryFn: async () => {
       let q = supabase
         .from("landing_pages")
-        .select("*, destinations(name, testimonials)")
+        .select(`
+          *,
+          destinations(
+            id, name, about, hero_image,
+            best_months, themes, suitable_for, testimonials
+          )
+        `)
         .eq("slug", slug!);
       if (!isPreview) q = q.eq("is_active", true);
-      const { data, error } = await q.single();
+      const { data, error } = await q.maybeSingle();
       if (error) throw error;
       return data as unknown as LandingPageData;
     },
@@ -33,9 +39,18 @@ const LandingPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("itineraries")
-        .select("headline, itinerary_days, inclusions, exclusions")
+        .select(`
+          headline, about,
+          itinerary_days, inclusions, exclusions, highlights,
+          hero_image, gallery,
+          price_per_person, nights, days,
+          flights_included, stay_included, transfers_included,
+          meals_included, breakfast_included, sightseeing_included,
+          support_247,
+          best_months, suitable_for, themes, destination_type
+        `)
         .eq("id", (page as any).itinerary_id!)
-        .single();
+        .maybeSingle();
       return data as unknown as ItineraryData;
     },
   });
