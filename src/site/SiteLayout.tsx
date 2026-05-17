@@ -49,6 +49,24 @@ export default function SiteLayout({
 }: Props) {
   const { pathname } = useLocation();
 
+  // Google Tag Manager — public site only (never on /admin)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const GTM_ID = "GTM-NDHCWP9";
+    if (!(window as any).__gtmLoaded) {
+      (window as any).__gtmLoaded = true;
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+      const s = document.createElement("script");
+      s.async = true;
+      s.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`;
+      document.head.appendChild(s);
+      const ns = document.createElement("noscript");
+      ns.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${GTM_ID}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
+      document.body.insertBefore(ns, document.body.firstChild);
+    }
+  }, []);
+
   // Set page-level <head> tags
   useEffect(() => {
     const finalTitle = title ?? "Adventourist — Travel Designed For You";
