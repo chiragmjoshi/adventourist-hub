@@ -339,12 +339,17 @@ const LeadDetail = () => {
   };
 
   const handleSaveNotes = () => {
-    if (!formState.notes && !(lead as any)?.notes) return;
-    updateLead.mutate({ notes: formState.notes ?? (lead as any)?.notes });
-    setFormState(prev => {
-      const { notes, ...rest } = prev;
-      return rest;
-    });
+    const text = (formState.notes ?? "").trim();
+    if (!text) { toast.info("Nothing to save"); return; }
+    // Append to existing notes so each save becomes a new entry, then clear
+    // the textarea so the user can type a fresh note.
+    const existing = ((lead as any)?.notes || "").trim();
+    const stamp = format(new Date(), "dd MMM yyyy, hh:mm a");
+    const who = profile?.name || "User";
+    const entry = `[${stamp} · ${who}] ${text}`;
+    const merged = existing ? `${entry}\n\n${existing}` : entry;
+    updateLead.mutate({ notes: merged });
+    setFormState(prev => ({ ...prev, notes: "" }));
   };
 
   const handleSaveEnquiry = () => {
