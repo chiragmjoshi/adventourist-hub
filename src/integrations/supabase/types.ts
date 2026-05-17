@@ -467,126 +467,164 @@ export type Database = {
       }
       destinations: {
         Row: {
-          about: string
-          created_at: string | null
-          id: number
+          about: string | null
+          best_months: string[]
+          created_at: string
+          gallery: string[]
+          hero_image: string | null
+          id: string
+          is_active: boolean
           name: string
-          updated_at: string | null
+          slug: string | null
+          suitable_for: string[]
+          testimonials: Json
+          themes: string[]
+          updated_at: string
         }
         Insert: {
-          about: string
-          created_at?: string | null
-          id: number
+          about?: string | null
+          best_months?: string[]
+          created_at?: string
+          gallery?: string[]
+          hero_image?: string | null
+          id?: string
+          is_active?: boolean
           name: string
-          updated_at?: string | null
+          slug?: string | null
+          suitable_for?: string[]
+          testimonials?: Json
+          themes?: string[]
+          updated_at?: string
         }
         Update: {
-          about?: string
-          created_at?: string | null
-          id?: number
+          about?: string | null
+          best_months?: string[]
+          created_at?: string
+          gallery?: string[]
+          hero_image?: string | null
+          id?: string
+          is_active?: boolean
           name?: string
-          updated_at?: string | null
+          slug?: string | null
+          suitable_for?: string[]
+          testimonials?: Json
+          themes?: string[]
+          updated_at?: string
         }
         Relationships: []
       }
       itineraries: {
         Row: {
           about: string | null
-          all_meals_included: boolean
+          best_months: string[]
           breakfast_included: boolean
           created_at: string
-          days_data: string | null
-          destination_id: number | null
-          destination_thumbnail_id: number | null
-          exclusion: string | null
+          days: number | null
+          destination_id: string | null
+          destination_type: string | null
+          exclusions: string | null
           flights_included: boolean
-          headline: string | null
-          id: number
-          important_things: string | null
-          inclusion: string | null
-          meta_description: string | null
-          meta_footer: string | null
-          meta_header: string | null
-          meta_image: string | null
-          meta_tags: string | null
-          meta_title: string | null
-          no_follow: number | null
-          no_index: number | null
-          pricing_per_person: number | null
+          gallery: string[]
+          headline: string
+          hero_image: string | null
+          highlights: string[]
+          id: string
+          inclusions: string | null
+          itinerary_days: Json
+          meals_included: boolean
+          nights: number | null
+          price_per_person: number | null
+          published_at: string | null
+          seo_description: string | null
+          seo_keywords: string | null
+          seo_title: string | null
           sightseeing_included: boolean
           slug: string
           status: string
           stay_included: boolean
-          support_24x7_included: boolean
+          suitable_for: string[]
+          support_247: boolean
+          themes: string[]
           transfers_included: boolean
           updated_at: string
-          view_count: string | null
         }
         Insert: {
           about?: string | null
-          all_meals_included?: boolean
+          best_months?: string[]
           breakfast_included?: boolean
-          created_at: string
-          days_data?: string | null
-          destination_id?: number | null
-          destination_thumbnail_id?: number | null
-          exclusion?: string | null
+          created_at?: string
+          days?: number | null
+          destination_id?: string | null
+          destination_type?: string | null
+          exclusions?: string | null
           flights_included?: boolean
-          headline?: string | null
-          id: number
-          important_things?: string | null
-          inclusion?: string | null
-          meta_description?: string | null
-          meta_footer?: string | null
-          meta_header?: string | null
-          meta_image?: string | null
-          meta_tags?: string | null
-          meta_title?: string | null
-          no_follow?: number | null
-          no_index?: number | null
-          pricing_per_person?: number | null
+          gallery?: string[]
+          headline: string
+          hero_image?: string | null
+          highlights?: string[]
+          id?: string
+          inclusions?: string | null
+          itinerary_days?: Json
+          meals_included?: boolean
+          nights?: number | null
+          price_per_person?: number | null
+          published_at?: string | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          seo_title?: string | null
           sightseeing_included?: boolean
           slug: string
           status?: string
           stay_included?: boolean
-          support_24x7_included?: boolean
+          suitable_for?: string[]
+          support_247?: boolean
+          themes?: string[]
           transfers_included?: boolean
           updated_at?: string
-          view_count?: string | null
         }
         Update: {
           about?: string | null
-          all_meals_included?: boolean
+          best_months?: string[]
           breakfast_included?: boolean
           created_at?: string
-          days_data?: string | null
-          destination_id?: number | null
-          destination_thumbnail_id?: number | null
-          exclusion?: string | null
+          days?: number | null
+          destination_id?: string | null
+          destination_type?: string | null
+          exclusions?: string | null
           flights_included?: boolean
-          headline?: string | null
-          id?: number
-          important_things?: string | null
-          inclusion?: string | null
-          meta_description?: string | null
-          meta_footer?: string | null
-          meta_header?: string | null
-          meta_image?: string | null
-          meta_tags?: string | null
-          meta_title?: string | null
-          no_follow?: number | null
-          no_index?: number | null
-          pricing_per_person?: number | null
+          gallery?: string[]
+          headline?: string
+          hero_image?: string | null
+          highlights?: string[]
+          id?: string
+          inclusions?: string | null
+          itinerary_days?: Json
+          meals_included?: boolean
+          nights?: number | null
+          price_per_person?: number | null
+          published_at?: string | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          seo_title?: string | null
           sightseeing_included?: boolean
           slug?: string
           status?: string
           stay_included?: boolean
-          support_24x7_included?: boolean
+          suitable_for?: string[]
+          support_247?: boolean
+          themes?: string[]
           transfers_included?: boolean
           updated_at?: string
-          view_count?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "itineraries_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       itineraryables: {
         Row: {
@@ -644,96 +682,123 @@ export type Database = {
       }
       landing_pages: {
         Row: {
-          ad_group_id: number | null
-          campaign_type_id: number | null
-          channel_id: number | null
+          ad_group: string | null
+          best_time_to_visit: string[]
+          budget: number | null
+          campaign_type: string | null
+          channel: string | null
           created_at: string
-          destination_id: number | null
-          destination_thumbnail_id: number | null
-          exclusion: string | null
-          gallery_template_id: number | null
-          headline: string
-          id: number
-          inclusion: string | null
-          itinerary_days_data: string | null
-          itinerary_id: number | null
-          meta_description: string | null
-          meta_footer: string | null
-          meta_header: string | null
-          meta_image: string | null
-          meta_tags: string | null
-          meta_title: string | null
-          no_follow: number
-          no_index: number
-          platform_id: number | null
-          pricing_per_person: number | null
-          settings: string | null
+          custom_exclusions: string | null
+          custom_inclusions: string | null
+          destination_id: string | null
+          destination_type: string[]
+          form_after_submit_message: string | null
+          form_submit_text: string | null
+          form_subtitle: string | null
+          form_terms_label: string | null
+          form_title: string | null
+          gallery: string[]
+          hero_headline: string | null
+          hero_image: string | null
+          hero_subtext: string | null
+          id: string
+          is_active: boolean
+          itinerary_id: string | null
+          name: string | null
+          platform: string | null
+          published_at: string | null
+          seo_description: string | null
+          seo_title: string | null
           slug: string
-          template_id: number | null
+          stay_days: string | null
+          suitable_for: string[]
+          time_to_visit: string[]
           updated_at: string
-          view_count: string | null
         }
         Insert: {
-          ad_group_id?: number | null
-          campaign_type_id?: number | null
-          channel_id?: number | null
-          created_at: string
-          destination_id?: number | null
-          destination_thumbnail_id?: number | null
-          exclusion?: string | null
-          gallery_template_id?: number | null
-          headline: string
-          id: number
-          inclusion?: string | null
-          itinerary_days_data?: string | null
-          itinerary_id?: number | null
-          meta_description?: string | null
-          meta_footer?: string | null
-          meta_header?: string | null
-          meta_image?: string | null
-          meta_tags?: string | null
-          meta_title?: string | null
-          no_follow?: number
-          no_index?: number
-          platform_id?: number | null
-          pricing_per_person?: number | null
-          settings?: string | null
+          ad_group?: string | null
+          best_time_to_visit?: string[]
+          budget?: number | null
+          campaign_type?: string | null
+          channel?: string | null
+          created_at?: string
+          custom_exclusions?: string | null
+          custom_inclusions?: string | null
+          destination_id?: string | null
+          destination_type?: string[]
+          form_after_submit_message?: string | null
+          form_submit_text?: string | null
+          form_subtitle?: string | null
+          form_terms_label?: string | null
+          form_title?: string | null
+          gallery?: string[]
+          hero_headline?: string | null
+          hero_image?: string | null
+          hero_subtext?: string | null
+          id?: string
+          is_active?: boolean
+          itinerary_id?: string | null
+          name?: string | null
+          platform?: string | null
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug: string
-          template_id?: number | null
+          stay_days?: string | null
+          suitable_for?: string[]
+          time_to_visit?: string[]
           updated_at?: string
-          view_count?: string | null
         }
         Update: {
-          ad_group_id?: number | null
-          campaign_type_id?: number | null
-          channel_id?: number | null
+          ad_group?: string | null
+          best_time_to_visit?: string[]
+          budget?: number | null
+          campaign_type?: string | null
+          channel?: string | null
           created_at?: string
-          destination_id?: number | null
-          destination_thumbnail_id?: number | null
-          exclusion?: string | null
-          gallery_template_id?: number | null
-          headline?: string
-          id?: number
-          inclusion?: string | null
-          itinerary_days_data?: string | null
-          itinerary_id?: number | null
-          meta_description?: string | null
-          meta_footer?: string | null
-          meta_header?: string | null
-          meta_image?: string | null
-          meta_tags?: string | null
-          meta_title?: string | null
-          no_follow?: number
-          no_index?: number
-          platform_id?: number | null
-          pricing_per_person?: number | null
-          settings?: string | null
+          custom_exclusions?: string | null
+          custom_inclusions?: string | null
+          destination_id?: string | null
+          destination_type?: string[]
+          form_after_submit_message?: string | null
+          form_submit_text?: string | null
+          form_subtitle?: string | null
+          form_terms_label?: string | null
+          form_title?: string | null
+          gallery?: string[]
+          hero_headline?: string | null
+          hero_image?: string | null
+          hero_subtext?: string | null
+          id?: string
+          is_active?: boolean
+          itinerary_id?: string | null
+          name?: string | null
+          platform?: string | null
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string
-          template_id?: number | null
+          stay_days?: string | null
+          suitable_for?: string[]
+          time_to_visit?: string[]
           updated_at?: string
-          view_count?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "landing_pages_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_itinerary_id_fkey"
+            columns: ["itinerary_id"]
+            isOneToOne: false
+            referencedRelation: "itineraries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_comments: {
         Row: {
@@ -896,6 +961,329 @@ export type Database = {
       }
       leads: {
         Row: {
+          ad_group: string | null
+          assigned_to: string | null
+          campaign_type: string | null
+          channel: string | null
+          created_at: string
+          destination_id: string | null
+          disposition: string
+          email: string | null
+          id: string
+          is_hot: boolean
+          itinerary_id: string | null
+          landing_page_id: string | null
+          landing_url: string | null
+          mobile: string | null
+          name: string | null
+          notes: string | null
+          platform: string | null
+          referrer_url: string | null
+          sales_status: string
+          source: string
+          travel_date: string | null
+          traveller_code: string
+          updated_at: string
+        }
+        Insert: {
+          ad_group?: string | null
+          assigned_to?: string | null
+          campaign_type?: string | null
+          channel?: string | null
+          created_at?: string
+          destination_id?: string | null
+          disposition?: string
+          email?: string | null
+          id?: string
+          is_hot?: boolean
+          itinerary_id?: string | null
+          landing_page_id?: string | null
+          landing_url?: string | null
+          mobile?: string | null
+          name?: string | null
+          notes?: string | null
+          platform?: string | null
+          referrer_url?: string | null
+          sales_status?: string
+          source?: string
+          travel_date?: string | null
+          traveller_code?: string
+          updated_at?: string
+        }
+        Update: {
+          ad_group?: string | null
+          assigned_to?: string | null
+          campaign_type?: string | null
+          channel?: string | null
+          created_at?: string
+          destination_id?: string | null
+          disposition?: string
+          email?: string | null
+          id?: string
+          is_hot?: boolean
+          itinerary_id?: string | null
+          landing_page_id?: string | null
+          landing_url?: string | null
+          mobile?: string | null
+          name?: string | null
+          notes?: string | null
+          platform?: string | null
+          referrer_url?: string | null
+          sales_status?: string
+          source?: string
+          travel_date?: string | null
+          traveller_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_itinerary_id_fkey"
+            columns: ["itinerary_id"]
+            isOneToOne: false
+            referencedRelation: "itineraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legacy_destinations: {
+        Row: {
+          about: string
+          created_at: string | null
+          id: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          about: string
+          created_at?: string | null
+          id: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          about?: string
+          created_at?: string | null
+          id?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      legacy_itineraries: {
+        Row: {
+          about: string | null
+          all_meals_included: boolean
+          breakfast_included: boolean
+          created_at: string
+          days_data: string | null
+          destination_id: number | null
+          destination_thumbnail_id: number | null
+          exclusion: string | null
+          flights_included: boolean
+          headline: string | null
+          id: number
+          important_things: string | null
+          inclusion: string | null
+          meta_description: string | null
+          meta_footer: string | null
+          meta_header: string | null
+          meta_image: string | null
+          meta_tags: string | null
+          meta_title: string | null
+          no_follow: number | null
+          no_index: number | null
+          pricing_per_person: number | null
+          sightseeing_included: boolean
+          slug: string
+          status: string
+          stay_included: boolean
+          support_24x7_included: boolean
+          transfers_included: boolean
+          updated_at: string
+          view_count: string | null
+        }
+        Insert: {
+          about?: string | null
+          all_meals_included?: boolean
+          breakfast_included?: boolean
+          created_at: string
+          days_data?: string | null
+          destination_id?: number | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          flights_included?: boolean
+          headline?: string | null
+          id: number
+          important_things?: string | null
+          inclusion?: string | null
+          meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
+          meta_title?: string | null
+          no_follow?: number | null
+          no_index?: number | null
+          pricing_per_person?: number | null
+          sightseeing_included?: boolean
+          slug: string
+          status?: string
+          stay_included?: boolean
+          support_24x7_included?: boolean
+          transfers_included?: boolean
+          updated_at?: string
+          view_count?: string | null
+        }
+        Update: {
+          about?: string | null
+          all_meals_included?: boolean
+          breakfast_included?: boolean
+          created_at?: string
+          days_data?: string | null
+          destination_id?: number | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          flights_included?: boolean
+          headline?: string | null
+          id?: number
+          important_things?: string | null
+          inclusion?: string | null
+          meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
+          meta_title?: string | null
+          no_follow?: number | null
+          no_index?: number | null
+          pricing_per_person?: number | null
+          sightseeing_included?: boolean
+          slug?: string
+          status?: string
+          stay_included?: boolean
+          support_24x7_included?: boolean
+          transfers_included?: boolean
+          updated_at?: string
+          view_count?: string | null
+        }
+        Relationships: []
+      }
+      legacy_landing_pages: {
+        Row: {
+          ad_group_id: number | null
+          campaign_type_id: number | null
+          channel_id: number | null
+          created_at: string
+          destination_id: number | null
+          destination_thumbnail_id: number | null
+          exclusion: string | null
+          gallery_template_id: number | null
+          headline: string
+          id: number
+          inclusion: string | null
+          itinerary_days_data: string | null
+          itinerary_id: number | null
+          meta_description: string | null
+          meta_footer: string | null
+          meta_header: string | null
+          meta_image: string | null
+          meta_tags: string | null
+          meta_title: string | null
+          no_follow: number
+          no_index: number
+          platform_id: number | null
+          pricing_per_person: number | null
+          settings: string | null
+          slug: string
+          template_id: number | null
+          updated_at: string
+          view_count: string | null
+        }
+        Insert: {
+          ad_group_id?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at: string
+          destination_id?: number | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          gallery_template_id?: number | null
+          headline: string
+          id: number
+          inclusion?: string | null
+          itinerary_days_data?: string | null
+          itinerary_id?: number | null
+          meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
+          meta_title?: string | null
+          no_follow?: number
+          no_index?: number
+          platform_id?: number | null
+          pricing_per_person?: number | null
+          settings?: string | null
+          slug: string
+          template_id?: number | null
+          updated_at?: string
+          view_count?: string | null
+        }
+        Update: {
+          ad_group_id?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at?: string
+          destination_id?: number | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          gallery_template_id?: number | null
+          headline?: string
+          id?: number
+          inclusion?: string | null
+          itinerary_days_data?: string | null
+          itinerary_id?: number | null
+          meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
+          meta_title?: string | null
+          no_follow?: number
+          no_index?: number
+          platform_id?: number | null
+          pricing_per_person?: number | null
+          settings?: string | null
+          slug?: string
+          template_id?: number | null
+          updated_at?: string
+          view_count?: string | null
+        }
+        Relationships: []
+      }
+      legacy_leads: {
+        Row: {
           ad_group_id: number | null
           allocated_to: number | null
           campaign_type_id: number | null
@@ -908,8 +1296,10 @@ export type Database = {
           is_hot: boolean
           itinerary_id: number | null
           name: string | null
+          platform: string | null
           platform_id: number | null
           remarks: string | null
+          sales_status: string | null
           sales_status_id: number | null
           source: string
           source_id: number | null
@@ -929,8 +1319,10 @@ export type Database = {
           is_hot?: boolean
           itinerary_id?: number | null
           name?: string | null
+          platform?: string | null
           platform_id?: number | null
           remarks?: string | null
+          sales_status?: string | null
           sales_status_id?: number | null
           source?: string
           source_id?: number | null
@@ -950,12 +1342,47 @@ export type Database = {
           is_hot?: boolean
           itinerary_id?: number | null
           name?: string | null
+          platform?: string | null
           platform_id?: number | null
           remarks?: string | null
+          sales_status?: string | null
           sales_status_id?: number | null
           source?: string
           source_id?: number | null
           travel_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      legacy_users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: number
+          name: string
+          password: string
+          remember_token: string | null
+          role_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: number
+          name: string
+          password: string
+          remember_token?: string | null
+          role_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: number
+          name?: string
+          password?: string
+          remember_token?: string | null
+          role_id?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1507,34 +1934,37 @@ export type Database = {
       }
       users: {
         Row: {
-          created_at: string | null
+          avatar_url: string | null
+          created_at: string
           email: string
-          email_verified_at: string | null
-          id: number
+          id: string
+          is_active: boolean
+          mobile: string | null
           name: string
-          password: string
-          remember_token: string | null
-          updated_at: string | null
+          role: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          avatar_url?: string | null
+          created_at?: string
           email: string
-          email_verified_at?: string | null
-          id: number
-          name: string
-          password: string
-          remember_token?: string | null
-          updated_at?: string | null
+          id: string
+          is_active?: boolean
+          mobile?: string | null
+          name?: string
+          role?: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          avatar_url?: string | null
+          created_at?: string
           email?: string
-          email_verified_at?: string | null
-          id?: number
+          id?: string
+          is_active?: boolean
+          mobile?: string | null
           name?: string
-          password?: string
-          remember_token?: string | null
-          updated_at?: string | null
+          role?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1643,31 +2073,6 @@ export type Database = {
           hot_leads: number | null
           sales_status: string | null
           total_leads: number | null
-        }
-        Relationships: []
-      }
-      v_leads_full: {
-        Row: {
-          ad_group: string | null
-          allocated_to_name: string | null
-          campaign_type: string | null
-          channel: string | null
-          created_at: string | null
-          customer_email: string | null
-          customer_id: number | null
-          customer_mobile: number | null
-          customer_name: string | null
-          disposition: string | null
-          id: number | null
-          is_hot: boolean | null
-          itinerary_id: number | null
-          platform: string | null
-          remarks: string | null
-          sales_status: string | null
-          source: string | null
-          travel_date: string | null
-          traveller_code: string | null
-          updated_at: string | null
         }
         Relationships: []
       }
