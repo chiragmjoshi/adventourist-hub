@@ -251,6 +251,32 @@ const LeadDetail = () => {
       if (updates.disposition && updates.disposition !== oldLead.disposition) {
         events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
         evaluateRulesForLead(id!, "disposition_changed");
+        // Auto-create reminders for specific dispositions (non-blocking)
+        const dk = dispKey(updates.disposition);
+        const autoRems: { title: string; reminder_type: string; due_at: Date; toast: string }[] = [];
+        if (dk === "busy_call_back" || dk === "not_reachable_call_back" || dk === "not_reachable") {
+          autoRems.push({
+            title: `Call back ${oldLead.name || "lead"}`,
+            reminder_type: "call_back",
+            due_at: inHours(2),
+            toast: "📞 Reminder set: Call back in 2 hours",
+          });
+        } else if (dk === "follow_up_needed") {
+          autoRems.push({
+            title: `Follow up with ${oldLead.name || "lead"}`,
+            reminder_type: "follow_up",
+            due_at: tomorrowAt(10),
+            toast: "🔔 Follow-up reminder set for tomorrow 10 AM",
+          });
+        }
+        for (const r of autoRems) {
+          await supabase.from("reminders" as any).insert({
+            lead_id: id!, created_by: profile?.id || null, assigned_to: profile?.id || null,
+            title: r.title, reminder_type: r.reminder_type,
+            due_at: r.due_at.toISOString(), status: "pending",
+          } as any);
+          toast.success(r.toast);
+        }
       }
       if (updates.follow_up_date !== undefined && updates.follow_up_date !== oldLead.follow_up_date) {
         const txt = updates.follow_up_date
@@ -266,11 +292,37 @@ const LeadDetail = () => {
       }
       if (updates.sales_status === "File Closed" && oldLead.sales_status !== "File Closed") {
         setCashflowPrompt(true);
+        // Auto-create trip start / review reminders when file closes and travel_date is set
+        if (oldLead.travel_date) {
+          const dest = oldLead.destinations?.name || "destination";
+          const nights = oldLead.itineraries?.nights ?? null;
+          const inserts: any[] = [{
+            lead_id: id!, created_by: profile?.id || null, assigned_to: profile?.id || null,
+            title: `Trip starts — ${oldLead.name || "lead"} to ${dest}`,
+            reminder_type: "trip_start",
+            due_at: fromDateAt(oldLead.travel_date, 8).toISOString(),
+            status: "pending",
+          }];
+          if (typeof nights === "number" && nights > 0) {
+            inserts.push({
+              lead_id: id!, created_by: profile?.id || null, assigned_to: profile?.id || null,
+              title: `${oldLead.name || "Lead"} returns from ${dest} — request review`,
+              reminder_type: "trip_end",
+              due_at: fromDateAt(oldLead.travel_date, 10, 0, nights + 2).toISOString(),
+              status: "pending",
+            });
+          }
+          await supabase.from("reminders" as any).insert(inserts as any);
+          toast.success(`✅ ${inserts.length} trip reminder${inserts.length > 1 ? "s" : ""} created automatically`);
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead", id] });
       queryClient.invalidateQueries({ queryKey: ["lead_timeline", id] });
+      queryClient.invalidateQueries({ queryKey: ["reminders", "lead", id] });
+      queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      queryClient.invalidateQueries({ queryKey: ["reminders", "due_today"] });
       toast.success("Lead updated");
     },
     onError: () => toast.error("Failed to update"),
