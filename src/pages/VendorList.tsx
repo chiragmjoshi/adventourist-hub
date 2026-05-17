@@ -90,7 +90,7 @@ const VendorList = () => {
   const activeCount = vendors.filter((v: any) => v.is_active).length;
   const filtersActive = search || destFilter.length || serviceFilter.length || statusFilter !== "all" || sortBy !== "recent";
 
-  const getDestName = (id: string) => destinations.find((d: any) => d.id === id)?.name || id;
+  const getDestName = (id: string) => destinations.find((d: any) => d.id === id)?.name || null;
   const getPrimaryContact = (cp: any): ContactPoint => {
     if (!cp) return {};
     const arr = Array.isArray(cp) ? cp : [];
@@ -188,7 +188,7 @@ const VendorList = () => {
             <tbody>
               {filtered.map((v: any) => {
                 const pc = getPrimaryContact(v.contact_points);
-                const dests = (v.serve_destinations || []) as string[];
+                const dests = ((v.serve_destinations || []) as string[]).filter((d) => !!getDestName(d));
                 const svcs = (v.services || []) as string[];
                 return (
                   <tr key={v.id} onClick={() => navigate(`/admin/vendors/${v.id}`)}
