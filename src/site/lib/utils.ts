@@ -115,5 +115,5 @@ export function waLink(opts: string | WALinkOptions = {}): string {
   if (o.source) tokenParts.push(`src:${o.source}`);
   if (o.slug)   tokenParts.push(`trip:${o.slug}`);
   const token = tokenParts.length ? ` [${tokenParts.join("|")}]` : "";
-  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(base + token)}`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(base + token)}`;
 }
