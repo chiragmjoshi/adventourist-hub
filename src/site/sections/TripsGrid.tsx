@@ -363,7 +363,7 @@ function ItineraryCard({ trip, index }: { trip: CMSItinerary; index: number }) {
       transition={{ delay: Math.min(index * 0.05, 0.4), duration: 0.4, ease: "easeOut" }}
       className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-ink/6 transition-all duration-300 hover:-translate-y-1.5"
     >
-      <div className="relative aspect-[4/5] overflow-hidden">
+      <div className="relative aspect-[5/4] sm:aspect-[4/5] overflow-hidden">
         <TripImage
           path={imgPath}
           alt={`${trip.headline} — ${trip.destination?.name ?? ""} travel itinerary`}
