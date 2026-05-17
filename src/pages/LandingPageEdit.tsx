@@ -50,6 +50,7 @@ const LandingPageEdit = () => {
 
   const [form, setForm] = useState({
     name: "", slug: "", destination_id: "", itinerary_id: "",
+    template_id: "bold",
     hero_headline: "", hero_subtext: "", hero_image: "",
     budget: 0, stay_days: "", best_time_to_visit: [] as string[],
     suitable_for: [] as string[], destination_type: [] as string[],
@@ -106,6 +107,7 @@ const LandingPageEdit = () => {
       setForm({
         name: existing.name || "", slug: existing.slug || "",
         destination_id: existing.destination_id || "", itinerary_id: (existing as any).itinerary_id || "",
+        template_id: (existing as any).template_id || "bold",
         hero_headline: existing.hero_headline || "", hero_subtext: existing.hero_subtext || "",
         hero_image: (existing as any).hero_image || "",
         budget: existing.budget || 0, stay_days: (existing as any).stay_days || "",
@@ -152,6 +154,7 @@ const LandingPageEdit = () => {
       const payload: any = {
         name: form.name || form.hero_headline, slug: form.slug,
         destination_id: form.destination_id || null, itinerary_id: form.itinerary_id || null,
+        template_id: form.template_id || "bold",
         hero_headline: form.hero_headline, hero_subtext: form.hero_subtext,
         hero_image: form.hero_image || null,
         budget: form.budget || null, stay_days: form.stay_days || null,
@@ -238,6 +241,36 @@ const LandingPageEdit = () => {
 
         {/* TAB 1 — Page Content */}
         <TabsContent value="content" className="space-y-5">
+          <Card className="border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Template</CardTitle></CardHeader>
+            <CardContent className="px-5 pb-5">
+              <p className="text-[10px] text-muted-foreground mb-3">Choose how this landing page is rendered. You can switch anytime.</p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { id: "bold", name: "Bold", desc: "Conversion-focused with prominent CTA and form" },
+                  { id: "minimal", name: "Minimal", desc: "Editorial, typography-driven, lots of whitespace" },
+                  { id: "story", name: "Story", desc: "Narrative scroll with rich imagery" },
+                ].map(t => {
+                  const active = form.template_id === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setField("template_id", t.id)}
+                      className={`text-left rounded-lg border p-3 transition-colors ${active ? "border-primary bg-primary/5" : "border-border/50 hover:border-primary/30"}`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">{t.name}</span>
+                        {active && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-snug">{t.desc}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-border/50 shadow-none">
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Hero</CardTitle></CardHeader>
             <CardContent className="px-5 pb-5 space-y-4">
