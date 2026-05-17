@@ -38,6 +38,7 @@ const EVENT_COLORS: Record<string, string> = {
   call_logged: "bg-[#3B82F6]",
   document_uploaded: "bg-blue-500",
   file_closed: "bg-[#056147]",
+  reminder_done: "bg-amber-500",
 };
 
 const STATUS_DOT: Record<string, string> = {
