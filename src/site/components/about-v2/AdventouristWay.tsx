@@ -31,11 +31,11 @@ export default function AdventouristWay() {
   return (
     <section
       ref={ref}
-      className="relative bg-[#F4EFE6] px-6 py-28 text-[#1A1D2E] sm:px-10 lg:px-20 lg:py-44"
+      className="relative bg-[#F4EFE6] px-6 py-20 text-[#1A1D2E] sm:px-10 lg:px-20 lg:py-28"
     >
-      <div className="mx-auto grid max-w-7xl gap-16 lg:grid-cols-[1.2fr_1fr] lg:gap-24">
+      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
         <div>
-          <p className="mb-6 text-[11px] uppercase tracking-[0.4em] text-[#C9A86B]">
+          <p className="mb-6 text-[11px] uppercase tracking-[0.4em] text-[#FF6F4C]">
             The Adventourist Way
           </p>
           <motion.h2
@@ -64,7 +64,7 @@ export default function AdventouristWay() {
               }}
               className="group relative overflow-hidden rounded-2xl border border-white/40 bg-white/50 p-7 backdrop-blur-xl shadow-[0_10px_40px_-20px_rgba(26,29,46,0.25)]"
             >
-              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#1A1D2E] text-[#C9A86B]">
+              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#FF6F4C] text-white">
                 <c.icon className="h-5 w-5" />
               </div>
               <h3

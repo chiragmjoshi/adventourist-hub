@@ -61,9 +61,9 @@ function Row({ direction = "left", duration = 40 }: { direction?: "left" | "righ
 
 export default function ReviewsMarquee() {
   return (
-    <section className="relative bg-[#0B0B0E] py-20 text-white lg:py-28">
-      <div className="mx-auto mb-12 max-w-7xl px-6 sm:px-10 lg:px-20">
-        <p className="mb-4 text-[11px] uppercase tracking-[0.4em] text-[#C9A86B]">
+    <section className="relative bg-[#1B0D07] py-16 text-white lg:py-20">
+      <div className="mx-auto mb-10 max-w-7xl px-6 sm:px-10 lg:px-20">
+        <p className="mb-4 text-[11px] uppercase tracking-[0.4em] text-[#FF6F4C]">
           250+ five-star reviews
         </p>
         <h2

@@ -33,14 +33,14 @@ const TEAM = [
 
 export default function TeamShowcase() {
   return (
-    <section className="bg-[#0B0B0E] px-6 py-28 text-white sm:px-10 lg:px-20 lg:py-44">
+    <section className="bg-[#1B0D07] px-6 py-20 text-white sm:px-10 lg:px-20 lg:py-28">
       <div className="mx-auto max-w-7xl">
-        <p className="mb-6 text-[11px] uppercase tracking-[0.4em] text-[#C9A86B]">The People</p>
+        <p className="mb-6 text-[11px] uppercase tracking-[0.4em] text-[#FF6F4C]">The People</p>
         <h2
-          className="mb-16 max-w-3xl text-4xl tracking-tight sm:text-6xl lg:text-7xl"
+          className="mb-12 max-w-3xl text-4xl tracking-tight sm:text-6xl lg:text-7xl"
           style={{ fontFamily: "'Fraunces', serif", fontWeight: 400 }}
         >
-          Meet the <em className="text-[#C9A86B] not-italic">travel designers</em>.
+          Meet the <em className="text-[#FF6F4C] not-italic">travel designers</em>.
         </h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {TEAM.map((m, i) => (
@@ -116,7 +116,7 @@ function TeamCard({ member, index }: { member: typeof TEAM[number]; index: numbe
         >
           {member.name}
         </h3>
-        <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-[#C9A86B]">{member.role}</p>
+        <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-[#FDC436]">{member.role}</p>
         <motion.p
           initial={false}
           animate={{ opacity: hover ? 1 : 0, y: hover ? 0 : 8 }}
