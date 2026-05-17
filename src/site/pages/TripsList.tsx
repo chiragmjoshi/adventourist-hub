@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import TripsGrid from "@/site/sections/TripsGrid";
 import { getItineraries, type CMSItinerary } from "@/site/lib/api";
 
@@ -53,6 +54,20 @@ export default function TripsList() {
       keywords="travel itineraries, customisable trips, mumbai travel agency, bali ladakh thailand packages"
       jsonLd={jsonLd}
     >
+      <SEO
+        title="All Trips & Itineraries — Adventourist"
+        description="Browse curated travel itineraries from Adventourist. Adventure trips, beach holidays, mountain treks, cultural journeys. Custom packages from Mumbai."
+        canonical="/trips"
+        schema={[...jsonLd, {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "Travel Itineraries by Adventourist",
+          description: "Browse all curated travel itineraries from Adventourist — adventure trips, beach holidays, mountain treks, and cultural journeys.",
+          url: "https://www.adventourist.in/trips",
+          itemListOrder: "https://schema.org/ItemListUnordered",
+        }]}
+        keywords="travel itineraries India, adventure trips, beach packages, mountain tours, cultural tours India"
+      />
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="bg-drift">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-1 text-sm font-body text-ink/55">
