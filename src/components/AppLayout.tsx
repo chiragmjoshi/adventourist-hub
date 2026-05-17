@@ -1,7 +1,9 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import TopBar from "@/components/TopBar";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -9,6 +11,48 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ children, title }: AppLayoutProps) => {
+  /* PERF-7 — Warm shared lookups once when the admin shell mounts so any
+     form (lead, itinerary, cashflow) opens with data already cached. */
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    queryClient.prefetchQuery({
+      queryKey: ["master_values"],
+      staleTime: 10 * 60 * 1000,
+      queryFn: async () => {
+        const { data } = await supabase
+          .from("master_values")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order");
+        return data || [];
+      },
+    });
+    queryClient.prefetchQuery({
+      queryKey: ["destinations_active"],
+      staleTime: 10 * 60 * 1000,
+      queryFn: async () => {
+        const { data } = await supabase
+          .from("destinations")
+          .select("id, name")
+          .eq("is_active", true)
+          .order("name");
+        return data || [];
+      },
+    });
+    queryClient.prefetchQuery({
+      queryKey: ["users_active"],
+      staleTime: 10 * 60 * 1000,
+      queryFn: async () => {
+        const { data } = await supabase
+          .from("users")
+          .select("id, name")
+          .eq("is_active", true);
+        return data || [];
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
