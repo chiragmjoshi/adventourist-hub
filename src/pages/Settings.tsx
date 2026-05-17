@@ -166,18 +166,22 @@ const Settings = () => {
     mutationFn: async () => {
       const validKeys = ["aisensy_api_key", "review_link", "pre_trip_reminder_days", "safe_journey_hour", "review_request_hour", "smtp_host", "smtp_port", "smtp_username", "smtp_password", "email_from_name", "email_from_address"];
       for (const key of validKeys) {
-        const value = autoForm[key] || "";
-        const { data: existing } = await supabase.from("automation_settings").select("id").eq("key", key).maybeSingle();
+        const value = autoForm[key] ?? getAutoSetting(key) ?? "";
+        const { data: existing, error: readError } = await supabase.from("automation_settings").select("id").eq("key", key).maybeSingle();
+        if (readError) throw readError;
         if (existing) {
-          await supabase.from("automation_settings").update({ value, updated_at: new Date().toISOString() }).eq("key", key);
+          const { error } = await supabase.from("automation_settings").update({ value, updated_at: new Date().toISOString() }).eq("key", key);
+          if (error) throw error;
         } else {
-          await supabase.from("automation_settings").insert({ key, value, description: key.replace(/_/g, " ") });
+          const { error } = await supabase.from("automation_settings").insert({ key, value, description: key.replace(/_/g, " ") });
+          if (error) throw error;
         }
       }
       for (const [trigger, name] of Object.entries(templateEdits)) {
-        await supabase.from("automation_templates" as any)
+        const { error } = await supabase.from("automation_templates" as any)
           .update({ aisensy_template_name: name, is_active: templateActiveEdits[trigger] ?? true })
           .eq("trigger_event", trigger);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
@@ -213,8 +217,30 @@ const Settings = () => {
     );
   };
 
-  const isWhatsAppConnected = !!(autoForm.aisensy_api_key && autoForm.aisensy_api_key !== "REPLACE_WITH_YOUR_API_KEY");
-  const isSmtpConfigured = !!(autoForm.smtp_host && autoForm.smtp_username);
+  const getAutomationFieldValue = (key: string) => autoForm[key] ?? getAutoSetting(key) ?? "";
+  const isWhatsAppConnected = !!(getAutomationFieldValue("aisensy_api_key") && getAutomationFieldValue("aisensy_api_key") !== "REPLACE_WITH_YOUR_API_KEY");
+  const isSmtpConfigured = !!(
+    getAutomationFieldValue("smtp_host").trim() &&
+    getAutomationFieldValue("smtp_username").trim() &&
+    getAutomationFieldValue("smtp_password").trim()
+  );
+
+  const handleSendTestEmail = async () => {
+    setSmtpTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-test-email", {
+        body: { to: profile?.email },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Test email sent to ${(data as any)?.to || profile?.email}`);
+      queryClient.invalidateQueries({ queryKey: ["automation_settings"] });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to send test email");
+    } finally {
+      setSmtpTesting(false);
+    }
+  };
 
   return (
     <AppLayout title="Settings">
