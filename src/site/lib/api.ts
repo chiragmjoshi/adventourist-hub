@@ -36,7 +36,7 @@ export function getCMSImageUrl(
   bucketOrOptions: string | CMSImageOptions = DEFAULT_BUCKET,
   maybeOptions?: CMSImageOptions
 ): string {
-  if (!p) return "/site-images/bg-home-page.jpg";
+  if (!p) return "/site-images/bali.jpg";
   const bucket = typeof bucketOrOptions === "string" ? bucketOrOptions : DEFAULT_BUCKET;
   const options =
     typeof bucketOrOptions === "object" ? bucketOrOptions : maybeOptions;

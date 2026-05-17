@@ -1,4 +1,5 @@
 import type { Itinerary, Destination, Testimonial, TravelStory } from "./types";
+import { getDestinationImage } from "./destinationImages";
 
 export const WHATSAPP_NUMBER = "919930400694";
 export const WHATSAPP_NUMBER_DISPLAY = "+91 99304 00694";
@@ -34,7 +35,7 @@ export const MOCK_ITINERARIES: Itinerary[] = [
     slug: "bali-break-5-days-4-nights",
     title: "Bali Break",
     destination: "Bali",
-    heroImage: "/site-images/bg-home-page.jpg",
+    heroImage: getDestinationImage("bali"),
     duration: 5,
     nights: 4,
     budgetFrom: 57000,
@@ -109,9 +110,9 @@ export const MOCK_ITINERARIES: Itinerary[] = [
       { question: "Can I customise this itinerary?", answer: "Yes — every itinerary we build is personalised. We can adjust the pace, add destinations like Nusa Penida or Lombok, upgrade stays, or modify activities based on your interests." },
     ],
     hotels: [
-      { name: "COMO Uma Seminyak", image: "/bg-home-page.jpg", stars: 5, type: "Boutique Hotel" },
-      { name: "Komaneka at Bisma", image: "/site-images/search-images-8.jpg", stars: 5, type: "Heritage Villa" },
-      { name: "St. Regis Bali Resort", image: "/site-images/singapore.jpg", stars: 5, type: "Luxury Resort" },
+      { name: "COMO Uma Seminyak", image: getDestinationImage("bali"), stars: 5, type: "Boutique Hotel" },
+      { name: "Komaneka at Bisma", image: getDestinationImage("bali"), stars: 5, type: "Heritage Villa" },
+      { name: "St. Regis Bali Resort", image: getDestinationImage("bali"), stars: 5, type: "Luxury Resort" },
     ],
   },
   {
@@ -119,7 +120,7 @@ export const MOCK_ITINERARIES: Itinerary[] = [
     slug: "singapore-malaysia-jewels-of-the-straits",
     title: "Jewels of the Straits",
     destination: "Singapore",
-    heroImage: "/site-images/singapore.jpg",
+    heroImage: getDestinationImage("singapore"),
     duration: 7,
     nights: 6,
     budgetFrom: 89000,
@@ -148,7 +149,7 @@ export const MOCK_ITINERARIES: Itinerary[] = [
     slug: "vietnam-ascending-dragon-6-days",
     title: "The Ascending Dragon — Vietnam",
     destination: "Vietnam",
-    heroImage: "/site-images/malaysia.jpg",
+    heroImage: getDestinationImage("vietnam"),
     duration: 6,
     nights: 5,
     budgetFrom: 72000,
@@ -179,7 +180,7 @@ export const MOCK_ITINERARIES: Itinerary[] = [
     slug: "leh-ladakh-odyssey-8-days",
     title: "Leh Ladakh Odyssey",
     destination: "Leh Ladakh",
-    heroImage: "/site-images/search-images-8.jpg",
+    heroImage: getDestinationImage("leh ladakh"),
     duration: 8,
     nights: 7,
     budgetFrom: 45000,
@@ -213,7 +214,7 @@ export const MOCK_ITINERARIES: Itinerary[] = [
     slug: "seychelles-island-paradise-7-days",
     title: "Seychelles: Island Paradise",
     destination: "Seychelles",
-    heroImage: "/site-images/dubai.jpg",
+    heroImage: getDestinationImage("seychelles"),
     duration: 7,
     nights: 6,
     budgetFrom: 120000,
@@ -243,7 +244,7 @@ export const MOCK_ITINERARIES: Itinerary[] = [
     slug: "thailand-highlights-6-days",
     title: "Thailand Highlights",
     destination: "Thailand",
-    heroImage: "/site-images/singapore.jpg",
+    heroImage: getDestinationImage("thailand"),
     duration: 6,
     nights: 5,
     budgetFrom: 65000,
@@ -270,12 +271,12 @@ export const MOCK_ITINERARIES: Itinerary[] = [
 ];
 
 export const MOCK_DESTINATIONS: Destination[] = [
-  { id: "1", slug: "bali", name: "Bali", heroImage: "/bg-home-page.jpg", tagline: "Island of the Gods", region: "Indonesia", itineraryCount: 8, bestMonths: [4, 5, 6, 7, 8, 9], expertTip: "Skip the tourist-heavy areas of Kuta and base yourself in Ubud or Canggu for a more authentic experience. Ask us about hidden waterfall hikes and family-run warungs.", expertName: "Minal Shah", experiences: ["Food", "Culture", "Adventure", "Wellness", "Nature"] },
-  { id: "2", slug: "leh-ladakh", name: "Leh Ladakh", heroImage: "/site-images/search-images-8.jpg", tagline: "Where Sky Meets Earth", region: "India", itineraryCount: 6, bestMonths: [6, 7, 8, 9], expertTip: "Always arrive a day early and do nothing on Day 1. Acclimatisation is non-negotiable at this altitude. Drink water, avoid alcohol, sleep early.", expertName: "Rahul Desai", experiences: ["Adventure", "Nature", "Culture", "Wellness"] },
-  { id: "3", slug: "thailand", name: "Thailand", heroImage: "/site-images/singapore.jpg", tagline: "Land of Smiles", region: "Southeast Asia", itineraryCount: 5, bestMonths: [11, 12, 1, 2, 3], expertTip: "Visit Chiang Mai in November for the Yi Peng lantern festival — it's one of the most magical experiences in all of Asia.", expertName: "Priya Nair", experiences: ["Food", "Culture", "Beach", "Nightlife", "Adventure"] },
-  { id: "4", slug: "sri-lanka", name: "Sri Lanka", heroImage: "/site-images/malaysia.jpg", tagline: "The Pearl of the Indian Ocean", region: "South Asia", itineraryCount: 4, bestMonths: [12, 1, 2, 3, 4], expertTip: "Don't just do the coast — the hill country around Ella and Nuwara Eliya is spectacular. The train ride from Kandy to Ella is one of the world's great train journeys.", expertName: "Aditya Kumar", experiences: ["Culture", "Nature", "Wildlife", "Beach", "Adventure"] },
-  { id: "5", slug: "singapore", name: "Singapore", heroImage: "/site-images/singapore.jpg", tagline: "Lion City", region: "Southeast Asia", itineraryCount: 3, bestMonths: [2, 3, 4, 10, 11], expertTip: "Singapore is expensive to eat at restaurants — but the hawker centres are world-class and cost a fraction. Maxwell Food Centre and Lau Pa Sat are our favourites.", expertName: "Minal Shah", experiences: ["Food", "City", "Shopping", "Culture", "Nature"] },
-  { id: "6", slug: "seychelles", name: "Seychelles", heroImage: "/site-images/dubai.jpg", tagline: "Paradise Redefined", region: "Indian Ocean", itineraryCount: 3, bestMonths: [4, 5, 10, 11], expertTip: "April and October (shoulder seasons) offer the best weather with fewer tourists and lower prices. Avoid December–January which is peak season with rain on Mahé.", expertName: "Priya Nair", experiences: ["Beach", "Luxury", "Wellness", "Nature", "Adventure"] },
+  { id: "1", slug: "bali", name: "Bali", heroImage: getDestinationImage("bali"), tagline: "Island of the Gods", region: "Indonesia", itineraryCount: 8, bestMonths: [4, 5, 6, 7, 8, 9], expertTip: "Skip the tourist-heavy areas of Kuta and base yourself in Ubud or Canggu for a more authentic experience. Ask us about hidden waterfall hikes and family-run warungs.", expertName: "Minal Shah", experiences: ["Food", "Culture", "Adventure", "Wellness", "Nature"] },
+  { id: "2", slug: "leh-ladakh", name: "Leh Ladakh", heroImage: getDestinationImage("leh ladakh"), tagline: "Where Sky Meets Earth", region: "India", itineraryCount: 6, bestMonths: [6, 7, 8, 9], expertTip: "Always arrive a day early and do nothing on Day 1. Acclimatisation is non-negotiable at this altitude. Drink water, avoid alcohol, sleep early.", expertName: "Rahul Desai", experiences: ["Adventure", "Nature", "Culture", "Wellness"] },
+  { id: "3", slug: "thailand", name: "Thailand", heroImage: getDestinationImage("thailand"), tagline: "Land of Smiles", region: "Southeast Asia", itineraryCount: 5, bestMonths: [11, 12, 1, 2, 3], expertTip: "Visit Chiang Mai in November for the Yi Peng lantern festival — it's one of the most magical experiences in all of Asia.", expertName: "Priya Nair", experiences: ["Food", "Culture", "Beach", "Nightlife", "Adventure"] },
+  { id: "4", slug: "sri-lanka", name: "Sri Lanka", heroImage: getDestinationImage("sri lanka"), tagline: "The Pearl of the Indian Ocean", region: "South Asia", itineraryCount: 4, bestMonths: [12, 1, 2, 3, 4], expertTip: "Don't just do the coast — the hill country around Ella and Nuwara Eliya is spectacular. The train ride from Kandy to Ella is one of the world's great train journeys.", expertName: "Aditya Kumar", experiences: ["Culture", "Nature", "Wildlife", "Beach", "Adventure"] },
+  { id: "5", slug: "singapore", name: "Singapore", heroImage: getDestinationImage("singapore"), tagline: "Lion City", region: "Southeast Asia", itineraryCount: 3, bestMonths: [2, 3, 4, 10, 11], expertTip: "Singapore is expensive to eat at restaurants — but the hawker centres are world-class and cost a fraction. Maxwell Food Centre and Lau Pa Sat are our favourites.", expertName: "Minal Shah", experiences: ["Food", "City", "Shopping", "Culture", "Nature"] },
+  { id: "6", slug: "seychelles", name: "Seychelles", heroImage: getDestinationImage("seychelles"), tagline: "Paradise Redefined", region: "Indian Ocean", itineraryCount: 3, bestMonths: [4, 5, 10, 11], expertTip: "April and October (shoulder seasons) offer the best weather with fewer tourists and lower prices. Avoid December–January which is peak season with rain on Mahé.", expertName: "Priya Nair", experiences: ["Beach", "Luxury", "Wellness", "Nature", "Adventure"] },
 ];
 
 export const MOCK_TESTIMONIALS: Testimonial[] = [
@@ -288,10 +289,10 @@ export const MOCK_TESTIMONIALS: Testimonial[] = [
 ];
 
 export const MOCK_STORIES: TravelStory[] = [
-  { slug: "leh-ladakh-bucket-list", category: "Adventure", title: "11 Reasons Why Leh Ladakh Should Be on Every Indian's Bucket List", excerpt: "From the surreal Pangong Lake to the ancient monasteries of Thiksey — Ladakh is not just a destination, it's a transformation.", image: "/site-images/search-images-8.jpg", readTime: "6 min read", href: "/travel-stories/leh-ladakh-bucket-list", featured: true },
-  { slug: "vietnam-street-food", category: "Food & Culture", title: "The Street Food Trail That Changed My Perspective on Vietnam", excerpt: "Bun cha in Hanoi, banh mi from a street cart, and the best pho I've ever had — in a city that woke up my senses.", image: "/site-images/malaysia.jpg", readTime: "4 min read", href: "/travel-stories/vietnam-street-food" },
-  { slug: "bali-honeymoon-48-hours", category: "Honeymoon", title: "We Planned Our Bali Honeymoon in 48 Hours — Here's How", excerpt: "When we said yes on a Tuesday, we had no idea we'd be in Ubud by Friday. Adventourist made it possible.", image: "/bg-home-page.jpg", readTime: "5 min read", href: "/travel-stories/bali-honeymoon-48-hours" },
-  { slug: "seychelles-packing-list", category: "Travel Tips", title: "The Only Seychelles Packing List You'll Ever Need", excerpt: "Reef-safe sunscreen, a light sarong, and reef shoes. Everything else? Leave it at home.", image: "/site-images/dubai.jpg", readTime: "3 min read", href: "/travel-stories/seychelles-packing-list" },
+  { slug: "leh-ladakh-bucket-list", category: "Adventure", title: "11 Reasons Why Leh Ladakh Should Be on Every Indian's Bucket List", excerpt: "From the surreal Pangong Lake to the ancient monasteries of Thiksey — Ladakh is not just a destination, it's a transformation.", image: getDestinationImage("leh ladakh"), readTime: "6 min read", href: "/travel-stories/leh-ladakh-bucket-list", featured: true },
+  { slug: "vietnam-street-food", category: "Food & Culture", title: "The Street Food Trail That Changed My Perspective on Vietnam", excerpt: "Bun cha in Hanoi, banh mi from a street cart, and the best pho I've ever had — in a city that woke up my senses.", image: getDestinationImage("vietnam"), readTime: "4 min read", href: "/travel-stories/vietnam-street-food" },
+  { slug: "bali-honeymoon-48-hours", category: "Honeymoon", title: "We Planned Our Bali Honeymoon in 48 Hours — Here's How", excerpt: "When we said yes on a Tuesday, we had no idea we'd be in Ubud by Friday. Adventourist made it possible.", image: getDestinationImage("bali"), readTime: "5 min read", href: "/travel-stories/bali-honeymoon-48-hours" },
+  { slug: "seychelles-packing-list", category: "Travel Tips", title: "The Only Seychelles Packing List You'll Ever Need", excerpt: "Reef-safe sunscreen, a light sarong, and reef shoes. Everything else? Leave it at home.", image: getDestinationImage("seychelles"), readTime: "3 min read", href: "/travel-stories/seychelles-packing-list" },
 ];
 
 export const BUDGET_OPTIONS = [

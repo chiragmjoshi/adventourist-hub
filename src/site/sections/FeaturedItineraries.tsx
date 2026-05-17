@@ -3,23 +3,9 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { waLink } from "@/site/lib/utils";
 import { getCMSImageUrl, type CMSItinerary, type CMSDestination } from "@/site/lib/api";
+import { getDestinationImage } from "@/site/lib/destinationImages";
 
-const DEST_TRIP_IMAGES: Record<string, string> = {
-  "Bali":            "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&q=80",
-  "Thailand":        "https://images.unsplash.com/photo-1528181304800-259b08848526?w=1200&q=80",
-  "Sri Lanka":       "https://images.unsplash.com/photo-1578005343432-bf1ab1b5e6f4?w=1200&q=80",
-  "Vietnam":         "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1200&q=80",
-  "Africa":          "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1200&q=80",
-  "Europe":          "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1200&q=80",
-  "Leh Ladakh":      "https://images.unsplash.com/photo-1571536802807-30451e3955d8?w=1200&q=80",
-  "Rajasthan":       "https://images.unsplash.com/photo-1477587458883-47145ed31dfe?w=1200&q=80",
-  "Kerala":          "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80",
-  "Himachal Pradesh":"https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80",
-  "Himachal":        "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80",
-  "South India":     "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80",
-  "Northeast India": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80",
-};
-const TRIP_FALLBACK = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80";
+const TRIP_FALLBACK = getDestinationImage("default");
 
 interface TripCard {
   slug: string;
@@ -42,17 +28,17 @@ function mapAPITrip(t: CMSItinerary): TripCard {
     budgetFrom:  t.pricing_per_person ? `₹${t.pricing_per_person.toLocaleString("en-IN")}` : "On Request",
     rawPrice:    t.pricing_per_person ? `₹${t.pricing_per_person.toLocaleString("en-IN")}` : undefined,
     destination: destName,
-    image:       cmsImg || DEST_TRIP_IMAGES[destName] || TRIP_FALLBACK,
+    image:       cmsImg || getDestinationImage(destName),
   };
 }
 
 const FALLBACK_TRIPS: TripCard[] = [
-  { slug: "colors-of-rajasthan",   title: "Colors of Rajasthan in 9 Nights & 10 Days",          duration: "10 Days · 9 Nights", budgetFrom: "₹44,999", destination: "Rajasthan",        image: DEST_TRIP_IMAGES["Rajasthan"] },
-  { slug: "wildlife-of-rajasthan", title: "Wildlife of Rajasthan in 5 Nights & 6 Days",         duration: "6 Days · 5 Nights",  budgetFrom: "₹24,999", destination: "Rajasthan",        image: DEST_TRIP_IMAGES["Rajasthan"] },
-  { slug: "offbeat-himachal",      title: "Offbeat Himachal: Kasol & Jibhi in 4 Nights & 5 Days", duration: "5 Days · 4 Nights",  budgetFrom: "₹14,999", destination: "Himachal Pradesh", image: DEST_TRIP_IMAGES["Himachal"] },
-  { slug: "dharamshala-dalhousie", title: "Getaway to Dharamshala & Dalhousie in 6 Nights & 7 Days", duration: "7 Days · 6 Nights",  budgetFrom: "₹27,999", destination: "Himachal Pradesh", image: DEST_TRIP_IMAGES["Himachal"] },
-  { slug: "royal-karnataka",       title: "Royal Retreat of Karnataka in 3 Nights & 4 Days",     duration: "4 Days · 3 Nights",  budgetFrom: "₹14,999", destination: "South India",      image: DEST_TRIP_IMAGES["Kerala"] },
-  { slug: "north-east-vacation",   title: "North East Vacation in 8 Nights & 9 Days",            duration: "9 Days · 8 Nights",  budgetFrom: "₹39,999", destination: "Northeast India",  image: DEST_TRIP_IMAGES["Himachal"] },
+  { slug: "colors-of-rajasthan",   title: "Colors of Rajasthan in 9 Nights & 10 Days",          duration: "10 Days · 9 Nights", budgetFrom: "₹44,999", destination: "Rajasthan",        image: getDestinationImage("rajasthan") },
+  { slug: "wildlife-of-rajasthan", title: "Wildlife of Rajasthan in 5 Nights & 6 Days",         duration: "6 Days · 5 Nights",  budgetFrom: "₹24,999", destination: "Rajasthan",        image: getDestinationImage("rajasthan") },
+  { slug: "bali-break",            title: "Bali Break in 4 Nights & 5 Days",                    duration: "5 Days · 4 Nights",  budgetFrom: "₹57,999", destination: "Bali",             image: getDestinationImage("bali") },
+  { slug: "leh-ladakh-odyssey",    title: "Leh Ladakh Odyssey in 7 Nights & 8 Days",            duration: "8 Days · 7 Nights",  budgetFrom: "₹45,999", destination: "Leh Ladakh",       image: getDestinationImage("leh ladakh") },
+  { slug: "thailand-highlights",   title: "Thailand Highlights in 5 Nights & 6 Days",           duration: "6 Days · 5 Nights",  budgetFrom: "₹65,999", destination: "Thailand",         image: getDestinationImage("thailand") },
+  { slug: "seychelles-paradise",   title: "Seychelles Island Paradise in 6 Nights & 7 Days",    duration: "7 Days · 6 Nights",  budgetFrom: "₹1,20,999", destination: "Seychelles",     image: getDestinationImage("seychelles") },
 ];
 
 function TripCardImage({ src, alt }: { src: string; alt: string }) {
@@ -63,7 +49,7 @@ function TripCardImage({ src, alt }: { src: string; alt: string }) {
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setImgSrc(TRIP_FALLBACK)}
+      onError={() => setImgSrc(getDestinationImage(alt))}
       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
     />
   );
