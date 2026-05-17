@@ -263,6 +263,25 @@ const ItineraryEdit = () => {
 
   /* ── Helpers ── */
   const setField = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
+
+  // Auto-populate empty fields from destination on user selection.
+  const onDestinationChange = (v: string) => {
+    const dest: any = destinations.find((d: any) => d.id === v);
+    setForm(prev => {
+      const next: any = { ...prev, destination_id: v };
+      if (!dest) return next;
+      if ((!prev.best_months || prev.best_months.length === 0) && Array.isArray(dest.best_months)) {
+        next.best_months = monthsToNames(dest.best_months);
+      }
+      if ((!prev.themes || prev.themes.length === 0) && Array.isArray(dest.themes)) {
+        next.themes = dest.themes;
+      }
+      if ((!prev.suitable_for || prev.suitable_for.length === 0) && Array.isArray(dest.suitable_for)) {
+        next.suitable_for = dest.suitable_for;
+      }
+      return next;
+    });
+  };
   const toggleArrayItem = (key: string, item: string) => {
     setForm(prev => {
       const arr = prev[key] as string[];
