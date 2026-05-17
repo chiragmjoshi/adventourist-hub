@@ -27,6 +27,11 @@ import { getCrossHostRedirect, getHostKind } from "@/lib/hostname";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useDBHealthCheck } from "@/hooks/useDBHealthCheck";
 
+function HealthCheckRunner() {
+  useDBHealthCheck();
+  return null;
+}
+
 // Admin pages — lazy loaded to keep public site bundle small
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const LeadManagement = lazy(() => import("./pages/LeadManagement"));
