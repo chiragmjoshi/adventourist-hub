@@ -88,95 +88,40 @@ const StoryEdit = () => {
     queryKey: ["story", id],
     enabled: !isNew,
     queryFn: async () => {
-      const { data, error } = await supabase.from("stories" as any).select("*").eq("id", id!).maybeSingle();
+      const { data, error } = await supabase
+        .from("travel_stories" as any)
+        .select("*")
+        .eq("id", id!)
+        .maybeSingle();
       if (error) throw error;
       if (data) {
-        const d = data as any;
-        // travel_stories rows when loaded from the new table
-        if ("content_html" in d || "thumbnail_url" in d || "status" in d) {
-          // fall-through; we re-fetch from travel_stories below
-        }
-        const loaded: StoryForm = mapRowToForm(d);
-        setForm(loaded);
-        resetSnapshot(loaded);
-        return data;
-      }
-      // Try travel_stories
-      const tv = await supabase.from("travel_stories" as any).select("*").eq("id", id!).maybeSingle();
-      if (tv.error) throw tv.error;
-      if (tv.data) {
-        const loaded = mapRowToForm(tv.data as any);
+        const loaded: StoryForm = mapRowToForm(data as any);
         setForm(loaded);
         resetSnapshot(loaded);
       }
-      return tv.data;
+      return data;
     },
   });
 
   function mapRowToForm(d: any): StoryForm {
-    const isTravel = "content_html" in d || "thumbnail_url" in d || "status" in d;
-    if (isTravel) {
-      return {
-        title: d.title || "",
-        slug: d.slug || "",
-        excerpt: d.excerpt || "",
-        content: d.content_html || "",
-        cover_image_url: d.thumbnail_url || "",
-        author: d.author || "Minal Joshi",
-        category: d.category || "travel-stories",
-        tags: d.tags || [],
-        destination_id: null,
-        read_time_minutes: d.read_time_minutes ?? 5,
-        is_published: d.status === "published",
-        published_at: d.published_at || null,
-        seo_title: d.seo_title || "",
-        seo_description: d.seo_description || "",
-        og_image_url: "",
-      };
-    }
     return {
       title: d.title || "",
       slug: d.slug || "",
       excerpt: d.excerpt || "",
-      content: d.content || "",
-      cover_image_url: d.cover_image_url || "",
+      content: d.content_html || "",
+      cover_image_url: d.thumbnail_url || "",
       author: d.author || "Minal Joshi",
       category: d.category || "travel-stories",
       tags: d.tags || [],
-      destination_id: d.destination_id || null,
+      destination_id: null,
       read_time_minutes: d.read_time_minutes ?? 5,
-      is_published: !!d.is_published,
+      is_published: d.status === "published",
       published_at: d.published_at || null,
       seo_title: d.seo_title || "",
       seo_description: d.seo_description || "",
-      og_image_url: d.og_image_url || "",
+      og_image_url: "",
     };
   }
-
-  // (legacy load block removed — handled above)
-  const _unused_legacy_block = () => {
-    if (false) {
-      const d = {} as any;
-        const loaded: StoryForm = {
-          title: d.title || "",
-          slug: d.slug || "",
-          excerpt: d.excerpt || "",
-          content: d.content || "",
-          cover_image_url: d.cover_image_url || "",
-          author: d.author || "Minal Joshi",
-          category: d.category || "travel-stories",
-          tags: d.tags || [],
-          destination_id: d.destination_id || null,
-          read_time_minutes: d.read_time_minutes ?? 5,
-          is_published: !!d.is_published,
-          published_at: d.published_at || null,
-          seo_title: d.seo_title || "",
-          seo_description: d.seo_description || "",
-          og_image_url: d.og_image_url || "",
-        };
-      // no-op
-    }
-  };
 
   const { data: destinations = [] } = useQuery({
     queryKey: ["destinations_active_min"],
