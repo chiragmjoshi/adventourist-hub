@@ -644,52 +644,94 @@ export type Database = {
       }
       landing_pages: {
         Row: {
-          about: string | null
-          created_at: string | null
-          cta_text: string | null
+          ad_group_id: number | null
+          campaign_type_id: number | null
+          channel_id: number | null
+          created_at: string
           destination_id: number | null
-          form_headline: string | null
-          headline: string | null
+          destination_thumbnail_id: number | null
+          exclusion: string | null
+          gallery_template_id: number | null
+          headline: string
           id: number
+          inclusion: string | null
+          itinerary_days_data: string | null
+          itinerary_id: number | null
           meta_description: string | null
+          meta_footer: string | null
+          meta_header: string | null
+          meta_image: string | null
+          meta_tags: string | null
           meta_title: string | null
-          name: string | null
-          slug: string | null
-          status: string
-          sub_headline: string | null
-          updated_at: string | null
+          no_follow: number
+          no_index: number
+          platform_id: number | null
+          pricing_per_person: number | null
+          settings: string | null
+          slug: string
+          template_id: number | null
+          updated_at: string
+          view_count: string | null
         }
         Insert: {
-          about?: string | null
-          created_at?: string | null
-          cta_text?: string | null
+          ad_group_id?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at: string
           destination_id?: number | null
-          form_headline?: string | null
-          headline?: string | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          gallery_template_id?: number | null
+          headline: string
           id: number
+          inclusion?: string | null
+          itinerary_days_data?: string | null
+          itinerary_id?: number | null
           meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
           meta_title?: string | null
-          name?: string | null
-          slug?: string | null
-          status?: string
-          sub_headline?: string | null
-          updated_at?: string | null
+          no_follow?: number
+          no_index?: number
+          platform_id?: number | null
+          pricing_per_person?: number | null
+          settings?: string | null
+          slug: string
+          template_id?: number | null
+          updated_at?: string
+          view_count?: string | null
         }
         Update: {
-          about?: string | null
-          created_at?: string | null
-          cta_text?: string | null
+          ad_group_id?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at?: string
           destination_id?: number | null
-          form_headline?: string | null
-          headline?: string | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          gallery_template_id?: number | null
+          headline?: string
           id?: number
+          inclusion?: string | null
+          itinerary_days_data?: string | null
+          itinerary_id?: number | null
           meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
           meta_title?: string | null
-          name?: string | null
-          slug?: string | null
-          status?: string
-          sub_headline?: string | null
-          updated_at?: string | null
+          no_follow?: number
+          no_index?: number
+          platform_id?: number | null
+          pricing_per_person?: number | null
+          settings?: string | null
+          slug?: string
+          template_id?: number | null
+          updated_at?: string
+          view_count?: string | null
         }
         Relationships: []
       }
