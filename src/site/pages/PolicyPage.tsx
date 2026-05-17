@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import { WHATSAPP_NUMBER, WHATSAPP_NUMBER_DISPLAY } from "@/site/lib/constants";
 
 // ---------- Block model ----------
@@ -215,8 +216,27 @@ function PolicyPage(props: PolicyProps) {
     [title, description, canonicalPath, lastUpdated],
   );
 
+  const seoDescriptionMap: Record<string, string> = {
+    "/privacy-policy": "Read Adventourist's privacy policy. How we collect, use, and protect your personal information when you use our travel planning services.",
+    "/terms-and-conditions": "Terms and conditions for using Adventourist's travel planning services, website, and packages.",
+    "/refund-and-cancellation-policy": "Adventourist's refund and cancellation policy. Understand our terms for cancellations, changes, and refunds on travel bookings.",
+    "/payment-policy": "Learn about Adventourist's payment terms, accepted payment methods, and booking deposit requirements.",
+  };
+  const seoTitleMap: Record<string, string> = {
+    "/privacy-policy": "Privacy Policy — Adventourist",
+    "/terms-and-conditions": "Terms & Conditions — Adventourist",
+    "/refund-and-cancellation-policy": "Refund & Cancellation Policy — Adventourist",
+    "/payment-policy": "Payment Policy — Adventourist",
+  };
+
   return (
     <SiteLayout title={`${title} | Adventourist`} description={description} jsonLd={jsonLd}>
+      <SEO
+        title={seoTitleMap[canonicalPath] || `${title} — Adventourist`}
+        description={seoDescriptionMap[canonicalPath] || description}
+        canonical={canonicalPath}
+        schema={jsonLd}
+      />
       {/* Hero */}
       <section className="bg-gradient-to-b from-drift to-white border-b border-ink/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20">
