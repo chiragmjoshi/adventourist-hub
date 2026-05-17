@@ -107,6 +107,7 @@ const Settings = () => {
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
   const [testResult, setTestResult] = useState<"idle" | "loading" | "success" | "fail">("idle");
   const [testError, setTestError] = useState("");
+  const [smtpTesting, setSmtpTesting] = useState(false);
 
   useEffect(() => {
     if (autoSettings.length > 0) {
@@ -377,9 +378,36 @@ const Settings = () => {
                   </div>
                 ))}
               </div>
-              <Button size="sm" variant="outline" onClick={() => toast.info("Email test will be available once SMTP is configured and saved")}>
-                <Mail className="h-3.5 w-3.5 mr-1" />Send Test Email
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={smtpTesting || !isSmtpConfigured}
+                onClick={async () => {
+                  if (!isSmtpConfigured) {
+                    toast.error("Please fill SMTP Host and Username, then click Save before testing.");
+                    return;
+                  }
+                  setSmtpTesting(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("send-test-email", {
+                      body: { to: profile?.email },
+                    });
+                    if (error) throw error;
+                    if ((data as any)?.error) throw new Error((data as any).error);
+                    toast.success(`Test email sent to ${(data as any)?.to || profile?.email}`);
+                  } catch (e: any) {
+                    toast.error(e?.message || "Failed to send test email");
+                  } finally {
+                    setSmtpTesting(false);
+                  }
+                }}
+              >
+                {smtpTesting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Mail className="h-3.5 w-3.5 mr-1" />}
+                {smtpTesting ? "Sending…" : "Send Test Email"}
               </Button>
+              {!isSmtpConfigured && (
+                <p className="text-[11px] text-muted-foreground">Fill SMTP Host and Username above, then click Save to enable the test.</p>
+              )}
             </CardContent>
           </Card>
 
