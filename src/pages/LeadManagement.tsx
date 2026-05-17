@@ -19,23 +19,13 @@ import { toast } from "sonner";
 import { format, formatDistanceToNow, subDays, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import DateRangePicker, { ALL_TIME_FROM } from "@/components/DateRangePicker";
+import AttributionFields from "@/components/AttributionFields";
+import { useAttributionOptions } from "@/hooks/useAttributionOptions";
 
 /* DB now stores the display value directly (e.g. "Not Contacted").
  * No translation between display labels and DB keys is needed anymore. */
 
-/* ────── Platform → Channel mapping ────── */
-const CHANNEL_BY_PLATFORM: Record<string, string[]> = {
-  "Paid":     ["Google Search", "Google Display", "YouTube Ads", "Instagram Ads", "Facebook Ads", "WhatsApp Ads"],
-  "Referral": ["Client Referral", "Non-Client Referral", "Partner Referral"],
-  "Organic":  ["Website", "Walk-in", "Google My Business", "Direct Call", "WhatsApp Direct"],
-  "Content":  ["Instagram Organic", "Facebook Organic", "YouTube Organic", "LinkedIn Organic", "Travel Blog"],
-};
-const filterChannelsByPlatform = <T extends { value: string }>(channels: T[], platform: string): T[] => {
-  if (!platform) return channels;
-  const allowed = CHANNEL_BY_PLATFORM[platform];
-  if (!allowed) return channels;
-  return channels.filter(c => allowed.includes(c.value));
-};
+/* Cascade attribution is sourced from useAttributionOptions hook. */
 
 /* ────── Disposition badge colors (light opaque chips) ────── */
 const DISP_BADGE: Record<string, string> = {
