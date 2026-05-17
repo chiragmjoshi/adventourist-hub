@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import SiteLayout from "@/site/SiteLayout";
-import { WHATSAPP_NUMBER } from "@/site/lib/constants";
+import { WHATSAPP_NUMBER, WHATSAPP_NUMBER_DISPLAY } from "@/site/lib/constants";
 
 // ---------- Block model ----------
 type Block =
