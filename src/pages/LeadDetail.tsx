@@ -26,8 +26,11 @@ import { evaluateRulesForLead } from "@/services/automationEngine";
 const EVENT_COLORS: Record<string, string> = {
   lead_created: "bg-[#64CBB9]",
   status_change: "bg-[#FDC436]",
+  status_changed: "bg-[#FDC436]",
   disposition_change: "bg-[#8B5CF6]",
+  disposition_changed: "bg-[#8B5CF6]",
   note_added: "bg-[#6B7280]",
+  call_logged: "bg-[#3B82F6]",
   document_uploaded: "bg-blue-500",
   file_closed: "bg-[#056147]",
 };
