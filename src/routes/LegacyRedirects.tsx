@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Route, Navigate, useParams, useLocation } from "react-router-dom";
+import NotFound from "@/pages/NotFound";
 
 /**
  * Legacy URL redirects for old WordPress / pre-rebuild paths.
@@ -67,7 +68,7 @@ const ROOT_SLUG_MAP: Record<string, string> = {
 function RootSlugRedirect() {
   const { slug = "" } = useParams();
   const mapped = ROOT_SLUG_MAP[normaliseSlug(slug)];
-  if (!mapped) return <Navigate to="/404" replace />;
+  if (!mapped) return <NotFound />;
   return <Navigate to={`/trips/${mapped}`} replace />;
 }
 
