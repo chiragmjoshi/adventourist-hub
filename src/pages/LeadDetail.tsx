@@ -187,50 +187,35 @@ const LeadDetail = () => {
     enabled: !!(lead as any)?.traveller_code,
   });
 
-  const { data: masterValues = [] } = useQuery({
-    queryKey: ["master_values"],
+  /* PERF-3 — Combine 5 lookup queries into one parallel Promise.all batch.
+     Lookups rarely change, so cache for 10 minutes. */
+  const { data: lookups } = useQuery({
+    queryKey: ["lead_detail_lookups"],
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("master_values").select("*").eq("is_active", true).order("sort_order");
-      if (error) throw error;
-      return data;
+      const [mvRes, usersRes, destRes, itinRes, vendorRes] = await Promise.all([
+        supabase.from("master_values").select("*").eq("is_active", true).order("sort_order"),
+        supabase.from("users").select("id, name").eq("is_active", true),
+        supabase.from("destinations").select("id, name").eq("is_active", true),
+        supabase.from("itineraries").select("id, headline, destination_id"),
+        supabase.from("vendors").select("id, name").eq("is_active", true),
+      ]);
+      return {
+        masterValues: mvRes.data || [],
+        users: usersRes.data || [],
+        destinations: destRes.data || [],
+        itineraries: itinRes.data || [],
+        vendors: vendorRes.data || [],
+      };
     },
   });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ["users_active"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("users").select("id, name").eq("is_active", true);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: destinations = [] } = useQuery({
-    queryKey: ["destinations_active"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("destinations").select("id, name").eq("is_active", true);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: allItineraries = [] } = useQuery({
-    queryKey: ["itineraries_list"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("itineraries").select("id, headline, destination_id");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: vendors = [] } = useQuery({
-    queryKey: ["vendors_active"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("vendors").select("id, name").eq("is_active", true);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const {
+    masterValues = [],
+    users = [],
+    destinations = [],
+    itineraries: allItineraries = [],
+    vendors = [],
+  } = lookups || {};
 
   const mvByType = (type: string) => masterValues.filter((v: any) => v.type === type);
   const getField = (key: string) => formState[key] ?? (lead as any)?.[key] ?? "";
