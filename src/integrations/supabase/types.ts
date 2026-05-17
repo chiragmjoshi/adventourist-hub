@@ -1366,6 +1366,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           legacy_id: number | null
+          parent_value: string | null
           sort_order: number | null
           type: string
           value: string
@@ -1375,6 +1376,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           legacy_id?: number | null
+          parent_value?: string | null
           sort_order?: number | null
           type: string
           value: string
@@ -1384,6 +1386,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           legacy_id?: number | null
+          parent_value?: string | null
           sort_order?: number | null
           type?: string
           value?: string
