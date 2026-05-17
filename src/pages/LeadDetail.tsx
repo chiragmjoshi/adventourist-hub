@@ -597,10 +597,10 @@ const LeadDetail = () => {
           <LeadReminderStrip leadId={id!} />
           <Tabs defaultValue="enquiry">
             <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none">
-              {["enquiry", "trips", "comments"].map(tab => (
+              {["enquiry", "trips", "activity"].map(tab => (
                 <TabsTrigger key={tab} value={tab}
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2.5 pt-1 text-sm capitalize">
-                  {tab === "enquiry" ? "Current Enquiry" : tab === "trips" ? `Trips${trips.length > 0 ? ` (${trips.length})` : ""}` : "Comments"}
+                  {tab === "enquiry" ? "Current Enquiry" : tab === "trips" ? `Trips${trips.length > 0 ? ` (${trips.length})` : ""}` : "Activity"}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -648,29 +648,17 @@ const LeadDetail = () => {
                       <Input type="date" className="h-9 text-xs mt-1 rounded-md" value={getField("travel_date") || ""} onChange={e => setFormState(prev => ({...prev, travel_date: e.target.value}))} />
                     </div>
                     <div>
+                      <Label className="text-xs text-muted-foreground">Pax</Label>
+                      <Input type="number" min={1} className="h-9 text-xs mt-1 rounded-md" value={getField("pax_count") || ""} onChange={e => setFormState(prev => ({...prev, pax_count: e.target.value ? Number(e.target.value) : null}))} />
+                    </div>
+                    <div>
                       <Label className="text-xs text-muted-foreground">Created On</Label>
                       <p className="text-sm mt-1.5">{l.created_at ? format(new Date(l.created_at), "dd MMM yyyy, hh:mm a") : "—"}</p>
                     </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Proposed Price</Label>
-                      <Input className="h-9 text-xs mt-1 rounded-md" placeholder="₹" />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Vendor Cost Price</Label>
-                      <Input className="h-9 text-xs mt-1 rounded-md" placeholder="₹" />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Margin</Label>
-                      <p className="text-sm mt-1.5 font-medium">—</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Vendor</Label>
-                      <Select value="" onValueChange={() => {}}>
-                        <SelectTrigger className="h-9 text-xs mt-1 rounded-md"><SelectValue placeholder="Select vendor" /></SelectTrigger>
-                        <SelectContent>{vendors.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
                   </div>
+                  <p className="text-[11px] text-muted-foreground mt-3">
+                    Cost, margin and vendor live on the Trip Cashflow — see the <span className="font-medium">Trips</span> tab.
+                  </p>
                   <div className="flex justify-end mt-5">
                     <Button size="sm" onClick={handleSaveEnquiry} className="rounded-md">Save Changes</Button>
                   </div>
