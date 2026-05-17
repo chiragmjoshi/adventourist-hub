@@ -384,7 +384,7 @@ const ItineraryEdit = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground">Destination</Label>
-                  <Select value={form.destination_id} onValueChange={v => setField("destination_id", v)}>
+                  <Select value={form.destination_id} onValueChange={onDestinationChange}>
                     <SelectTrigger className="mt-1 rounded-md"><SelectValue placeholder="Select destination" /></SelectTrigger>
                     <SelectContent>{destinations.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                   </Select>
