@@ -461,9 +461,14 @@ const LeadManagement = () => {
           <h1 className="text-xl font-semibold text-foreground">Lead Management</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{totalCount.toLocaleString()} leads match</p>
         </div>
-        <Button onClick={() => setSheetOpen(true)} className="rounded-md">
-          <Plus className="h-4 w-4 mr-1.5" />Add Lead
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-9 rounded-md gap-1.5" onClick={handleExport}>
+            <Download className="h-4 w-4" />Export
+          </Button>
+          <Button onClick={() => setSheetOpen(true)} className="rounded-md">
+            <Plus className="h-4 w-4 mr-1.5" />Add Lead
+          </Button>
+        </div>
       </div>
 
       {/* ── Smart Filter Bar — compact inline row ── */}
@@ -487,16 +492,11 @@ const LeadManagement = () => {
         <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
           options={[]} />
 
-        <div className="ml-auto flex items-center gap-1.5">
-          {anyFiltersActive && (
-            <button onClick={resetFilters} className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 whitespace-nowrap rounded-md">
-              <RotateCcw className="h-3 w-3" />Reset
-            </button>
-          )}
-          <Button variant="outline" size="sm" className="h-8 text-xs rounded-md gap-1.5" onClick={handleExport}>
-            <Download className="h-3.5 w-3.5" />Export
-          </Button>
-        </div>
+        {anyFiltersActive && (
+          <button onClick={resetFilters} className="ml-auto h-8 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 whitespace-nowrap rounded-md">
+            <RotateCcw className="h-3 w-3" />Reset
+          </button>
+        )}
       </div>
 
       {/* ── Disposition Chips ── */}
