@@ -4,24 +4,28 @@ import SEO from "@/components/SEO";
 import ContactForm from "@/site/components/contact/ContactForm";
 import { PHONE_DISPLAY, SUPPORT_EMAIL, WHATSAPP_NUMBER } from "@/site/lib/constants";
 import { waLink } from "@/site/lib/utils";
+import { useLeadCapture } from "@/site/hooks/useLeadCapture";
+import minalImg from "@/assets/team-minal.jpg";
+import pinkyImg from "@/assets/team-pinky.jpg";
+import viyaImg from "@/assets/team-viya.jpg";
 
 const TEAM = [
   {
     name: "Minal Joshi",
     role: "Co-Founder & Lead Travel Expert",
-    image: "/site-images/career-img.png",
+    image: minalImg,
     waSource: "contact_team_minal",
   },
   {
     name: "Pinky Prajapati",
     role: "Travel Expert",
-    image: "/site-images/2151747328.jpg",
+    image: pinkyImg,
     waSource: "contact_team_pinky",
   },
   {
     name: "Travel Team",
     role: "Destination Specialists",
-    image: null,
+    image: viyaImg,
     waSource: "contact_team_general",
   },
 ];
