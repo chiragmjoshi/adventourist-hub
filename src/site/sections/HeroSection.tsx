@@ -6,7 +6,7 @@ import { waLink } from "@/site/lib/utils";
 // Use Unsplash auto-format (serves WebP/AVIF) and right-sized widths.
 const HERO_BG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1600&q=70";
 const card = (id: string) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=70`;
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=480&q=60`;
 
 const destinations = [
   { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",   region: "India", image: card("photo-1571536802807-30451e3955d8") },
