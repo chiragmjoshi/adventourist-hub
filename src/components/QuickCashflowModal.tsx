@@ -124,7 +124,8 @@ export default function QuickCashflowModal({ open, onOpenChange, lead }: QuickCa
         booking_date: form.booking_date || null,
         pax_count: Number(form.pax_count) || 1,
         gst_billing: form.gst_billing,
-        notes: form.notes || (form.selling_price ? `Final selling price (agreed): ₹${form.selling_price}` : null),
+        notes: form.notes || null,
+        agreed_selling_price: form.selling_price ? Number(form.selling_price) : null,
         assigned_to: lead.assigned_to || null,
         status: "draft",
         trip_stage: "trip_sold",
@@ -159,6 +160,7 @@ export default function QuickCashflowModal({ open, onOpenChange, lead }: QuickCa
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["lead_trips", lead?.id] });
+      queryClient.invalidateQueries({ queryKey: ["lead_trips"] });
       queryClient.invalidateQueries({ queryKey: ["lead_timeline", lead?.id] });
       queryClient.invalidateQueries({ queryKey: ["lead", lead?.id] });
       queryClient.invalidateQueries({ queryKey: ["leads"] });
