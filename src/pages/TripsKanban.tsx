@@ -53,14 +53,20 @@ const TripsKanban = () => {
       const { data, error } = await supabase
         .from("trip_cashflow")
         .select(`
-          id, cashflow_code, traveller_name, traveller_code, trip_stage, status,
-          travel_start_date, travel_end_date, pax_count, lead_id, assigned_to, updated_at,
-          destinations:destination_id(name),
-          leads:lead_id(mobile, email),
-          users:assigned_to(name, avatar_url)
+          id,
+          cashflow_code,
+          traveller_name,
+          traveller_code,
+          travel_start_date,
+          travel_end_date,
+          trip_stage,
+          status,
+          pax_count,
+          destination:destinations!destination_id(name),
+          assignedUser:users!assigned_to(name)
         `)
         .neq("status", "cancelled")
-        .order("travel_start_date", { ascending: true, nullsFirst: false });
+        .order("travel_start_date", { ascending: true });
       if (error) throw error;
       return (data as any[]) || [];
     },
@@ -96,7 +102,7 @@ const TripsKanban = () => {
       return (
         (t.traveller_name || "").toLowerCase().includes(q) ||
         (t.cashflow_code || "").toLowerCase().includes(q) ||
-        (t.destinations?.name || "").toLowerCase().includes(q) ||
+        (t.destination?.name || "").toLowerCase().includes(q) ||
         (t.leads?.mobile || "").toLowerCase().includes(q)
       );
     });
@@ -272,9 +278,9 @@ const TripsKanban = () => {
                           return null;
                         })()}
 
-                        {t.destinations?.name && (
+                        {t.destination?.name && (
                           <Badge variant="secondary" className="mt-1.5 text-[10px] px-1.5 py-0 bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0 rounded">
-                            {t.destinations.name}
+                            {t.destination.name}
                           </Badge>
                         )}
 
@@ -287,9 +293,9 @@ const TripsKanban = () => {
                           </div>
                         )}
 
-                        {t.users?.name && (
+                        {t.assignedUser?.name && (
                           <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
-                            <User className="h-3 w-3" />{t.users.name}
+                            <User className="h-3 w-3" />{t.assignedUser.name}
                           </div>
                         )}
 
