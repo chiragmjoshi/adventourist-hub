@@ -23,8 +23,9 @@ Email: support@adventourist.in | GST: 27ABMFA3990N1ZQ
 Office: Vile Parle West, Mumbai 400056 | Mon–Sat 9AM–9PM IST
 
 ## Pages
-/ — Homepage
-/trips — All itineraries (Bali, Ladakh, Thailand, Sri Lanka, Singapore, Seychelles, Vietnam, Rajasthan etc.)
-/travel-stories — Travel blogs, destination guides, client stories
-/about-us — Company story, team, values
-/contact — Plan your trip, WhatsApp enquiry
+- [Homepage](/): Adventourist — boutique travel planning from Mumbai.
+- [All Trips](/trips): Curated itineraries — Bali, Ladakh, Thailand, Sri Lanka, Singapore, Seychelles, Vietnam, Rajasthan and more.
+- [Travel Stories](/travel-stories): Travel blogs, destination guides and client stories.
+- [About Us](/about-us): Company story, team and values.
+- [Contact](/contact): Plan your trip or send a WhatsApp enquiry.
+- [FAQs](/faqs): Booking, payments, cancellations and on-trip support.
