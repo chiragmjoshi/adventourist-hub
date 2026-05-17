@@ -1,21 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * AiSensy WhatsApp message sending service.
- * 
- * IMPORTANT: The AiSensy API key is stored in automation_settings table
- * and fetched at runtime. Never hardcode or store in frontend env.
+ * AiSensy WhatsApp service — client-side wrapper.
+ * The API key never leaves the server. All sends route through the
+ * `send-whatsapp` edge function which fetches the key with the service role
+ * after verifying the caller's role.
  */
-
-interface AiSensyPayload {
-  apiKey: string;
-  campaignName: string;
-  destination: string;
-  userName: string;
-  templateParams: string[];
-  source: string;
-  media?: { url: string; filename: string };
-}
 
 export function formatMobile(mobile: string): string {
   let cleaned = mobile.replace(/[\s\-\(\)]/g, "");
@@ -23,15 +13,6 @@ export function formatMobile(mobile: string): string {
   if (cleaned.startsWith("91") && cleaned.length === 12) return cleaned;
   if (cleaned.startsWith("0")) cleaned = cleaned.substring(1);
   return "91" + cleaned;
-}
-
-export async function getAutomationSetting(key: string): Promise<string> {
-  const { data } = await supabase
-    .from("automation_settings")
-    .select("value")
-    .eq("key", key)
-    .single();
-  return data?.value || "";
 }
 
 export async function getTemplate(triggerEvent: string) {
@@ -49,34 +30,19 @@ export async function sendWhatsAppMessage(
   variables: string[],
   userName: string
 ): Promise<{ success: boolean; response: any }> {
-  const formattedMobile = formatMobile(mobile);
-  const apiKey = await getAutomationSetting("aisensy_api_key");
+  const { data, error } = await supabase.functions.invoke("send-whatsapp", {
+    body: { templateName, mobile, variables, userName },
+  });
+  if (error) return { success: false, response: { error: error.message } };
+  return { success: !!data?.success, response: data?.response ?? data };
+}
 
-  if (!apiKey || apiKey === "REPLACE_WITH_YOUR_API_KEY") {
-    return { success: false, response: { error: "AiSensy API key not configured" } };
-  }
-
-  const payload: AiSensyPayload = {
-    apiKey,
-    campaignName: templateName,
-    destination: formattedMobile,
-    userName,
-    templateParams: variables,
-    source: "adventourist-crm",
-  };
-
-  try {
-    const response = await fetch(
-      "https://backend.aisensy.com/campaign/t1/api/v2",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-    const data = await response.json();
-    return { success: response.ok, response: data };
-  } catch (error) {
-    return { success: false, response: error };
-  }
+export async function testWhatsAppConnection(
+  overrideApiKey?: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.functions.invoke("send-whatsapp", {
+    body: { testOnly: true, overrideApiKey },
+  });
+  if (error) return { success: false, error: error.message };
+  return { success: !!data?.success, error: data?.error };
 }
