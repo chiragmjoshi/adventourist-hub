@@ -247,13 +247,6 @@ export type Database = {
             referencedRelation: "trip_cashflow"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "automations_log_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cashflow_code_sequence: {
@@ -271,289 +264,434 @@ export type Database = {
         }
         Relationships: []
       }
-      destinations: {
+      customer_tag_customer: {
         Row: {
-          about: string | null
-          best_months: string[] | null
-          created_at: string | null
-          gallery: string[] | null
-          hero_image: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          slug: string
-          suitable_for: string[] | null
-          testimonials: Json | null
-          themes: string[] | null
+          created_at: string
+          customer_id: number
+          customer_tag_id: number
+          id: number
+          updated_at: string
         }
         Insert: {
-          about?: string | null
-          best_months?: string[] | null
-          created_at?: string | null
-          gallery?: string[] | null
-          hero_image?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          slug: string
-          suitable_for?: string[] | null
-          testimonials?: Json | null
-          themes?: string[] | null
+          created_at: string
+          customer_id: number
+          customer_tag_id: number
+          id: number
+          updated_at?: string
         }
         Update: {
-          about?: string | null
-          best_months?: string[] | null
-          created_at?: string | null
-          gallery?: string[] | null
-          hero_image?: string | null
-          id?: string
-          is_active?: boolean | null
+          created_at?: string
+          customer_id?: number
+          customer_tag_id?: number
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_tags: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at: string
+          id: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
           name?: string
-          slug?: string
-          suitable_for?: string[] | null
-          testimonials?: Json | null
-          themes?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          anniversary: string | null
+          created_at: string
+          dob: string | null
+          email: string | null
+          id: number
+          mobile: number
+          name: string | null
+          profile_image: string | null
+          traveller_code: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          anniversary?: string | null
+          created_at: string
+          dob?: string | null
+          email?: string | null
+          id: number
+          mobile: number
+          name?: string | null
+          profile_image?: string | null
+          traveller_code: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          anniversary?: string | null
+          created_at?: string
+          dob?: string | null
+          email?: string | null
+          id?: number
+          mobile?: number
+          name?: string | null
+          profile_image?: string | null
+          traveller_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      destination_pictures: {
+        Row: {
+          alt_tag: string | null
+          created_at: string | null
+          destination_id: number
+          file_path: string | null
+          id: number
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alt_tag?: string | null
+          created_at?: string | null
+          destination_id: number
+          file_path?: string | null
+          id: number
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alt_tag?: string | null
+          created_at?: string | null
+          destination_id?: number
+          file_path?: string | null
+          id?: number
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      destination_testimonials: {
+        Row: {
+          city: number | null
+          created_at: string
+          description: string | null
+          destination_id: number
+          id: number
+          image: string | null
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: number | null
+          created_at?: string
+          description?: string | null
+          destination_id: number
+          id: number
+          image?: string | null
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: number | null
+          created_at?: string
+          description?: string | null
+          destination_id?: number
+          id?: number
+          image?: string | null
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      destination_time_to_visits: {
+        Row: {
+          created_at: string | null
+          destination_id: number
+          id: number
+          time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          destination_id: number
+          id: number
+          time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          destination_id?: number
+          id?: number
+          time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      destination_types: {
+        Row: {
+          category: string
+          created_at: string | null
+          destination_id: number
+          id: number
+          type: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          destination_id: number
+          id: number
+          type?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          destination_id?: number
+          id?: number
+          type?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      destinations: {
+        Row: {
+          about: string
+          created_at: string | null
+          id: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          about: string
+          created_at?: string | null
+          id: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          about?: string
+          created_at?: string | null
+          id?: number
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
       itineraries: {
         Row: {
           about: string | null
-          best_months: string[] | null
-          breakfast_included: boolean | null
-          created_at: string | null
-          days: number | null
-          destination_id: string | null
-          destination_type: string | null
-          exclusions: string | null
-          flights_included: boolean | null
-          gallery: string[] | null
-          headline: string
-          hero_image: string | null
-          highlights: string[] | null
-          id: string
-          inclusions: string | null
-          itinerary_days: Json | null
-          meals_included: boolean | null
-          nights: number | null
-          price_per_person: number | null
-          published_at: string | null
-          seo_description: string | null
-          seo_keywords: string | null
-          seo_title: string | null
-          sightseeing_included: boolean | null
+          all_meals_included: boolean
+          breakfast_included: boolean
+          created_at: string
+          days_data: string | null
+          destination_id: number | null
+          destination_thumbnail_id: number | null
+          exclusion: string | null
+          flights_included: boolean
+          headline: string | null
+          id: number
+          important_things: string | null
+          inclusion: string | null
+          meta_description: string | null
+          meta_footer: string | null
+          meta_header: string | null
+          meta_image: string | null
+          meta_tags: string | null
+          meta_title: string | null
+          no_follow: number | null
+          no_index: number | null
+          pricing_per_person: number | null
+          sightseeing_included: boolean
           slug: string
-          status: string | null
-          stay_included: boolean | null
-          suitable_for: string[] | null
-          support_247: boolean | null
-          themes: string[] | null
-          transfers_included: boolean | null
-          updated_at: string | null
+          status: string
+          stay_included: boolean
+          support_24x7_included: boolean
+          transfers_included: boolean
+          updated_at: string
+          view_count: string | null
         }
         Insert: {
           about?: string | null
-          best_months?: string[] | null
-          breakfast_included?: boolean | null
-          created_at?: string | null
-          days?: number | null
-          destination_id?: string | null
-          destination_type?: string | null
-          exclusions?: string | null
-          flights_included?: boolean | null
-          gallery?: string[] | null
-          headline: string
-          hero_image?: string | null
-          highlights?: string[] | null
-          id?: string
-          inclusions?: string | null
-          itinerary_days?: Json | null
-          meals_included?: boolean | null
-          nights?: number | null
-          price_per_person?: number | null
-          published_at?: string | null
-          seo_description?: string | null
-          seo_keywords?: string | null
-          seo_title?: string | null
-          sightseeing_included?: boolean | null
+          all_meals_included?: boolean
+          breakfast_included?: boolean
+          created_at: string
+          days_data?: string | null
+          destination_id?: number | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          flights_included?: boolean
+          headline?: string | null
+          id: number
+          important_things?: string | null
+          inclusion?: string | null
+          meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
+          meta_title?: string | null
+          no_follow?: number | null
+          no_index?: number | null
+          pricing_per_person?: number | null
+          sightseeing_included?: boolean
           slug: string
-          status?: string | null
-          stay_included?: boolean | null
-          suitable_for?: string[] | null
-          support_247?: boolean | null
-          themes?: string[] | null
-          transfers_included?: boolean | null
-          updated_at?: string | null
+          status?: string
+          stay_included?: boolean
+          support_24x7_included?: boolean
+          transfers_included?: boolean
+          updated_at?: string
+          view_count?: string | null
         }
         Update: {
           about?: string | null
-          best_months?: string[] | null
-          breakfast_included?: boolean | null
-          created_at?: string | null
-          days?: number | null
-          destination_id?: string | null
-          destination_type?: string | null
-          exclusions?: string | null
-          flights_included?: boolean | null
-          gallery?: string[] | null
-          headline?: string
-          hero_image?: string | null
-          highlights?: string[] | null
-          id?: string
-          inclusions?: string | null
-          itinerary_days?: Json | null
-          meals_included?: boolean | null
-          nights?: number | null
-          price_per_person?: number | null
-          published_at?: string | null
-          seo_description?: string | null
-          seo_keywords?: string | null
-          seo_title?: string | null
-          sightseeing_included?: boolean | null
+          all_meals_included?: boolean
+          breakfast_included?: boolean
+          created_at?: string
+          days_data?: string | null
+          destination_id?: number | null
+          destination_thumbnail_id?: number | null
+          exclusion?: string | null
+          flights_included?: boolean
+          headline?: string | null
+          id?: number
+          important_things?: string | null
+          inclusion?: string | null
+          meta_description?: string | null
+          meta_footer?: string | null
+          meta_header?: string | null
+          meta_image?: string | null
+          meta_tags?: string | null
+          meta_title?: string | null
+          no_follow?: number | null
+          no_index?: number | null
+          pricing_per_person?: number | null
+          sightseeing_included?: boolean
           slug?: string
-          status?: string | null
-          stay_included?: boolean | null
-          suitable_for?: string[] | null
-          support_247?: boolean | null
-          themes?: string[] | null
-          transfers_included?: boolean | null
+          status?: string
+          stay_included?: boolean
+          support_24x7_included?: boolean
+          transfers_included?: boolean
+          updated_at?: string
+          view_count?: string | null
+        }
+        Relationships: []
+      }
+      itineraryables: {
+        Row: {
+          created_at: string | null
+          id: number
+          itinerary_id: number
+          itineraryable_id: number | null
+          itineraryable_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: number
+          itinerary_id: number
+          itineraryable_id?: number | null
+          itineraryable_type?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "itineraries_destination_id_fkey"
-            columns: ["destination_id"]
-            isOneToOne: false
-            referencedRelation: "destinations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Update: {
+          created_at?: string | null
+          id?: number
+          itinerary_id?: number
+          itineraryable_id?: number | null
+          itineraryable_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      landing_pageables: {
+        Row: {
+          created_at: string | null
+          id: number
+          landing_page_id: number
+          landing_pageable_id: number | null
+          landing_pageable_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: number
+          landing_page_id: number
+          landing_pageable_id?: number | null
+          landing_pageable_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          landing_page_id?: number
+          landing_pageable_id?: number | null
+          landing_pageable_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       landing_pages: {
         Row: {
-          ad_group: string | null
-          budget: number | null
-          campaign_type: string | null
-          channel: string | null
+          about: string | null
           created_at: string | null
-          custom_exclusions: string | null
-          custom_inclusions: string | null
-          destination_id: string | null
-          destination_type: string[] | null
-          form_after_submit_message: string | null
-          form_submit_text: string | null
-          form_subtitle: string | null
-          form_terms_label: string | null
-          form_title: string | null
-          gallery: string[] | null
-          hero_headline: string | null
-          hero_image: string | null
-          hero_subtext: string | null
-          id: string
-          is_active: boolean | null
-          itinerary_id: string | null
-          name: string
-          platform: string | null
-          published_at: string | null
-          seo_description: string | null
-          seo_title: string | null
-          slug: string
-          stay_days: string | null
-          suitable_for: string[] | null
-          template: string | null
-          testimonial_ids: string[] | null
-          time_to_visit: string[] | null
+          cta_text: string | null
+          destination_id: number | null
+          form_headline: string | null
+          headline: string | null
+          id: number
+          meta_description: string | null
+          meta_title: string | null
+          name: string | null
+          slug: string | null
+          status: string
+          sub_headline: string | null
           updated_at: string | null
-          why_adventourist: string | null
         }
         Insert: {
-          ad_group?: string | null
-          budget?: number | null
-          campaign_type?: string | null
-          channel?: string | null
+          about?: string | null
           created_at?: string | null
-          custom_exclusions?: string | null
-          custom_inclusions?: string | null
-          destination_id?: string | null
-          destination_type?: string[] | null
-          form_after_submit_message?: string | null
-          form_submit_text?: string | null
-          form_subtitle?: string | null
-          form_terms_label?: string | null
-          form_title?: string | null
-          gallery?: string[] | null
-          hero_headline?: string | null
-          hero_image?: string | null
-          hero_subtext?: string | null
-          id?: string
-          is_active?: boolean | null
-          itinerary_id?: string | null
-          name: string
-          platform?: string | null
-          published_at?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          slug: string
-          stay_days?: string | null
-          suitable_for?: string[] | null
-          template?: string | null
-          testimonial_ids?: string[] | null
-          time_to_visit?: string[] | null
+          cta_text?: string | null
+          destination_id?: number | null
+          form_headline?: string | null
+          headline?: string | null
+          id: number
+          meta_description?: string | null
+          meta_title?: string | null
+          name?: string | null
+          slug?: string | null
+          status?: string
+          sub_headline?: string | null
           updated_at?: string | null
-          why_adventourist?: string | null
         }
         Update: {
-          ad_group?: string | null
-          budget?: number | null
-          campaign_type?: string | null
-          channel?: string | null
+          about?: string | null
           created_at?: string | null
-          custom_exclusions?: string | null
-          custom_inclusions?: string | null
-          destination_id?: string | null
-          destination_type?: string[] | null
-          form_after_submit_message?: string | null
-          form_submit_text?: string | null
-          form_subtitle?: string | null
-          form_terms_label?: string | null
-          form_title?: string | null
-          gallery?: string[] | null
-          hero_headline?: string | null
-          hero_image?: string | null
-          hero_subtext?: string | null
-          id?: string
-          is_active?: boolean | null
-          itinerary_id?: string | null
-          name?: string
-          platform?: string | null
-          published_at?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          slug?: string
-          stay_days?: string | null
-          suitable_for?: string[] | null
-          template?: string | null
-          testimonial_ids?: string[] | null
-          time_to_visit?: string[] | null
+          cta_text?: string | null
+          destination_id?: number | null
+          form_headline?: string | null
+          headline?: string | null
+          id?: number
+          meta_description?: string | null
+          meta_title?: string | null
+          name?: string | null
+          slug?: string | null
+          status?: string
+          sub_headline?: string | null
           updated_at?: string | null
-          why_adventourist?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "landing_pages_destination_id_fkey"
-            columns: ["destination_id"]
-            isOneToOne: false
-            referencedRelation: "destinations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "landing_pages_itinerary_id_fkey"
-            columns: ["itinerary_id"]
-            isOneToOne: false
-            referencedRelation: "itineraries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       lead_comments: {
         Row: {
@@ -577,22 +715,7 @@ export type Database = {
           lead_id?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "lead_comments_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       lead_timeline: {
         Row: {
@@ -622,51 +745,56 @@ export type Database = {
           metadata?: Json | null
           note?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "lead_timeline_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_timeline_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      leads: {
+      lead_timelines: {
         Row: {
-          ad_group: string | null
-          address: string | null
-          assigned_to: string | null
-          budget_range: string | null
-          campaign_type: string | null
-          channel: string | null
           created_at: string | null
-          customer_tag: string | null
-          destination_id: string | null
-          disposition: string | null
-          email: string | null
-          follow_up_date: string | null
-          group_size: string | null
-          id: string
-          is_hot: boolean | null
-          itinerary_id: string | null
-          landing_page_id: string | null
-          landing_url: string | null
-          mobile: string | null
-          name: string
-          notes: string | null
-          platform: string | null
-          referrer_url: string | null
-          sales_status: string | null
-          travel_date: string | null
-          traveller_code: string
+          description: string | null
+          headline: string | null
+          id: number
+          lead_id: number
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          headline?: string | null
+          id: number
+          lead_id: number
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          headline?: string | null
+          id?: number
+          lead_id?: number
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      lead_trackings: {
+        Row: {
+          ad_id: string | null
+          adset_id: string | null
+          af_click_lookback: string | null
+          af_siteid: string | null
+          campaign_id: string | null
+          click_id: string | null
+          created_at: string | null
+          creative_name: string | null
+          device: string | null
+          device_type: string | null
+          fbclid: string | null
+          gclid: string | null
+          id: number
+          lead_id: number
+          pid: string | null
+          placement: string | null
           updated_at: string | null
           utm_campaign: string | null
           utm_content: string | null
@@ -675,32 +803,22 @@ export type Database = {
           utm_term: string | null
         }
         Insert: {
-          ad_group?: string | null
-          address?: string | null
-          assigned_to?: string | null
-          budget_range?: string | null
-          campaign_type?: string | null
-          channel?: string | null
+          ad_id?: string | null
+          adset_id?: string | null
+          af_click_lookback?: string | null
+          af_siteid?: string | null
+          campaign_id?: string | null
+          click_id?: string | null
           created_at?: string | null
-          customer_tag?: string | null
-          destination_id?: string | null
-          disposition?: string | null
-          email?: string | null
-          follow_up_date?: string | null
-          group_size?: string | null
-          id?: string
-          is_hot?: boolean | null
-          itinerary_id?: string | null
-          landing_page_id?: string | null
-          landing_url?: string | null
-          mobile?: string | null
-          name: string
-          notes?: string | null
-          platform?: string | null
-          referrer_url?: string | null
-          sales_status?: string | null
-          travel_date?: string | null
-          traveller_code: string
+          creative_name?: string | null
+          device?: string | null
+          device_type?: string | null
+          fbclid?: string | null
+          gclid?: string | null
+          id: number
+          lead_id: number
+          pid?: string | null
+          placement?: string | null
           updated_at?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -709,32 +827,22 @@ export type Database = {
           utm_term?: string | null
         }
         Update: {
-          ad_group?: string | null
-          address?: string | null
-          assigned_to?: string | null
-          budget_range?: string | null
-          campaign_type?: string | null
-          channel?: string | null
+          ad_id?: string | null
+          adset_id?: string | null
+          af_click_lookback?: string | null
+          af_siteid?: string | null
+          campaign_id?: string | null
+          click_id?: string | null
           created_at?: string | null
-          customer_tag?: string | null
-          destination_id?: string | null
-          disposition?: string | null
-          email?: string | null
-          follow_up_date?: string | null
-          group_size?: string | null
-          id?: string
-          is_hot?: boolean | null
-          itinerary_id?: string | null
-          landing_page_id?: string | null
-          landing_url?: string | null
-          mobile?: string | null
-          name?: string
-          notes?: string | null
-          platform?: string | null
-          referrer_url?: string | null
-          sales_status?: string | null
-          travel_date?: string | null
-          traveller_code?: string
+          creative_name?: string | null
+          device?: string | null
+          device_type?: string | null
+          fbclid?: string | null
+          gclid?: string | null
+          id?: number
+          lead_id?: number
+          pid?: string | null
+          placement?: string | null
           updated_at?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -742,36 +850,73 @@ export type Database = {
           utm_source?: string | null
           utm_term?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "leads_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_destination_id_fkey"
-            columns: ["destination_id"]
-            isOneToOne: false
-            referencedRelation: "destinations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_itinerary_id_fkey"
-            columns: ["itinerary_id"]
-            isOneToOne: false
-            referencedRelation: "itineraries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_landing_page_id_fkey"
-            columns: ["landing_page_id"]
-            isOneToOne: false
-            referencedRelation: "landing_pages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          ad_group_id: number | null
+          allocated_to: number | null
+          campaign_type_id: number | null
+          channel_id: number | null
+          created_at: string | null
+          customer_id: number
+          disposition_id: number | null
+          email: string | null
+          id: number
+          is_hot: boolean
+          itinerary_id: number | null
+          name: string | null
+          platform_id: number | null
+          remarks: string | null
+          sales_status_id: number | null
+          source: string
+          source_id: number | null
+          travel_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ad_group_id?: number | null
+          allocated_to?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at?: string | null
+          customer_id: number
+          disposition_id?: number | null
+          email?: string | null
+          id: number
+          is_hot?: boolean
+          itinerary_id?: number | null
+          name?: string | null
+          platform_id?: number | null
+          remarks?: string | null
+          sales_status_id?: number | null
+          source?: string
+          source_id?: number | null
+          travel_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ad_group_id?: number | null
+          allocated_to?: number | null
+          campaign_type_id?: number | null
+          channel_id?: number | null
+          created_at?: string | null
+          customer_id?: number
+          disposition_id?: number | null
+          email?: string | null
+          id?: number
+          is_hot?: boolean
+          itinerary_id?: number | null
+          name?: string | null
+          platform_id?: number | null
+          remarks?: string | null
+          sales_status_id?: number | null
+          source?: string
+          source_id?: number | null
+          travel_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       master_values: {
         Row: {
@@ -796,6 +941,30 @@ export type Database = {
           is_active?: boolean | null
           sort_order?: number | null
           type?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      masters: {
+        Row: {
+          created_at: string | null
+          id: number
+          type: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id: number
+          type: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          type?: string
+          updated_at?: string | null
           value?: string
         }
         Relationships: []
@@ -831,15 +1000,46 @@ export type Database = {
           type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      permission_role: {
+        Row: {
+          permission_id: number
+          role_id: number
+        }
+        Insert: {
+          permission_id: number
+          role_id: number
+        }
+        Update: {
+          permission_id?: number
+          role_id?: number
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       reminders: {
         Row: {
@@ -886,27 +1086,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "reminders_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "reminders_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
@@ -936,6 +1115,45 @@ export type Database = {
           id?: string
           permission?: string
           role?: string
+        }
+        Relationships: []
+      }
+      role_user: {
+        Row: {
+          role_id: number
+          user_id: number
+        }
+        Insert: {
+          role_id: number
+          user_id: number
+        }
+        Update: {
+          role_id?: number
+          user_id?: number
+        }
+        Relationships: []
+      }
+      roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1027,15 +1245,7 @@ export type Database = {
           updated_at?: string | null
           views?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "stories_destination_id_fkey"
-            columns: ["destination_id"]
-            isOneToOne: false
-            referencedRelation: "destinations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       travel_stories: {
         Row: {
@@ -1194,43 +1404,7 @@ export type Database = {
           updated_at?: string | null
           zoho_invoice_ref?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "trip_cashflow_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trip_cashflow_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trip_cashflow_destination_id_fkey"
-            columns: ["destination_id"]
-            isOneToOne: false
-            referencedRelation: "destinations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trip_cashflow_itinerary_id_fkey"
-            columns: ["itinerary_id"]
-            isOneToOne: false
-            referencedRelation: "itineraries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trip_cashflow_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       trip_cashflow_vendors: {
         Row: {
@@ -1291,34 +1465,34 @@ export type Database = {
       }
       users: {
         Row: {
-          avatar_url: string | null
           created_at: string | null
           email: string
-          id: string
-          is_active: boolean | null
-          mobile: string | null
+          email_verified_at: string | null
+          id: number
           name: string
-          role: string
+          password: string
+          remember_token: string | null
+          updated_at: string | null
         }
         Insert: {
-          avatar_url?: string | null
           created_at?: string | null
           email: string
-          id?: string
-          is_active?: boolean | null
-          mobile?: string | null
+          email_verified_at?: string | null
+          id: number
           name: string
-          role: string
+          password: string
+          remember_token?: string | null
+          updated_at?: string | null
         }
         Update: {
-          avatar_url?: string | null
           created_at?: string | null
           email?: string
-          id?: string
-          is_active?: boolean | null
-          mobile?: string | null
+          email_verified_at?: string | null
+          id?: number
           name?: string
-          role?: string
+          password?: string
+          remember_token?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1408,7 +1582,64 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_customer_lifetime: {
+        Row: {
+          email: string | null
+          first_enquiry: string | null
+          id: number | null
+          last_enquiry: string | null
+          mobile: number | null
+          name: string | null
+          total_enquiries: number | null
+          traveller_code: string | null
+          trips_booked: number | null
+        }
+        Relationships: []
+      }
+      v_lead_funnel: {
+        Row: {
+          hot_leads: number | null
+          sales_status: string | null
+          total_leads: number | null
+        }
+        Relationships: []
+      }
+      v_leads_full: {
+        Row: {
+          ad_group: string | null
+          allocated_to_name: string | null
+          campaign_type: string | null
+          channel: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_id: number | null
+          customer_mobile: number | null
+          customer_name: string | null
+          disposition: string | null
+          id: number | null
+          is_hot: boolean | null
+          itinerary_id: number | null
+          platform: string | null
+          remarks: string | null
+          sales_status: string | null
+          source: string | null
+          travel_date: string | null
+          traveller_code: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      v_source_attribution: {
+        Row: {
+          campaign_type: string | null
+          channel: string | null
+          closed_leads: number | null
+          conversion_rate_pct: number | null
+          platform: string | null
+          total_leads: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       current_user_role: { Args: never; Returns: string }
