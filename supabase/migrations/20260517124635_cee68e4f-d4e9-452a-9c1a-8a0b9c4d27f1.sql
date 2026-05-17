@@ -1,0 +1,4 @@
+DELETE FROM public.lead_timeline WHERE lead_id IN ('4d160c9e-74f2-4ad6-b2bd-9c9b99bd0fcb','c1fa2e67-2da9-4361-9ada-500805729b92','4a61e54c-01b7-471b-ad42-333336321fa3');
+DELETE FROM public.lead_tracking WHERE lead_id IN ('4d160c9e-74f2-4ad6-b2bd-9c9b99bd0fcb','c1fa2e67-2da9-4361-9ada-500805729b92','4a61e54c-01b7-471b-ad42-333336321fa3');
+DELETE FROM public.lead_comments WHERE lead_id IN ('4d160c9e-74f2-4ad6-b2bd-9c9b99bd0fcb','c1fa2e67-2da9-4361-9ada-500805729b92','4a61e54c-01b7-471b-ad42-333336321fa3');
+DELETE FROM public.leads WHERE id IN ('4d160c9e-74f2-4ad6-b2bd-9c9b99bd0fcb','c1fa2e67-2da9-4361-9ada-500805729b92','4a61e54c-01b7-471b-ad42-333336321fa3');
