@@ -20,19 +20,8 @@ import { format, formatDistanceToNow, subDays, subMonths, startOfMonth, endOfMon
 import { useAuth } from "@/contexts/AuthContext";
 import DateRangePicker from "@/components/DateRangePicker";
 
-/* ────── Display ↔ DB-key mapping ──────
- * DB stores snake_case keys (e.g. "not_contacted") but master_values
- * use human display strings ("Not Contacted"). Most map via slugify,
- * but a few legacy values diverge — handled by OVERRIDES.
- */
-const DISPLAY_KEY_OVERRIDES: Record<string, string> = {
-  "Not Reachable Call Back": "not_reachable",
-  "Wrong Number / Invalid Lead": "wrong_number",
-};
-const slugify = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-const displayToKey = (display: string): string =>
-  DISPLAY_KEY_OVERRIDES[display] ?? slugify(display);
+/* DB now stores the display value directly (e.g. "Not Contacted").
+ * No translation between display labels and DB keys is needed anymore. */
 
 /* ────── Platform → Channel mapping ────── */
 const CHANNEL_BY_PLATFORM: Record<string, string[]> = {
@@ -48,7 +37,22 @@ const filterChannelsByPlatform = <T extends { value: string }>(channels: T[], pl
   return channels.filter(c => allowed.includes(c.value));
 };
 
-/* ────── Disposition dot colors ────── */
+/* ────── Disposition badge colors (light opaque chips) ────── */
+const DISP_BADGE: Record<string, string> = {
+  "Not Contacted": "bg-gray-100 text-gray-700 border-gray-200",
+  "Wrong Number / Invalid Lead": "bg-red-50 text-red-700 border-red-200",
+  "Busy Call Back": "bg-amber-50 text-amber-800 border-amber-200",
+  "Not Reachable Call Back": "bg-orange-50 text-orange-700 border-orange-200",
+  "Query Closed": "bg-blue-50 text-blue-700 border-blue-200",
+  "Follow Up Needed": "bg-purple-50 text-purple-700 border-purple-200",
+  "Destination Changed": "bg-teal-50 text-teal-700 border-teal-200",
+  "Plan Dropped": "bg-pink-50 text-pink-700 border-pink-200",
+  "Booked Outside": "bg-gray-100 text-gray-800 border-gray-300",
+  "Ongoing Discussions": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Not Interested": "bg-slate-100 text-slate-700 border-slate-200",
+  "Ghosted": "bg-gray-50 text-gray-600 border-gray-200",
+  "Refund Issued": "bg-orange-100 text-orange-800 border-orange-300",
+};
 const DISP_DOT: Record<string, string> = {
   "Not Contacted": "bg-gray-400",
   "Wrong Number / Invalid Lead": "bg-red-500",
@@ -112,8 +116,8 @@ const LeadManagement = () => {
   const { profile } = useAuth();
 
   /* ── Filters ── */
-  // Default = "Last 3 Months to date": start of the month 2 months ago → today.
-  const defaultFrom = useMemo(() => startOfMonth(subMonths(new Date(), 2)), []);
+  // Default = "Last 6 Months to date": start of the month 5 months ago → today.
+  const defaultFrom = useMemo(() => startOfMonth(subMonths(new Date(), 5)), []);
   const defaultTo = useMemo(() => new Date(), []);
   const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
   const [dateTo, setDateTo] = useState<Date>(defaultTo);
@@ -185,7 +189,7 @@ const LeadManagement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select("*, destinations(name), itineraries(headline), users!leads_assigned_to_fkey(name)")
+        .select("*, destinations(name), itineraries(headline, destinations(name)), users!leads_assigned_to_fkey(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -306,7 +310,7 @@ const LeadManagement = () => {
   }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search]);
 
   const resetFilters = () => {
-    setDateFrom(startOfMonth(subMonths(new Date(), 2)));
+    setDateFrom(startOfMonth(subMonths(new Date(), 5)));
     setDateTo(new Date());
     setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
     setFilterAdGroup("all"); setFilterDestination("all");
@@ -337,7 +341,7 @@ const LeadManagement = () => {
   };
 
   const anyFiltersActive =
-    format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(subMonths(new Date(), 2)), "yyyy-MM-dd") ||
+    format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd") ||
     format(dateTo, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") ||
     filterChannel !== "all" || filterPlatform !== "all" || filterCampaign !== "all" ||
     filterAdGroup !== "all" || filterDestination !== "all" ||
