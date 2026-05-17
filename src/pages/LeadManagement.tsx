@@ -454,16 +454,16 @@ const LeadManagement = () => {
         />
         <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
           options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
+        <SmallSelect label="Channel" value={filterChannel}
+          onChange={(v) => { setFilterChannel(v); setFilterPlatform("all"); setFilterCampaign("all"); }}
+          options={filterChannelOptions.map((c) => ({ value: c, label: c }))} />
         <SmallSelect label="Platform" value={filterPlatform}
-          onChange={(v) => { setFilterPlatform(v); if (v !== "all") setFilterChannel("all"); }}
-          options={mvByType("platform").map((v: any) => ({ value: v.value, label: v.value }))} />
-        <SmallSelect label="Channel" value={filterChannel} onChange={setFilterChannel}
-          options={filterChannelsByPlatform(mvByType("channel"), filterPlatform === "all" ? "" : filterPlatform)
-            .map((v: any) => ({ value: v.value, label: v.value }))} />
+          onChange={(v) => { setFilterPlatform(v); setFilterCampaign("all"); }}
+          options={filterPlatformOptions.map((p) => ({ value: p, label: p }))} />
         <SmallSelect label="Campaign" value={filterCampaign} onChange={setFilterCampaign}
-          options={mvByType("campaign_type").map((v: any) => ({ value: v.value, label: v.value }))} />
+          options={filterCampaignOptions.map((c) => ({ value: c, label: c }))} />
         <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
-          options={mvByType("ad_group").map((v: any) => ({ value: v.value, label: v.value }))} />
+          options={[]} />
 
         {anyFiltersActive && (
           <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 whitespace-nowrap">
@@ -797,28 +797,14 @@ const LeadManagement = () => {
               {/* Section 3 */}
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Lead Source</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs mb-1 block">Channel</Label>
-                    <Select value={form.channel} onValueChange={v => setForm({...form, channel: v})}>
-                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{filterChannelsByPlatform(mvByType("channel"), form.platform).map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
-                    </Select></div>
-                  <div><Label className="text-xs mb-1 block">Platform</Label>
-                    <Select value={form.platform} onValueChange={v => setForm({...form, platform: v, channel: ""})}>
-                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{mvByType("platform").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
-                    </Select></div>
-                  <div><Label className="text-xs mb-1 block">Campaign Type</Label>
-                    <Select value={form.campaign_type} onValueChange={v => setForm({...form, campaign_type: v})}>
-                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{mvByType("campaign_type").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
-                    </Select></div>
-                  <div><Label className="text-xs mb-1 block">Ad Group</Label>
-                    <Select value={form.ad_group} onValueChange={v => setForm({...form, ad_group: v})}>
-                      <SelectTrigger className="rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{mvByType("ad_group").map((v: any) => <SelectItem key={v.id} value={v.value}>{v.value}</SelectItem>)}</SelectContent>
-                    </Select></div>
-                </div>
+                <AttributionFields
+                  channel={form.channel}
+                  platform={form.platform}
+                  campaignType={form.campaign_type}
+                  adGroup={form.ad_group}
+                  onChange={(field, value) => setForm(prev => ({ ...prev, [field]: value }))}
+                  layout="grid"
+                />
                 <p className="text-[11px] text-muted-foreground mt-2">Source data helps track ROI across campaigns</p>
               </div>
 
