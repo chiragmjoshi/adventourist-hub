@@ -206,7 +206,7 @@ export default function FAQs() {
 
   return (
     <SiteLayout
-      title="FAQs | Adventourist — Booking, Payments, Cancellations & More"
+      title="FAQs | Adventourist — Booking, Payments & Cancellations"
       description="Answers to common questions about planning a trip with Adventourist — booking process, payment terms, cancellations, on-trip support and more."
       keywords="adventourist faq, travel agency faq, booking process, cancellation policy, payment terms"
       jsonLd={jsonLd}
