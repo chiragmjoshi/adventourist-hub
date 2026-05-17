@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import TripImage from "@/site/ui/TripImage";
 import TripLeadForm from "@/site/components/trip/TripLeadForm";
 import { getItineraryBySlug, getItineraries, getCMSImageUrl, formatINRPrice, type CMSItinerary } from "@/site/lib/api";
@@ -57,6 +58,7 @@ export default function TripDetail() {
   if (loading) {
     return (
       <SiteLayout title="Loading… | Adventourist">
+        <SEO title="Loading… — Adventourist" description="Loading itinerary…" canonical={`/trips/${slug}`} noIndex />
         <div className="max-w-4xl mx-auto px-4 py-32 text-center font-body text-ink/50">Loading itinerary…</div>
       </SiteLayout>
     );
@@ -64,6 +66,7 @@ export default function TripDetail() {
   if (!trip) {
     return (
       <SiteLayout title="Trip Not Found | Adventourist">
+        <SEO title="Trip Not Found — Adventourist" description="The itinerary you're looking for may have been moved or unpublished." canonical={`/trips/${slug}`} noIndex />
         <div className="max-w-2xl mx-auto px-4 py-32 text-center">
           <h1 className="font-display font-black text-3xl text-abyss mb-3">Trip not found</h1>
           <p className="font-body text-ink/60 mb-6">The itinerary you're looking for may have been moved or unpublished.</p>
@@ -137,6 +140,14 @@ export default function TripDetail() {
       ogImage={heroImg}
       jsonLd={jsonLd}
     >
+      <SEO
+        title={`${trip.headline} — Adventourist`}
+        description={stripHtml(trip.about).slice(0, 155) || `Curated ${destinationName ?? ""} itinerary by Adventourist.`}
+        canonical={`/trips/${trip.slug}`}
+        ogImage={heroImg}
+        ogType="article"
+        schema={jsonLd}
+      />
       {/* Sticky sub-nav (appears on scroll) */}
       <div
         className={`fixed top-16 lg:top-20 left-0 right-0 z-40 bg-white border-b border-abyss/10 transition-transform duration-300 ${stickyVisible ? "translate-y-0" : "-translate-y-full"}`}
