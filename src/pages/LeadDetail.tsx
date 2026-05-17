@@ -23,6 +23,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { evaluateRulesForLead } from "@/services/automationEngine";
 import AddReminderModal from "@/components/reminders/AddReminderModal";
 import LeadReminderStrip from "@/components/reminders/LeadReminderStrip";
+import QuickCashflowModal from "@/components/QuickCashflowModal";
 import {
   tomorrowAt, inHours, fromDateAt, dispKey,
 } from "@/lib/reminderHelpers";
@@ -389,16 +390,9 @@ const LeadDetail = () => {
     },
   });
 
-  const handleCreateCashflow = async () => {
-    const l = lead as any;
-    await supabase.from("trip_cashflow").insert({
-      lead_id: l.id, traveller_code: l.traveller_code, traveller_name: l.name,
-      destination_id: l.destination_id || null, itinerary_id: l.itinerary_id || null,
-      assigned_to: l.assigned_to || null,
-    });
-    setCashflowPrompt(false);
-    toast.success("Trip Cashflow entry created");
-    navigate("/admin/trip-cashflow");
+  const handleCreateCashflow = () => {
+    // Legacy entry point kept for backwards compat — opens the quick modal.
+    setCashflowPrompt(true);
   };
 
   if (isLoading) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Loading lead...</div></AppLayout>;
@@ -925,20 +919,7 @@ const LeadDetail = () => {
         </div>
       </div>
 
-      <Dialog open={cashflowPrompt} onOpenChange={setCashflowPrompt}>
-        <DialogContent className="rounded-xl">
-          <DialogHeader>
-            <DialogTitle>Mark as File Closed?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will mark the trip as confirmed. Would you like to create a Trip Cashflow entry for this lead?
-          </p>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setCashflowPrompt(false)} className="rounded-md">Just Close File</Button>
-            <Button onClick={handleCreateCashflow} className="rounded-md">Close & Create Cashflow</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QuickCashflowModal open={cashflowPrompt} onOpenChange={setCashflowPrompt} lead={lead as any} />
       <AddReminderModal open={remindOpen} onOpenChange={setRemindOpen} lead={lead as any} />
     </AppLayout>
   );

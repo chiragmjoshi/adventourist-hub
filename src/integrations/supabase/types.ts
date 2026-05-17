@@ -1663,6 +1663,33 @@ export type Database = {
         }
         Relationships: []
       }
+      traveller_code_merges: {
+        Row: {
+          email: string
+          id: string
+          merged_at: string
+          new_code: string
+          old_code: string
+          rows_affected: Json
+        }
+        Insert: {
+          email: string
+          id?: string
+          merged_at?: string
+          new_code: string
+          old_code: string
+          rows_affected?: Json
+        }
+        Update: {
+          email?: string
+          id?: string
+          merged_at?: string
+          new_code?: string
+          old_code?: string
+          rows_affected?: Json
+        }
+        Relationships: []
+      }
       traveller_code_sequence: {
         Row: {
           last_sequence: number
