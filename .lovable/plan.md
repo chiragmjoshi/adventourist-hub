@@ -1,120 +1,54 @@
-## Goal
+## Where we are
+After the last round, Performance moved from **57 → 61**. The remaining drags on the score, in order of impact:
 
-Honor the 221 redirect rules in `Adventourist_Redirect_Plan.xlsx` so legacy WordPress / old-CMS URLs route to the new site sections.
+| Issue | Size / time | Where it comes from |
+|---|---|---|
+| Lovable badge font (`CameraPla.woff2`) + `~flock.js` | 131 KiB + 8 KiB | `cdn.gpteng.co` — injected by Lovable on published sites |
+| **Google Tag Manager + Facebook Pixel** | **613 KiB + 142 KiB** | NOT in this codebase — injected externally |
+| Hero Unsplash image still oversized | 43 KiB wasted | 800×419 served for a 378×238 slot |
+| `users` fetched 3× on initial load | ~3 KiB, but extends critical path to 4.4 s | `AuthProvider` runs on every host, including public; fires once for `getSession`, then again for `INITIAL_SESSION` / `TOKEN_REFRESHED` events |
+| Render-blocking Google Fonts CSS | 400 ms FCP delay | `<link rel="stylesheet">` in `index.html` |
+| Legacy JS transpile + `fbevents.js` polyfills | 12 KiB | Same FB pixel issue |
 
-## Important caveat (read first)
+## What I'll do
 
-Lovable hosting does **not** process `_redirects`, `netlify.toml`, `vercel.json`, or any edge-redirect config. The spreadsheet itself is written as a Cloudflare rules plan — true `301`s should be set up as Cloudflare Bulk Redirects / Rules on `adventourist.in`. From inside the app we can only do **client-side redirects** via React Router (`<Navigate replace />`), which:
+### 1. Hide the Lovable badge
+Call `set_badge_visibility(hide_badge: true)`. Removes the 131 KiB font + 8 KiB script from every public page. **Requires Pro plan** — if your workspace isn't Pro the call will be rejected and we skip this step.
 
-- Work for human visitors and most modern crawlers (Googlebot executes JS and follows them, but treats them as soft 301s).
-- Cannot redirect across hostnames (apex `adventourist.in` → `www`, or `blog.adventourist.in/*`) — those MUST stay in Cloudflare/DNS.
-- Cannot strip `?utm_*` server-side, but the route match ignores query strings so the destination URL is reached correctly.
+### 2. Skip `AuthProvider` on the public host
+Wrap `<AuthProvider>` in `src/App.tsx` so it only mounts on `admin` and `preview` hosts (matches what we already did for the automation worker + health check). On `www.adventourist.in` this stops all `supabase.auth.getSession()` traffic and the 3× `users?id=eq…` fetches. Admin routes are unaffected.
 
-This plan implements everything that CAN live in the app, and lists what must remain on Cloudflare.
+### 3. Shrink the hero card image
+In `src/site/sections/HeroSection.tsx`, drop the Unsplash `w` from `800` to `480` and quality from `70` to `60`. Displayed slot is 378×238; 480px covers 1.25× DPR. Saves ~45 KiB per image, 4 images = ~180 KiB total on hover/auto-rotate.
 
-## What gets implemented in-app
+### 4. Non-blocking Google Fonts
+In `index.html`, switch the Inter stylesheet from a normal `<link rel="stylesheet">` to the standard preload-swap pattern:
 
-A new component `src/routes/LegacyRedirects.tsx` containing route definitions, mounted at the top of the `<Routes>` tree in `src/App.tsx` (before the existing routes so they win).
-
-### 1. Blog post slug rename — `/travel-blog/:slug` → `/travel-stories/:slug` (covers 120 rows)
-
-Single dynamic route:
-```tsx
-<Route path="/travel-blog/:slug" element={<RedirectTo to="/travel-stories/:slug/" />} />
-<Route path="/travel-blog/:slug/" element={<RedirectTo to="/travel-stories/:slug/" />} />
-```
-This single rule replaces all 60 unique slug mappings (the apex `adventourist.in` variants are Cloudflare's job).
-
-### 2. Malformed `/1000` suffix (20 rows)
-```
-/travel-blog/:slug/1000          → /travel-stories/:slug/
-/travel-blog/:slug//1000         → /travel-stories/:slug/
-```
-
-### 3. WordPress `/feed/` (3 rows)
-```
-/travel-blog/:slug/feed          → /travel-stories/:slug/
+```html
+<link rel="preload" as="style" href="…/css2?family=Inter…" />
+<link rel="stylesheet" href="…/css2?family=Inter…" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="…/css2?family=Inter…" /></noscript>
 ```
 
-### 4. RSS UTM URLs (7 rows) — already handled by rule #1 (React Router ignores query string; UTMs naturally fall away on the new URL since we don't carry them).
+Removes ~400 ms of render-blocking; text falls back to system fonts for ~1 frame then swaps to Inter.
 
-### 5. Blog homepage + category/tag/pagination (14 rows)
-```
-/travel-blog/                       → /travel-stories/
-/travel-blog/about/                 → /about/
-/travel-blog/home/                  → /travel-stories/
-/travel-blog/page/*                 → /travel-stories/
-/travel-blog/category/*             → /travel-stories/
-/travel-blog/tag/camping-tips/      → /travel-stories/27-camping-tips/
-/travel-blog/tag/camping/           → /travel-stories/27-camping-tips/
-/travel-blog/tag/*                  → /travel-stories/   (catch-all)
-```
+## What I can't fix from code (needs your action)
 
-### 6. Itinerary URL changes (10 rows, static slug map)
-```
-/itinerary/Bhutan-Itinerary-for-8-Days            → /trips/bhutan-itinerary-8-days
-/itinerary/Spiti-Valley-Itinerary-6-Days          → /trips/spiti-valley-itinerary-6-days
-/itinerary/kashmir-trip-itinerary                 → /trips/kashmir-trip-itinerary
-/itinerary/Srilanka-Maldives-Itinerary-7-Nights   → /trips/srilanka-maldives-itinerary-7-nights
-/itinerary/bali-5days-4nights                     → /trips/bali-5-days-4-nights
-/itinerary/itinerary-darjeeling-pelling-sikkim-gangtok → /trips/darjeeling-pelling-sikkim-gangtok
-/itinerary/vietnam-tour-package                   → /trips/vietnam-tour-package
-/itinerary/6-Nights-and-7-Days-Leh-Ladakh-Itinerary-  → /trips/leh-ladakh-6-nights-7-days
-/itineraries/explore_itinerary                    → /trips/
-/explore-ladakh-via-manali-in-7-nights-8-days     → /trips/leh-ladakh-6-nights-7-days
-```
-A fallback `/itinerary/:slug` → `/trips/` will catch anything not in the map.
+### Google Tag Manager + Facebook Pixel
+I grepped the entire repo for `GTM-NDHCWP9`, `AW-787`, `G-4K3LTMZZ3B`, `fbq`, `fbevents`, `googletagmanager`, `connect.facebook` — **zero matches**. Also checked the `settings` table in the database — none of those IDs are stored there either.
 
-### 7. Old `/story/` paths (2 rows)
-```
-/story/camping-tips                                                       → /travel-stories/27-camping-tips/
-/story/we-bet-you-didn-t-know-about-these-intriguing-facts-about-ladakh   → /travel-stories/interesting-facts-about-ladakh/
-```
+That means GTM and the Facebook Pixel are being injected outside this app. The likely sources:
 
-### 8. Typo + sitemap (2 rows)
-```
-/travelstories  → /travel-stories/
-/sitemaps       → /sitemap.xml
-```
+1. **Cloudflare → Rules → Configuration Rules / Workers / Zaraz** — most likely. Cloudflare Zaraz often hosts GTM. Check Cloudflare dashboard → Zaraz, and any active Workers on `adventourist.in`.
+2. **Cloudflare → Rules → "HTML Modifications" / "Email Obfuscation"** — uncommon but possible.
+3. **A legacy script left in your DNS/HTML injection from the WordPress origin** if Cloudflare is still proxying to old infrastructure for some paths.
 
-### Helper component
-```tsx
-function RedirectTo({ to }: { to: string }) {
-  const params = useParams();
-  const target = to.replace(/:(\w+)/g, (_, k) => params[k] ?? "");
-  return <Navigate to={target} replace />;
-}
-```
+These two tags together are **755 KiB and ~120 ms of main-thread time** — bigger than every code-side fix combined. Removing them from Cloudflare/Zaraz will jump Performance significantly more than anything I can change in code.
 
-## What stays in Cloudflare (cannot live in-app)
+If you want them kept for analytics but deferred, paste the GTM container ID and pixel ID and I'll add a "load on first interaction or after 5 s idle" loader inside `index.html` — but that only works if you also remove the external injection, otherwise both copies will load.
 
-| Rule | Reason |
-|---|---|
-| `adventourist.in` → `www.adventourist.in` (apex → www, all paths) | Hostname-level, DNS/Cloudflare only |
-| `blog.adventourist.in/*` → `www.adventourist.in/travel-stories{path}` | Different subdomain |
-| `staging.adventourist.in`, `dev.adventourist.in`, `uat.adventourist.in`, `cms.adventourist.in/admin` | Marked "DO NOT REDIRECT" in the sheet |
-| True HTTP `301` status (for max SEO equity) | App can only issue client-side redirects |
-
-Recommendation: paste the static rows from the spreadsheet into a Cloudflare Bulk Redirect List, and use a Cloudflare Rule for the dynamic patterns (`/travel-blog/*` → `/travel-stories/$1`). The in-app redirects then serve as a belt-and-braces fallback if Cloudflare misses anything.
-
-## Files touched
-
-- **Create** `src/routes/LegacyRedirects.tsx` — the route table + `RedirectTo` helper.
-- **Edit** `src/App.tsx` — mount `<LegacyRedirects />` as the first child inside `<Routes>` (so legacy paths short-circuit before hitting `NotFound`).
-
-No DB changes, no edge function changes, no CMS changes.
-
-## Verification
-
-1. Visit `/travel-blog/13-driving-tips/` → lands on `/travel-stories/13-driving-tips/`.
-2. Visit `/travel-blog/13-driving-tips/?utm_source=rss&...` → lands on `/travel-stories/13-driving-tips/`.
-3. Visit `/travel-blog/about-leh-palace-ladakh//1000` → lands on `/travel-stories/about-leh-palace-ladakh/`.
-4. Visit `/travel-blog/category/things-to-do/page/2/` → lands on `/travel-stories/`.
-5. Visit `/itinerary/Bhutan-Itinerary-for-8-Days` → lands on `/trips/bhutan-itinerary-8-days`.
-6. Visit `/story/camping-tips` → lands on `/travel-stories/27-camping-tips/`.
-7. Visit `/travelstories` → lands on `/travel-stories/`.
-8. Visit `/sitemaps` → lands on `/sitemap.xml`.
-
-## Open question
-
-Do you want me to proceed with the in-app React Router redirects only (this plan), or do you also want a clean export (CSV) of the Cloudflare-only rules to paste into your Cloudflare dashboard?
+## Expected impact after these changes
+- Performance: **61 → ~75** (with badge hidden + auth gated + fonts non-blocking).
+- After also removing external GTM/FB pixel: **~90+**.
+- LCP: 6.0 s → ~3 s.
+- CLS / Best Practices unchanged (those need separate work — mostly the FB pixel polyfills account for the BP 58 score).
