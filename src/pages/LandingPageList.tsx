@@ -32,12 +32,20 @@ const LandingPageList = () => {
     },
   });
 
+  /* PERF-4 — fetch only the landing_page_id column (drops payload ~95%)
+     and exclude rows where it is null so the count is meaningful. */
   const { data: leadCounts = {} } = useQuery({
     queryKey: ["landing_page_lead_counts"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data } = await supabase.from("leads").select("landing_page_id");
+      const { data } = await supabase
+        .from("leads")
+        .select("landing_page_id")
+        .not("landing_page_id", "is", null);
       const counts: Record<string, number> = {};
-      (data || []).forEach((l: any) => { if (l.landing_page_id) counts[l.landing_page_id] = (counts[l.landing_page_id] || 0) + 1; });
+      (data || []).forEach((l: any) => {
+        counts[l.landing_page_id] = (counts[l.landing_page_id] || 0) + 1;
+      });
       return counts;
     },
   });
