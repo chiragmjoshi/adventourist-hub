@@ -178,7 +178,16 @@ const ItineraryList = () => {
                     )}
                   </TableCell>
                   <TableCell className="py-3">
-                    <span className="text-[13px] font-medium text-foreground">{it.headline}</span>
+                    <span className="text-[13px] font-medium text-foreground inline-flex items-center gap-1.5">
+                      {it.headline}
+                      {!it.hero_image && (
+                        <span
+                          title="Missing hero image"
+                          className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"
+                          aria-label="Missing hero image"
+                        />
+                      )}
+                    </span>
                   </TableCell>
                   <TableCell className="py-3">
                     {it.destinations?.name ? (
