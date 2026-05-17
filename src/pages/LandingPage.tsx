@@ -49,6 +49,19 @@ const LandingPage = () => {
 
   /* ─── meta ─── */
   useEffect(() => {
+    // GTM (public landing pages only)
+    if (typeof window !== "undefined" && !(window as any).__gtmLoaded) {
+      (window as any).__gtmLoaded = true;
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+      const gs = document.createElement("script");
+      gs.async = true;
+      gs.src = "https://www.googletagmanager.com/gtm.js?id=GTM-NDHCWP9";
+      document.head.appendChild(gs);
+      const ns = document.createElement("noscript");
+      ns.innerHTML = '<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NDHCWP9" height="0" width="0" style="display:none;visibility:hidden"></iframe>';
+      document.body.insertBefore(ns, document.body.firstChild);
+    }
     if (!page) return;
     document.title = (page as any).seo_title || page.hero_headline || page.name;
     const setMeta = (name: string, content: string) => {
