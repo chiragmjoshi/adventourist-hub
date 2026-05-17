@@ -1,38 +1,71 @@
-## Image regeneration — final batch
+## Lead Detail — full QC + restructure
 
-Continue the photoreal editorial overhaul. Same National Geographic look (golden hour, wide framing, no text, no watermarks, 16:9, ~1536×864).
+Scope: `/admin/leads/:id`. Three real bugs + four structural changes.
 
-### 1. Remaining 11 travel stories
-Generate one image per slug → `public/site-images/stories/{slug}.jpg`:
-- 13-driving-tips → Indian mountain highway, monsoon light
-- about-chadar-trek → Frozen Zanskar river, trekkers in down jackets
-- history-culture-and-festivals-of-leh → Hemis monastery festival, masked dancers
-- interesting-facts-about-ladakh → Pangong Lake from above, prayer flags
-- maldives-package → Overwater villa, turquoise lagoon, aerial
-- places-to-visit-in-chittorgarh-in-2023 → Chittorgarh Fort ramparts at dusk
-- places-to-visit-in-kashmir-2 → Dal Lake shikara, Zabarwan range
-- places-to-visit-in-paro → Tiger's Nest monastery on cliff
-- shanti-stupa-leh-ladakh → Shanti Stupa at sunset, Leh below
-- things-to-do-in-jaisalmer → Jaisalmer Fort golden walls, camels in dunes
-- things-to-do-in-kasol → Parvati river, pine forest, Himalayan village
+---
 
-Then SQL: `UPDATE travel_stories SET thumbnail_url = '/site-images/stories/' || slug || '.jpg'` for these 11.
+### 1. Bugs to fix
 
-### 2. All 72 itinerary heroes
-Generate one image per slug → `public/site-images/itineraries/{slug}.jpg`. Prompt template per row uses headline + destination so each image is destination-specific (e.g. Bali → rice terraces / Uluwatu cliffs; Maldives → overwater villas; Ladakh → high-altitude desert; Rajasthan → forts/dunes; Kerala → backwaters; Bhutan → dzongs; Maharashtra → Sahyadris; Tadoba → tiger in sal forest; Andaman → Radhanagar beach; Kailash → Mt Kailash; Vaishno Devi → Trikuta hills temple; Scandinavia → aurora; Finland → snow cabin; Russia → St Basil's; Egypt → pyramids; Kenya → Maasai Mara; Australia → Sydney Opera House / Great Ocean Road; Georgia → Caucasus; Azerbaijan → Baku flame towers; Laos → Luang Prabang; Philippines → Palawan / Manila bay; Oman → Wadi Shab; Greece → Santorini; etc).
+**A. Cashflow modal doesn't update the lead.**
+`QuickCashflowModal` only inserts into `trip_cashflow`. The lead row's `travel_date`, `destination_id`, `itinerary_id`, `pax_count` stay blank, so the "Current Enquiry" card looks empty even after Save.
+Fix: in the same mutation, also `UPDATE leads SET destination_id, itinerary_id, travel_date, pax_count` for the source lead, and invalidate `["lead", id]`.
 
-Then SQL: `UPDATE itineraries SET hero_image = '/site-images/itineraries/' || slug || '.jpg'` for all 72.
+**B. Dead fields in Current Enquiry.**
+`Proposed Price`, `Vendor Cost Price`, `Margin`, `Vendor` are hard-coded inputs with no state, no save, no DB column. They are confusing the user into thinking saved cashflow data should appear here.
+Fix: remove them. Cost / margin / vendor live on Trip Cashflow only and are already shown in the Trips tab.
 
-### Execution
+**C. Reminder added on lead detail isn't on /admin/reminders.**
+Insert + invalidation are correct, but global react-query config is `staleTime: 5 min`, `refetchOnWindowFocus: false`. If the Reminders page was opened earlier in the session, the cached empty list can stick.
+Fix on the Reminders page query:
+- `staleTime: 0`
+- `refetchOnMount: "always"`
+- `refetchOnWindowFocus: true`
 
-Use the `ai-gateway` skill via `/tmp/lovable_ai.py --image --model google/gemini-3-flash-preview-image` in batched parallel runs (≈8 per batch) to keep wall-time reasonable. Each prompt prepended with: *"Cinematic editorial travel photograph, National Geographic style, golden hour, wide-angle, photoreal, no text, no watermarks, no logos, no people facing camera. Subject: …"*
+Also: `LeadDetail` references a `customer_tag` column that doesn't exist on `leads`. Remove the field (silent update failure today).
 
-Existing files in `public/site-images/itineraries/` are PNG stock placeholders — overwrite with new `.jpg` files (DB update switches extension in the same UPDATE).
+---
+
+### 2. Tab restructure
+
+Tabs become: **Current Enquiry · Trips · Activity**.
+
+**Current Enquiry** (slimmed):
+Destination · Itinerary · Travel Date · Pax · Created On · Internal Notes (existing textarea, now clearing after save so a fresh note can be typed).
+Drop the cost/vendor block (point 1B).
+
+**Trips** — convert the existing cards to a real table:
+Columns: Destination · Itinerary · Booking Date · Travel Date · Pax · Selling Price · Cost · Margin (₹ + %) · Status · Cashflow Code → links to `/admin/trip-cashflow/:id`.
+Keep the existing loyalty summary bar (Trips · Total Spend · Avg / Trip · Since). For `sales` role keep hiding Cost / Margin columns.
+Data source unchanged — already gathers every cashflow for this traveller across all of their leads via traveller_code + email + mobile.
+
+**Activity** (replaces Comments):
+Move the existing Activity Timeline (currently rendered as a separate card below the tabs) into this tab. Delete the standalone timeline card. Comments tab + `lead_comments` reads removed — Internal Notes covers that need.
+
+---
+
+### 3. New Inquiry action
+
+Header button "New Inquiry" next to "Remind". Creates a new row in `leads`:
+- copy `traveller_code`, `name`, `email`, `mobile`, `customer_id`
+- blank `destination_id`, `itinerary_id`, `travel_date`, `pax_count`, `notes`
+- `sales_status: "New Lead"`, `disposition: "Not Contacted"`, `source: "crm"`, `assigned_to` = current user
+- log `lead_created` in `lead_timeline`
+- navigate to the new lead's detail page
+
+That same traveller's Trips tab will continue to show all past trips because the trip query already pivots on traveller_code + email + mobile.
+
+---
+
+### Files touched
+
+- `src/pages/LeadDetail.tsx` — drop dead fields, drop Comments tab + `lead_comments` query, move Timeline into Activity tab, clear notes textarea after save, add New Inquiry button + mutation, remove `customer_tag` field.
+- `src/components/QuickCashflowModal.tsx` — also update parent lead row; invalidate `["lead", id]`.
+- `src/pages/Reminders.tsx` — query options: `staleTime: 0`, `refetchOnMount: "always"`, `refetchOnWindowFocus: true`.
+
+No schema migration. No changes to public site, no changes to other pages.
 
 ### Verification
-- `ls public/site-images/stories | wc -l` → 59
-- `ls public/site-images/itineraries | wc -l` → ≥72
-- Spot-check 5 random itineraries on the public site to confirm hero renders.
-
-### Estimated cost / time
-~83 image gens × Gemini Flash Image ≈ 10–15 min in parallel batches. No layout, route, or component changes — only image files + two SQL UPDATEs.
+- Mark a lead File Closed → fill modal → Save → lead detail's Destination / Itinerary / Travel Date / Pax now show those values and Trips tab shows the new row.
+- Add a reminder from lead detail → open Reminders page → it appears in Today/Upcoming.
+- Click "New Inquiry" on a lead with traveller_code ADV-… → lands on new lead, traveller_code preserved, Trips tab on either lead shows the same past trips.
+- Type a note → Save Notes → textarea clears, lead.notes persisted (visible after refresh).

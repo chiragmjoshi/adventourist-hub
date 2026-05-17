@@ -138,6 +138,17 @@ export default function QuickCashflowModal({ open, onOpenChange, lead }: QuickCa
         .single();
       if (error) throw error;
 
+      // Also patch the source lead so the "Current Enquiry" card reflects
+      // what was just agreed (destination, itinerary, travel date, pax).
+      const leadPatch: Record<string, any> = {};
+      if (form.destination_id) leadPatch.destination_id = form.destination_id;
+      if (form.itinerary_id) leadPatch.itinerary_id = form.itinerary_id;
+      if (form.travel_start_date) leadPatch.travel_date = form.travel_start_date;
+      if (form.pax_count) leadPatch.pax_count = Number(form.pax_count) || 1;
+      if (Object.keys(leadPatch).length > 0) {
+        await supabase.from("leads").update(leadPatch as any).eq("id", lead.id);
+      }
+
       await supabase.from("lead_timeline").insert({
         lead_id: lead.id,
         actor_id: profile?.id || null,
@@ -150,6 +161,7 @@ export default function QuickCashflowModal({ open, onOpenChange, lead }: QuickCa
       queryClient.invalidateQueries({ queryKey: ["lead_trips", lead?.id] });
       queryClient.invalidateQueries({ queryKey: ["lead_timeline", lead?.id] });
       queryClient.invalidateQueries({ queryKey: ["lead", lead?.id] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast.success(`Cashflow ${data.cashflow_code} created`);
       onOpenChange(false);
     },
