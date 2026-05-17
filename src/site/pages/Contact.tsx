@@ -3,7 +3,6 @@ import SiteLayout from "@/site/SiteLayout";
 import SEO from "@/components/SEO";
 import ContactForm from "@/site/components/contact/ContactForm";
 import { PHONE_DISPLAY, SUPPORT_EMAIL, WHATSAPP_NUMBER } from "@/site/lib/constants";
-import { waLink } from "@/site/lib/utils";
 import { useLeadCapture } from "@/site/hooks/useLeadCapture";
 import minalImg from "@/assets/team-minal.jpg";
 import pinkyImg from "@/assets/team-pinky.jpg";
