@@ -2036,6 +2036,8 @@ export type Database = {
         Returns: undefined
       }
       is_admin_or_higher: { Args: never; Returns: boolean }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
