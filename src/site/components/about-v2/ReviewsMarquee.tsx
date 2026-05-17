@@ -38,7 +38,7 @@ function Row({ direction = "left", duration = 40 }: { direction?: "left" | "righ
         {items.map((r, i) => (
           <div
             key={i}
-            className="flex w-[320px] shrink-0 flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:w-[400px]"
+            className="flex w-[320px] shrink-0 flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:w-[400px]"
           >
             <div className="flex gap-1 text-[#FDC436]">
               {[...Array(5)].map((_, s) => (
