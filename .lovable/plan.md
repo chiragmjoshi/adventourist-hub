@@ -1,28 +1,38 @@
-## Trips Kanban — fix blank board & UX additions
+## Image regeneration — final batch
 
-### Current state (verified by reading `src/pages/TripsKanban.tsx`)
-The file **already** uses `travel_start_date` / `travel_end_date`, already selects `pax_count`, and already renders pax. So FIX 1 and FIX 5 are largely no-ops. The real gaps are: no error surface, unsafe stage fallback, no urgency badge, no completed-toggle, and existing rows may have NULL `trip_stage`.
+Continue the photoreal editorial overhaul. Same National Geographic look (golden hour, wide framing, no text, no watermarks, 16:9, ~1536×864).
 
-### Changes to `src/pages/TripsKanban.tsx`
+### 1. Remaining 11 travel stories
+Generate one image per slug → `public/site-images/stories/{slug}.jpg`:
+- 13-driving-tips → Indian mountain highway, monsoon light
+- about-chadar-trek → Frozen Zanskar river, trekkers in down jackets
+- history-culture-and-festivals-of-leh → Hemis monastery festival, masked dancers
+- interesting-facts-about-ladakh → Pangong Lake from above, prayer flags
+- maldives-package → Overwater villa, turquoise lagoon, aerial
+- places-to-visit-in-chittorgarh-in-2023 → Chittorgarh Fort ramparts at dusk
+- places-to-visit-in-kashmir-2 → Dal Lake shikara, Zabarwan range
+- places-to-visit-in-paro → Tiger's Nest monastery on cliff
+- shanti-stupa-leh-ladakh → Shanti Stupa at sunset, Leh below
+- things-to-do-in-jaisalmer → Jaisalmer Fort golden walls, camels in dunes
+- things-to-do-in-kasol → Parvati river, pine forest, Himalayan village
 
-1. **Expose query error** — destructure `isError, error: queryError` from `useQuery`.
-2. **Error banner** — above the kanban scroll container, render a destructive banner when `isError` is true.
-3. **Safe stage grouping** — replace `const k = t.trip_stage || "trip_sold"` with:
-   ```ts
-   const k = (t.trip_stage && STAGES.find(s => s.key === t.trip_stage))
-     ? t.trip_stage : "trip_sold";
-   ```
-4. **Urgency badge** — add a red (≤7d) / amber (≤30d) `Badge` right after the `cashflow_code` line using `differenceInDays` (already imported). Keep the existing `T-{d}d` top-right badge untouched (it only covers ≤14d and lives in a different spot — both are fine, or we can drop the duplicate if you prefer; default: keep both since spec says additive).
-5. **"Show completed" toggle** — add `hideCompleted` state (default `true`), render a checkbox next to the existing "Mine only" switch in the header, and filter `trips` in the `grouped` memo when active.
-6. **No changes** to drag/drop (none exists here — only click-advance), card click nav, mutations, or dialogs.
+Then SQL: `UPDATE travel_stories SET thumbnail_url = '/site-images/stories/' || slug || '.jpg'` for these 11.
 
-### Database backfill (separate migration)
-```sql
-UPDATE trip_cashflow
-SET trip_stage = 'trip_sold'
-WHERE trip_stage IS NULL AND status <> 'cancelled';
-```
-Run via migration tool so existing rows surface in the "Trip Sold" column.
+### 2. All 72 itinerary heroes
+Generate one image per slug → `public/site-images/itineraries/{slug}.jpg`. Prompt template per row uses headline + destination so each image is destination-specific (e.g. Bali → rice terraces / Uluwatu cliffs; Maldives → overwater villas; Ladakh → high-altitude desert; Rajasthan → forts/dunes; Kerala → backwaters; Bhutan → dzongs; Maharashtra → Sahyadris; Tadoba → tiger in sal forest; Andaman → Radhanagar beach; Kailash → Mt Kailash; Vaishno Devi → Trikuta hills temple; Scandinavia → aurora; Finland → snow cabin; Russia → St Basil's; Egypt → pyramids; Kenya → Maasai Mara; Australia → Sydney Opera House / Great Ocean Road; Georgia → Caucasus; Azerbaijan → Baku flame towers; Laos → Luang Prabang; Philippines → Palawan / Manila bay; Oman → Wadi Shab; Greece → Santorini; etc).
 
-### Out of scope
-Column rename fixes (already correct), pax display (already present), styling/layout changes, other pages.
+Then SQL: `UPDATE itineraries SET hero_image = '/site-images/itineraries/' || slug || '.jpg'` for all 72.
+
+### Execution
+
+Use the `ai-gateway` skill via `/tmp/lovable_ai.py --image --model google/gemini-3-flash-preview-image` in batched parallel runs (≈8 per batch) to keep wall-time reasonable. Each prompt prepended with: *"Cinematic editorial travel photograph, National Geographic style, golden hour, wide-angle, photoreal, no text, no watermarks, no logos, no people facing camera. Subject: …"*
+
+Existing files in `public/site-images/itineraries/` are PNG stock placeholders — overwrite with new `.jpg` files (DB update switches extension in the same UPDATE).
+
+### Verification
+- `ls public/site-images/stories | wc -l` → 59
+- `ls public/site-images/itineraries | wc -l` → ≥72
+- Spot-check 5 random itineraries on the public site to confirm hero renders.
+
+### Estimated cost / time
+~83 image gens × Gemini Flash Image ≈ 10–15 min in parallel batches. No layout, route, or component changes — only image files + two SQL UPDATEs.
