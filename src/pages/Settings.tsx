@@ -192,14 +192,10 @@ const Settings = () => {
     if (!apiKey || apiKey === "REPLACE_WITH_YOUR_API_KEY") { setTestResult("fail"); setTestError("API key not configured"); return; }
     setTestResult("loading"); setTestError("");
     try {
-      const response = await fetch("https://backend.aisensy.com/campaign/t1/api/v2", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, campaignName: "connection_test", destination: "919999999999", userName: "Test", templateParams: [], source: "adventourist-crm-test" }),
-      });
-      if (response.ok || response.status === 400 || response.status === 422) { setTestResult("success"); }
-      else if (response.status === 401 || response.status === 403) { setTestResult("fail"); setTestError("Invalid API key"); }
-      else { setTestResult("fail"); setTestError(`Unexpected response: ${response.status}`); }
+      const { testWhatsAppConnection } = await import("@/services/aisensy");
+      const res = await testWhatsAppConnection(apiKey);
+      if (res.success) setTestResult("success");
+      else { setTestResult("fail"); setTestError(res.error || "Test failed"); }
     } catch (err: any) { setTestResult("fail"); setTestError(err.message || "Network error"); }
     setTimeout(() => setTestResult("idle"), 8000);
   };
