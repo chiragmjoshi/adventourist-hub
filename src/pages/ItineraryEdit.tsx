@@ -23,6 +23,10 @@ import MultiImageUploader from "@/components/forms/MultiImageUploader";
 import RichTextEditor from "@/components/forms/RichTextEditor";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthsToNames = (nums: any): string[] =>
+  Array.isArray(nums) ? nums.map((n: any) => MONTHS[Number(n) - 1]).filter(Boolean) : [];
+const monthsToNums = (names: string[]): number[] =>
+  names.map((m) => MONTHS.indexOf(m) + 1).filter((n) => n >= 1);
 
 const INCLUSIONS = [
   { key: "flights_included", label: "Flights Included" },
@@ -135,7 +139,7 @@ const ItineraryEdit = () => {
         days: existing.days,
         nights: existing.nights,
         price_per_person: existing.price_per_person,
-        best_months: existing.best_months || [],
+        best_months: monthsToNames(existing.best_months),
         themes: existing.themes || [],
         suitable_for: existing.suitable_for || [],
         destination_type: existing.destination_type || "",
@@ -194,7 +198,7 @@ const ItineraryEdit = () => {
         days: form.days || null,
         nights: form.nights || null,
         price_per_person: form.price_per_person || null,
-        best_months: form.best_months,
+        best_months: monthsToNums(form.best_months),
         themes: form.themes,
         suitable_for: form.suitable_for,
         destination_type: form.destination_type || null,
