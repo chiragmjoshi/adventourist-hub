@@ -165,9 +165,9 @@ export default function Contact() {
               <h2 className="font-display font-black text-2xl lg:text-3xl text-abyss mb-5">Meet the Team</h2>
               <ul className="space-y-3">
                 {TEAM.map((m) => (
-                  <li key={m.name} className="flex items-center justify-between gap-4 bg-drift rounded-2xl p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-14 h-14 rounded-full bg-abyss flex-shrink-0 overflow-hidden flex items-center justify-center text-white">
+                  <li key={m.name} className="flex items-center justify-between gap-3 bg-drift rounded-2xl p-3 sm:p-4 hover:shadow-md transition-shadow overflow-hidden">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-abyss flex-shrink-0 overflow-hidden flex items-center justify-center text-white">
                         {m.image ? (
                           <img src={m.image} alt={`${m.name} — ${m.role}`} className="w-full h-full object-cover" loading="lazy" />
                         ) : (
@@ -185,7 +185,7 @@ export default function Contact() {
                       href={waLink({ source: m.waSource, message: `Hi ${m.name.split(" ")[0]}! I'd like help planning a trip.` })}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold text-sm px-4 py-2 rounded-full transition-colors flex-shrink-0"
+                      className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-full transition-colors flex-shrink-0"
                       aria-label={`WhatsApp ${m.name}`}
                     >
                       WhatsApp
