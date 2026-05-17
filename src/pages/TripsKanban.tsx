@@ -55,6 +55,9 @@ const TripsKanban = () => {
         .select(`
           id,
           cashflow_code,
+          lead_id,
+          destination_id,
+          assigned_to,
           traveller_name,
           traveller_code,
           travel_start_date,
@@ -62,13 +65,43 @@ const TripsKanban = () => {
           trip_stage,
           status,
           pax_count,
-          destination:destinations!destination_id(name),
-          assignedUser:users!assigned_to(name)
+          updated_at
         `)
         .neq("status", "cancelled")
         .order("travel_start_date", { ascending: true });
       if (error) throw error;
-      return (data as any[]) || [];
+
+      const rows = (data as any[]) || [];
+      const destinationIds = [...new Set(rows.map((t) => t.destination_id).filter(Boolean))];
+      const assignedUserIds = [...new Set(rows.map((t) => t.assigned_to).filter(Boolean))];
+      const leadIds = [...new Set(rows.map((t) => t.lead_id).filter(Boolean))];
+
+      const [destinationsRes, usersRes, leadsRes] = await Promise.all([
+        destinationIds.length
+          ? supabase.from("destinations").select("id, name").in("id", destinationIds)
+          : Promise.resolve({ data: [], error: null }),
+        assignedUserIds.length
+          ? supabase.from("users").select("id, name").in("id", assignedUserIds)
+          : Promise.resolve({ data: [], error: null }),
+        leadIds.length
+          ? supabase.from("leads").select("id, mobile").in("id", leadIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (destinationsRes.error) throw destinationsRes.error;
+      if (usersRes.error) throw usersRes.error;
+      if (leadsRes.error) throw leadsRes.error;
+
+      const destinationsById = new Map((destinationsRes.data || []).map((d: any) => [d.id, d]));
+      const usersById = new Map((usersRes.data || []).map((u: any) => [u.id, u]));
+      const leadsById = new Map((leadsRes.data || []).map((l: any) => [l.id, l]));
+
+      return rows.map((trip) => ({
+        ...trip,
+        destination: destinationsById.get(trip.destination_id) || null,
+        assignedUser: usersById.get(trip.assigned_to) || null,
+        leads: leadsById.get(trip.lead_id) || null,
+      }));
     },
   });
 
