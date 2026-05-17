@@ -16,11 +16,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send, Briefcase, Plus } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Send, Briefcase, Plus, Bell } from "lucide-react";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { evaluateRulesForLead } from "@/services/automationEngine";
+import AddReminderModal from "@/components/reminders/AddReminderModal";
+import LeadReminderStrip from "@/components/reminders/LeadReminderStrip";
+import {
+  tomorrowAt, inHours, fromDateAt, dispKey,
+} from "@/lib/reminderHelpers";
 
 /* ── Timeline event colors ── */
 const EVENT_COLORS: Record<string, string> = {
@@ -33,6 +38,7 @@ const EVENT_COLORS: Record<string, string> = {
   call_logged: "bg-[#3B82F6]",
   document_uploaded: "bg-blue-500",
   file_closed: "bg-[#056147]",
+  reminder_done: "bg-amber-500",
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -73,13 +79,14 @@ const LeadDetail = () => {
   const [cashflowPrompt, setCashflowPrompt] = useState(false);
   const [formState, setFormState] = useState<Record<string, any>>({});
   const [commentText, setCommentText] = useState("");
+  const [remindOpen, setRemindOpen] = useState(false);
 
   /* ── Queries ── */
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("leads")
-        .select("*, destinations(name), itineraries(headline), users!leads_assigned_to_fkey(name)")
+        .select("*, destinations(name), itineraries(headline, nights), users!leads_assigned_to_fkey(name)")
         .eq("id", id!).single();
       if (error) throw error;
       return data;
@@ -245,6 +252,32 @@ const LeadDetail = () => {
       if (updates.disposition && updates.disposition !== oldLead.disposition) {
         events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
         evaluateRulesForLead(id!, "disposition_changed");
+        // Auto-create reminders for specific dispositions (non-blocking)
+        const dk = dispKey(updates.disposition);
+        const autoRems: { title: string; reminder_type: string; due_at: Date; toast: string }[] = [];
+        if (dk === "busy_call_back" || dk === "not_reachable_call_back" || dk === "not_reachable") {
+          autoRems.push({
+            title: `Call back ${oldLead.name || "lead"}`,
+            reminder_type: "call_back",
+            due_at: inHours(2),
+            toast: "📞 Reminder set: Call back in 2 hours",
+          });
+        } else if (dk === "follow_up_needed") {
+          autoRems.push({
+            title: `Follow up with ${oldLead.name || "lead"}`,
+            reminder_type: "follow_up",
+            due_at: tomorrowAt(10),
+            toast: "🔔 Follow-up reminder set for tomorrow 10 AM",
+          });
+        }
+        for (const r of autoRems) {
+          await supabase.from("reminders" as any).insert({
+            lead_id: id!, created_by: profile?.id || null, assigned_to: profile?.id || null,
+            title: r.title, reminder_type: r.reminder_type,
+            due_at: r.due_at.toISOString(), status: "pending",
+          } as any);
+          toast.success(r.toast);
+        }
       }
       if (updates.follow_up_date !== undefined && updates.follow_up_date !== oldLead.follow_up_date) {
         const txt = updates.follow_up_date
@@ -260,11 +293,37 @@ const LeadDetail = () => {
       }
       if (updates.sales_status === "File Closed" && oldLead.sales_status !== "File Closed") {
         setCashflowPrompt(true);
+        // Auto-create trip start / review reminders when file closes and travel_date is set
+        if (oldLead.travel_date) {
+          const dest = oldLead.destinations?.name || "destination";
+          const nights = oldLead.itineraries?.nights ?? null;
+          const inserts: any[] = [{
+            lead_id: id!, created_by: profile?.id || null, assigned_to: profile?.id || null,
+            title: `Trip starts — ${oldLead.name || "lead"} to ${dest}`,
+            reminder_type: "trip_start",
+            due_at: fromDateAt(oldLead.travel_date, 8).toISOString(),
+            status: "pending",
+          }];
+          if (typeof nights === "number" && nights > 0) {
+            inserts.push({
+              lead_id: id!, created_by: profile?.id || null, assigned_to: profile?.id || null,
+              title: `${oldLead.name || "Lead"} returns from ${dest} — request review`,
+              reminder_type: "trip_end",
+              due_at: fromDateAt(oldLead.travel_date, 10, 0, nights + 2).toISOString(),
+              status: "pending",
+            });
+          }
+          await supabase.from("reminders" as any).insert(inserts as any);
+          toast.success(`✅ ${inserts.length} trip reminder${inserts.length > 1 ? "s" : ""} created automatically`);
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead", id] });
       queryClient.invalidateQueries({ queryKey: ["lead_timeline", id] });
+      queryClient.invalidateQueries({ queryKey: ["reminders", "lead", id] });
+      queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      queryClient.invalidateQueries({ queryKey: ["reminders", "due_today"] });
       toast.success("Lead updated");
     },
     onError: () => toast.error("Failed to update"),
@@ -356,6 +415,15 @@ const LeadDetail = () => {
           <span className="font-mono font-semibold" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRemindOpen(true)}
+            className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
+          >
+            <Bell className="h-3.5 w-3.5" />
+            Remind
+          </Button>
           <input
             type="date"
             title="Follow-up date"
@@ -517,6 +585,7 @@ const LeadDetail = () => {
         </div>
 
         <div className="flex-1 min-w-0">
+          <LeadReminderStrip leadId={id!} />
           <Tabs defaultValue="enquiry">
             <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none">
               {["enquiry", "trips", "comments"].map(tab => (
@@ -866,6 +935,7 @@ const LeadDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AddReminderModal open={remindOpen} onOpenChange={setRemindOpen} lead={lead as any} />
     </AppLayout>
   );
 };

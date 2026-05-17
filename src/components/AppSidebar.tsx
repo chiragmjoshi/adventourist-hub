@@ -4,6 +4,8 @@ import {
   Bell, KanbanSquare, BookOpen,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
@@ -35,6 +37,24 @@ export function AppSidebar() {
   const { profile, signOut } = useAuth();
   const isDbActive = location.pathname.startsWith("/admin/db");
 
+  // Due-today reminders count for the badge
+  const { data: dueCount = 0 } = useQuery({
+    queryKey: ["reminders", "due_today", profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return 0;
+      const end = new Date(); end.setHours(23, 59, 59, 999);
+      const { count } = await supabase
+        .from("reminders" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending")
+        .lte("due_at", end.toISOString())
+        .or(`created_by.eq.${profile.id},assigned_to.eq.${profile.id}`);
+      return count || 0;
+    },
+    enabled: !!profile?.id,
+    refetchInterval: 60_000,
+  });
+
   const linkClasses = (isActive: boolean) =>
     `flex items-center gap-3 pl-3 pr-3 py-2 rounded-r-md text-sm transition-colors border-l-[3px] ${
       isActive
@@ -50,7 +70,7 @@ export function AppSidebar() {
     { title: "Stories", url: "/admin/stories", icon: BookOpen, show: hasPermission("itineraries") },
     { title: "Trip Cashflow", url: "/admin/trip-cashflow", icon: DollarSign, show: hasPermission("trip_cashflow") },
     { title: "Trips Kanban", url: "/admin/trips-kanban", icon: KanbanSquare, show: hasPermission("trip_cashflow") },
-    { title: "Reminders", url: "/admin/reminders", icon: Bell, show: true },
+    { title: "Reminders", url: "/admin/reminders", icon: Bell, show: true, badge: dueCount },
     { title: "Vendors", url: "/admin/vendors", icon: Truck, show: hasPermission("vendors") },
     { title: "Reports", url: "/admin/reports", icon: BarChart3, show: hasPermission("reports") },
     { title: "Automations", url: "/admin/automations", icon: Zap, show: hasRole("admin", "super_admin") },
@@ -87,7 +107,12 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end={item.url === "/admin"} className={({ isActive }) => linkClasses(isActive)}>
                       <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span className="flex-1">{item.title}</span>}
+                      {!collapsed && (item as any).badge ? (
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
+                          {(item as any).badge > 9 ? "9+" : (item as any).badge}
+                        </span>
+                      ) : null}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -1428,6 +1428,7 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           created_by: string | null
+          done_at: string | null
           due_at: string
           id: string
           lead_id: string | null
@@ -1442,6 +1443,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           created_by?: string | null
+          done_at?: string | null
           due_at: string
           id?: string
           lead_id?: string | null
@@ -1456,6 +1458,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           created_by?: string | null
+          done_at?: string | null
           due_at?: string
           id?: string
           lead_id?: string | null
