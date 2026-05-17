@@ -697,8 +697,15 @@ const LeadManagement = () => {
                       <SelectContent>{destinations.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                     </Select></div>
                   <div><Label className="text-xs mb-1 block">Itinerary</Label>
-                    <Select value={form.itinerary_id} onValueChange={v => setForm({...form, itinerary_id: v})}>
-                      <SelectTrigger className="rounded-md"><SelectValue placeholder={form.destination_id ? "Select itinerary" : "Select destination first"} /></SelectTrigger>
+                     <Select value={form.itinerary_id} onValueChange={v => {
+                       const it: any = itineraries.find((x: any) => x.id === v);
+                       setForm(prev => ({
+                         ...prev,
+                         itinerary_id: v,
+                         destination_id: prev.destination_id || it?.destination_id || "",
+                       }));
+                     }}>
+                       <SelectTrigger className="rounded-md"><SelectValue placeholder="Select itinerary" /></SelectTrigger>
                       <SelectContent>{itineraries.map((it: any) => <SelectItem key={it.id} value={it.id}>{it.headline}</SelectItem>)}</SelectContent>
                     </Select></div>
                   <div><Label className="text-xs mb-1 block">Assigned To</Label>

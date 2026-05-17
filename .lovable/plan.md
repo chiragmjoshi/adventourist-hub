@@ -1,36 +1,51 @@
-## Cinematic About Us redesign
+## Goal
 
-Replace `src/site/pages/About.tsx` with a new immersive page at the existing `/about-us` route. Wrap in current `SiteLayout` (keeps nav/footer) and add Lenis smooth scroll scoped to this page.
+Repair the destination → itinerary → lead data chain across the editor, edge function, and lead views. No schema changes needed — `leads.destination_id`, `leads.itinerary_id`, `landing_pages.destination_id`, `landing_pages.itinerary_id` all already exist.
 
-### Dependencies
-- Add `lenis` (one new dep). `framer-motion` v12 and `lucide-react` already installed.
+## What's actually broken (after audit)
 
-### File layout
-- `src/site/pages/About.tsx` — page composition, Lenis init in `useEffect`, SEO `<title>`/meta.
-- `src/site/components/about-v2/` — section components:
-  - `HeroCinematic.tsx` — 100vh, looping background video (Pexels/Cloudinary placeholder) + dark gradient overlay, headline split into chars, staggered `clip-path: inset(100% 0 0 0)` → `inset(0)` reveal, slow-zoom `scale 1→1.08` over 12s, bouncing scroll cue.
-  - `AdventouristWay.tsx` — off-white section, statement headline scrubbed `opacity 0.2→1` via `useScroll({ target, offset })` + `useTransform`. Three glassmorphism cards (`Handcrafted` `Sparkles`, `Honest Pricing` `BadgeIndianRupee`, `Zero Stress` `HeartHandshake`) staggered `whileInView` with spring.
-  - `StoryTimeline.tsx` — two-column. Left column `sticky top-0 h-screen` showing title + image that cross-fades as the active milestone changes (driven by `useScroll` segment progress). Right column maps milestones (2018, 2019, 2024, Present). A 2px vertical rail with a `motion.div` scaleY tied to scroll progress in Adventourist gold/terracotta. Mobile: unstack to single column, drop sticky.
-  - `TeamShowcase.tsx` — three oversized portrait cards. On hover: image `scale 1.05`, subtle 3D tilt via `useMotionValue` + `useTransform` on mouseX/Y (rotateX/rotateY ±6°), and a custom `motion.div` cursor reading "Explore" follows mouse within card bounds (positioned absolutely, hidden on touch). Members: Minal Joshi, Pinky Prajapati, Mukund Joshi with role labels.
-  - `ReviewsMarquee.tsx` — two duplicated rows translating `-50%` via `motion.div` with infinite `repeat`, pause on hover by toggling `animationPlayState` (use `motion.div` `animate` + state). 12+ snippets, star icons.
-  - `JourneyCTA.tsx` — massive headline "Let's Plan Your Next Journey.", large circular magnetic button. Magnetism: track mouseX/Y relative to button center, animate `x`/`y` springs (max ±18px), reset on leave. Footer reveal: outer section uses `position: sticky` reveal pattern (preceding section has higher z-index sliding up to expose the CTA underneath).
+| # | Spot | Status today |
+|---|---|---|
+| 1 | ItineraryEdit — destination dropdown | Selecting a destination does NOT auto-populate `best_months / themes / suitable_for / hero_image`. The destinations query only fetches `id, name, about`, so even the "About" info box is the only thing wired. |
+| 2 | `submit-lead` edge function | When `landing_page_id` is provided, the function does NOT look up the landing page. It never sets `itinerary_id`, and `destination_id` only resolves from a typed-in name. So landing-page-form leads land with both FKs null. |
+| 3 | LeadManagement "Add Lead" dialog | Destination→Itinerary cascade works one way only. If user picks an itinerary first (no destination chosen), `destination_id` stays empty. |
+| 4 | Lead list (LeadManagement table) | Join + render already correct — verify only. |
+| 5 | LeadDetail "Current Enquiry" tab | Selects exist but: not clickable links, no empty-state CTA, and picking an itinerary does not auto-fill `destination_id`. |
 
-### Design tokens
-- Local palette in component: `bg-[#0B0B0E]` (obsidian) for hero/CTA, `bg-[#F4EFE6]` (warm stone) for scroll section, accents `#C9A86B` (sand gold) and brand `#FF6F4C` (Blaze). Typography: import `Fraunces` (display serif) + keep Inter (body) via Google Fonts `<link>` in `index.html` (or `@import` in `index.css`).
-- Negative space: generous `py-32 lg:py-48` between sections, max-width `max-w-7xl`.
+## Fixes
 
-### Animation rules
-- All `whileInView` use `viewport={{ once: true, margin: "-100px" }}`.
-- Respect `prefers-reduced-motion`: skip Lenis init + replace transforms with static styles when matched.
-- All transforms GPU-friendly (`x/y/scale/opacity/clipPath`), no layout thrash.
+### 1. `src/pages/ItineraryEdit.tsx`
+- Expand the destinations query to select `id, name, about, best_months, themes, suitable_for, hero_image`.
+- On `destination_id` change, look up the selected destination and merge into form state **only for empty fields**:
+  - `best_months` empty → `monthsToNames(dest.best_months)`
+  - `themes` empty → `dest.themes`
+  - `suitable_for` empty → `dest.suitable_for`
+  - `hero_image` empty → keep blank but show a small preview of `dest.hero_image` labelled "Using destination image" beside the hero uploader.
+- Existing About info box already binds to `selectedDest.about` — confirm it re-renders on change (it does, since `selectedDest` is derived from `form.destination_id`).
+- Skip auto-merge when loading an existing itinerary (only run on user-initiated change).
 
-### Responsive
-- Hero text: `text-5xl sm:text-7xl lg:text-9xl`.
-- Sticky timeline becomes stacked column < `lg`; tilt + custom cursor disabled on `pointer: coarse`.
-- Marquee speed reduces on mobile.
+### 2. `supabase/functions/submit-lead/index.ts`
+- If `body.landing_page_id` is present, fetch `landing_pages` row (`destination_id, itinerary_id`) with the service-role client and use those values as the primary source.
+- Fallback chain for `destination_id`: landing page → name lookup.
+- Add `itinerary_id` to the insert payload (currently absent entirely).
+- No body-schema changes needed for clients — landing page already passes `landing_page_id`.
 
-### Out of scope
-- No backend changes, no schema changes, no admin route changes. Existing `Team`, `Contact`, `Stories` pages untouched.
+### 3. `src/pages/LeadManagement.tsx` (Add Lead dialog)
+- When user picks an itinerary, if `form.destination_id` is empty, set it from `itineraries.find(...).destination_id`. Keep current destination→itinerary filter cascade.
+- Insert already includes both FKs — no change there.
 
-### Verification
-- `/about-us` loads, animations fire, no console errors, Lighthouse a11y > 90, works on a 375px viewport.
+### 4. Lead list — verify only
+- Query already does `*, destinations(name), itineraries(headline), users!leads_assigned_to_fkey(name)` and the cells already render `destinations.name` and truncated `itineraries.headline` with em-dash fallback. No code change unless the manual test fails.
+
+### 5. `src/pages/LeadDetail.tsx` (Current Enquiry tab)
+- Wrap the displayed destination name and itinerary headline as `<Link>`s to `/destinations/:id` and `/itineraries/:id/edit` respectively.
+- When the itinerary `<Select>` changes, also patch `destination_id` from `itineraries.find(i => i.id === v).destination_id` if currently empty.
+- If both `destination_id` and `itinerary_id` are null, render an empty-state row: "No destination or itinerary linked" + an inline searchable itinerary picker that, on select, updates both FKs in one save.
+
+## Out of scope
+- No DB migrations (columns already exist).
+- No changes to landing page editor save (it already persists both FKs — verified line 154 of `LandingPageEdit.tsx`).
+- No changes to public-site itinerary enquiry path (it routes through the same `submit-lead` function with `landing_page_id`; once #2 is fixed it inherits the FKs).
+
+## Manual verification checklist
+After implementation, walk through the 6 end-to-end steps from the brief and report pass/fail per step.
