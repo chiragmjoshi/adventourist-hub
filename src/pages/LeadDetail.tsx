@@ -414,6 +414,15 @@ const LeadDetail = () => {
           <span className="font-mono font-semibold" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRemindOpen(true)}
+            className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
+          >
+            <Bell className="h-3.5 w-3.5" />
+            Remind
+          </Button>
           <input
             type="date"
             title="Follow-up date"
@@ -575,6 +584,7 @@ const LeadDetail = () => {
         </div>
 
         <div className="flex-1 min-w-0">
+          <LeadReminderStrip leadId={id!} />
           <Tabs defaultValue="enquiry">
             <TabsList className="border-b border-border/50 bg-transparent p-0 h-auto gap-0 rounded-none">
               {["enquiry", "trips", "comments"].map(tab => (
