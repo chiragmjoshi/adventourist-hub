@@ -1,0 +1,1 @@
+UPDATE trip_cashflow SET trip_stage = 'trip_sold' WHERE trip_stage IS NULL AND status <> 'cancelled';
