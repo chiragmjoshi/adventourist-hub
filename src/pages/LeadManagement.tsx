@@ -416,21 +416,20 @@ const LeadManagement = () => {
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Disposition</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("disposition").map((d: any) => {
-            const dbKey = displayToKey(d.value);
-            const active = activeDispositions.has(dbKey);
-            const dotColor = DISP_DOT[d.value] || "bg-gray-400";
+            const val = d.value;
+            const active = activeDispositions.has(val);
+            const badgeStyle = DISP_BADGE[val] || "bg-gray-50 text-gray-700 border-gray-200";
             return (
               <button
                 key={d.id}
-                onClick={() => toggleChip(activeDispositions, setActiveDispositions, dbKey)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
-                  active ? "bg-foreground/5 border-foreground/20 shadow-sm" : "border-border/40 hover:border-border hover:bg-muted/30"
+                onClick={() => toggleChip(activeDispositions, setActiveDispositions, val)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${badgeStyle} ${
+                  active ? "ring-2 ring-foreground/20 shadow-sm" : "hover:brightness-95"
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-                <span className="text-foreground/80">{d.value}</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">·</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">{dispositionCounts[dbKey] || 0}</span>
+                <span>{val}</span>
+                <span className="opacity-50">·</span>
+                <span className="font-semibold">{dispositionCounts[val] || 0}</span>
               </button>
             );
           })}
@@ -442,24 +441,21 @@ const LeadManagement = () => {
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Sales Status</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("sales_status").map((s: any) => {
-            const dbKey = displayToKey(s.value);
-            const active = activeStatuses.has(dbKey);
-            const activeStyle = STATUS_ACTIVE[s.value] || "bg-foreground text-background border-foreground";
-            const dotColor = STATUS_DOT[s.value] || "bg-gray-400";
+            const val = s.value;
+            const active = activeStatuses.has(val);
+            const activeStyle = STATUS_ACTIVE[val] || "bg-foreground text-background border-foreground";
+            const badgeStyle = STATUS_BADGE[val] || "bg-gray-50 text-gray-700 border-gray-200";
             return (
               <button
                 key={s.id}
-                onClick={() => toggleChip(activeStatuses, setActiveStatuses, dbKey)}
+                onClick={() => toggleChip(activeStatuses, setActiveStatuses, val)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-all duration-150 ${
-                  active
-                    ? `${activeStyle} font-bold shadow-sm`
-                    : "font-medium border-border/40 hover:border-border hover:bg-muted/30"
+                  active ? `${activeStyle} font-bold shadow-sm` : `${badgeStyle} font-medium hover:brightness-95`
                 }`}
               >
-                {!active && <span className={`w-2 h-2 rounded-full ${dotColor}`} />}
-                <span>{s.value}</span>
-                <span className={`text-[10px] font-semibold ${active ? "opacity-90" : "text-muted-foreground"}`}>·</span>
-                <span className={`text-[10px] font-semibold ${active ? "opacity-90" : "text-muted-foreground"}`}>{statusCounts[dbKey] || 0}</span>
+                <span>{val}</span>
+                <span className="opacity-60">·</span>
+                <span className="font-semibold">{statusCounts[val] || 0}</span>
               </button>
             );
           })}
