@@ -20,7 +20,11 @@ const RevenueReport = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const { data: cf } = await supabase.from("trip_cashflow").select("*, destination:destinations(name)").gte("created_at", from.toISOString()).lte("created_at", to.toISOString());
+      const { data: cf } = await supabase
+        .from("trip_cashflow")
+        .select("*, destination:destinations(name)")
+        .gte("travel_start_date", from.toISOString().split("T")[0])
+        .lte("travel_start_date", to.toISOString().split("T")[0]);
       setCashflows(cf || []);
       const cfIds = (cf || []).map((c: any) => c.id);
       if (cfIds.length > 0) {
@@ -43,31 +47,47 @@ const RevenueReport = () => {
     const pax = cf.pax_count || 1;
     const totalVendor = vendorCostPerPax * pax;
     const marginPct = Number(cf.margin_percent || 0);
-    const sellingPreGst = totalVendor / (1 - marginPct / 100);
-    return { totalVendor, sellingPreGst, margin: sellingPreGst - totalVendor };
+    const marginAmount = totalVendor * (marginPct / 100);
+    const sellingExGst = totalVendor + marginAmount;
+    const gstRate = 5;
+    const gstAmount = cf.gst_billing ? sellingExGst * (gstRate / 100) : 0;
+    const finalPrice = sellingExGst + gstAmount;
+    return {
+      totalVendor,
+      marginAmount,
+      margin: marginAmount,
+      sellingPreGst: sellingExGst,
+      sellingExGst,
+      gstAmount,
+      finalPrice,
+      grossMarginPct: sellingExGst > 0 ? (marginAmount / sellingExGst) * 100 : 0,
+    };
   };
 
-  const totalRevenue = cashflows.reduce((s, cf) => s + calcTrip(cf).sellingPreGst, 0);
-  const totalMargin = cashflows.reduce((s, cf) => s + calcTrip(cf).margin, 0);
-  const avgMarginPct = cashflows.length > 0 ? (totalMargin / totalRevenue) * 100 : 0;
+  const totalRevenue = cashflows.reduce((s, cf) => s + calcTrip(cf).sellingExGst, 0);
+  const totalMargin = cashflows.reduce((s, cf) => s + calcTrip(cf).marginAmount, 0);
+  const totalGst = cashflows.reduce((s, cf) => s + calcTrip(cf).gstAmount, 0);
+  const avgMarginPct = totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0;
 
   // Revenue by destination
   const byDest = cashflows.reduce((acc: Record<string, { revenue: number; trips: number; name: string }>, cf) => {
     const destName = cf.destination?.name || "Unknown";
     if (!acc[destName]) acc[destName] = { revenue: 0, trips: 0, name: destName };
-    acc[destName].revenue += calcTrip(cf).sellingPreGst;
+    acc[destName].revenue += calcTrip(cf).sellingExGst;
     acc[destName].trips += 1;
     return acc;
   }, {});
   const destData = Object.values(byDest).sort((a: any, b: any) => b.revenue - a.revenue).slice(0, 10);
 
-  // Monthly trend (last 12 months)
+  // Monthly trend (last 12 months) — grouped by travel_start_date
   const trendData = Array.from({ length: 12 }, (_, i) => {
     const month = subMonths(new Date(), 11 - i);
     const mStr = format(month, "yyyy-MM");
-    const mCf = cashflows.filter((cf) => format(new Date(cf.created_at), "yyyy-MM") === mStr);
-    const rev = mCf.reduce((s, cf) => s + calcTrip(cf).sellingPreGst, 0);
-    const mar = mCf.reduce((s, cf) => s + calcTrip(cf).margin, 0);
+    const mCf = cashflows.filter(
+      (cf) => cf.travel_start_date && format(new Date(cf.travel_start_date), "yyyy-MM") === mStr
+    );
+    const rev = mCf.reduce((s, cf) => s + calcTrip(cf).sellingExGst, 0);
+    const mar = mCf.reduce((s, cf) => s + calcTrip(cf).marginAmount, 0);
     return { month: format(month, "MMM yy"), revenue: Math.round(rev), margin: Math.round(mar) };
   });
 
@@ -82,11 +102,12 @@ const RevenueReport = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">{[...Array(4)].map((_, i) => <Card key={i}><CardContent className="p-5"><div className="h-16 bg-muted animate-pulse rounded" /></CardContent></Card>)}</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {[
               { label: "Total Revenue", value: formatINR(Math.round(totalRevenue)) },
               { label: "Total Margin", value: formatINR(Math.round(totalMargin)) },
               { label: "Avg Margin %", value: `${avgMarginPct.toFixed(1)}%` },
+              { label: "Total GST Collected", value: formatINR(Math.round(totalGst)) },
               { label: "Trips", value: cashflows.length.toString() },
             ].map((kpi) => (
               <Card key={kpi.label} className="border shadow-sm">
