@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import { WHATSAPP_NUMBER } from "@/site/lib/constants";
 
 type Category =
@@ -211,6 +212,12 @@ export default function FAQs() {
       keywords="adventourist faq, travel agency faq, booking process, cancellation policy, payment terms"
       jsonLd={jsonLd}
     >
+      <SEO
+        title="Frequently Asked Questions — Adventourist Travel"
+        description="Answers to common questions about Adventourist's travel planning process, packages, pricing, cancellations, and how to book your custom trip."
+        canonical="/faqs"
+        schema={jsonLd}
+      />
       {/* Hero — clean cream, no topo lines */}
       <section className="bg-drift">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 lg:pt-16 lg:pb-20">
