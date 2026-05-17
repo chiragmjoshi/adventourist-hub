@@ -20,19 +20,8 @@ import { format, formatDistanceToNow, subDays, subMonths, startOfMonth, endOfMon
 import { useAuth } from "@/contexts/AuthContext";
 import DateRangePicker from "@/components/DateRangePicker";
 
-/* ────── Display ↔ DB-key mapping ──────
- * DB stores snake_case keys (e.g. "not_contacted") but master_values
- * use human display strings ("Not Contacted"). Most map via slugify,
- * but a few legacy values diverge — handled by OVERRIDES.
- */
-const DISPLAY_KEY_OVERRIDES: Record<string, string> = {
-  "Not Reachable Call Back": "not_reachable",
-  "Wrong Number / Invalid Lead": "wrong_number",
-};
-const slugify = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-const displayToKey = (display: string): string =>
-  DISPLAY_KEY_OVERRIDES[display] ?? slugify(display);
+/* DB now stores the display value directly (e.g. "Not Contacted").
+ * No translation between display labels and DB keys is needed anymore. */
 
 /* ────── Platform → Channel mapping ────── */
 const CHANNEL_BY_PLATFORM: Record<string, string[]> = {
@@ -48,7 +37,22 @@ const filterChannelsByPlatform = <T extends { value: string }>(channels: T[], pl
   return channels.filter(c => allowed.includes(c.value));
 };
 
-/* ────── Disposition dot colors ────── */
+/* ────── Disposition badge colors (light opaque chips) ────── */
+const DISP_BADGE: Record<string, string> = {
+  "Not Contacted": "bg-gray-100 text-gray-700 border-gray-200",
+  "Wrong Number / Invalid Lead": "bg-red-50 text-red-700 border-red-200",
+  "Busy Call Back": "bg-amber-50 text-amber-800 border-amber-200",
+  "Not Reachable Call Back": "bg-orange-50 text-orange-700 border-orange-200",
+  "Query Closed": "bg-blue-50 text-blue-700 border-blue-200",
+  "Follow Up Needed": "bg-purple-50 text-purple-700 border-purple-200",
+  "Destination Changed": "bg-teal-50 text-teal-700 border-teal-200",
+  "Plan Dropped": "bg-pink-50 text-pink-700 border-pink-200",
+  "Booked Outside": "bg-gray-100 text-gray-800 border-gray-300",
+  "Ongoing Discussions": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Not Interested": "bg-slate-100 text-slate-700 border-slate-200",
+  "Ghosted": "bg-gray-50 text-gray-600 border-gray-200",
+  "Refund Issued": "bg-orange-100 text-orange-800 border-orange-300",
+};
 const DISP_DOT: Record<string, string> = {
   "Not Contacted": "bg-gray-400",
   "Wrong Number / Invalid Lead": "bg-red-500",
@@ -112,8 +116,8 @@ const LeadManagement = () => {
   const { profile } = useAuth();
 
   /* ── Filters ── */
-  // Default = "Last 3 Months to date": start of the month 2 months ago → today.
-  const defaultFrom = useMemo(() => startOfMonth(subMonths(new Date(), 2)), []);
+  // Default = "Last 6 Months to date": start of the month 5 months ago → today.
+  const defaultFrom = useMemo(() => startOfMonth(subMonths(new Date(), 5)), []);
   const defaultTo = useMemo(() => new Date(), []);
   const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
   const [dateTo, setDateTo] = useState<Date>(defaultTo);
@@ -185,7 +189,7 @@ const LeadManagement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select("*, destinations(name), itineraries(headline), users!leads_assigned_to_fkey(name)")
+        .select("*, destinations(name), itineraries(headline, destinations(name)), users!leads_assigned_to_fkey(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -306,7 +310,7 @@ const LeadManagement = () => {
   }, [dateFrom, dateTo, filterChannel, filterPlatform, filterCampaign, filterAdGroup, filterDestination, activeDispositions, activeStatuses, search]);
 
   const resetFilters = () => {
-    setDateFrom(startOfMonth(subMonths(new Date(), 2)));
+    setDateFrom(startOfMonth(subMonths(new Date(), 5)));
     setDateTo(new Date());
     setFilterChannel("all"); setFilterPlatform("all"); setFilterCampaign("all");
     setFilterAdGroup("all"); setFilterDestination("all");
@@ -337,7 +341,7 @@ const LeadManagement = () => {
   };
 
   const anyFiltersActive =
-    format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(subMonths(new Date(), 2)), "yyyy-MM-dd") ||
+    format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd") ||
     format(dateTo, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") ||
     filterChannel !== "all" || filterPlatform !== "all" || filterCampaign !== "all" ||
     filterAdGroup !== "all" || filterDestination !== "all" ||
@@ -412,21 +416,20 @@ const LeadManagement = () => {
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Disposition</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("disposition").map((d: any) => {
-            const dbKey = displayToKey(d.value);
-            const active = activeDispositions.has(dbKey);
-            const dotColor = DISP_DOT[d.value] || "bg-gray-400";
+            const val = d.value;
+            const active = activeDispositions.has(val);
+            const badgeStyle = DISP_BADGE[val] || "bg-gray-50 text-gray-700 border-gray-200";
             return (
               <button
                 key={d.id}
-                onClick={() => toggleChip(activeDispositions, setActiveDispositions, dbKey)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
-                  active ? "bg-foreground/5 border-foreground/20 shadow-sm" : "border-border/40 hover:border-border hover:bg-muted/30"
+                onClick={() => toggleChip(activeDispositions, setActiveDispositions, val)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${badgeStyle} ${
+                  active ? "ring-2 ring-foreground/20 shadow-sm" : "hover:brightness-95"
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-                <span className="text-foreground/80">{d.value}</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">·</span>
-                <span className="text-muted-foreground text-[10px] font-semibold">{dispositionCounts[dbKey] || 0}</span>
+                <span>{val}</span>
+                <span className="opacity-50">·</span>
+                <span className="font-semibold">{dispositionCounts[val] || 0}</span>
               </button>
             );
           })}
@@ -438,24 +441,21 @@ const LeadManagement = () => {
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Sales Status</p>
         <div className="flex flex-wrap gap-1.5">
           {mvByType("sales_status").map((s: any) => {
-            const dbKey = displayToKey(s.value);
-            const active = activeStatuses.has(dbKey);
-            const activeStyle = STATUS_ACTIVE[s.value] || "bg-foreground text-background border-foreground";
-            const dotColor = STATUS_DOT[s.value] || "bg-gray-400";
+            const val = s.value;
+            const active = activeStatuses.has(val);
+            const activeStyle = STATUS_ACTIVE[val] || "bg-foreground text-background border-foreground";
+            const badgeStyle = STATUS_BADGE[val] || "bg-gray-50 text-gray-700 border-gray-200";
             return (
               <button
                 key={s.id}
-                onClick={() => toggleChip(activeStatuses, setActiveStatuses, dbKey)}
+                onClick={() => toggleChip(activeStatuses, setActiveStatuses, val)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-all duration-150 ${
-                  active
-                    ? `${activeStyle} font-bold shadow-sm`
-                    : "font-medium border-border/40 hover:border-border hover:bg-muted/30"
+                  active ? `${activeStyle} font-bold shadow-sm` : `${badgeStyle} font-medium hover:brightness-95`
                 }`}
               >
-                {!active && <span className={`w-2 h-2 rounded-full ${dotColor}`} />}
-                <span>{s.value}</span>
-                <span className={`text-[10px] font-semibold ${active ? "opacity-90" : "text-muted-foreground"}`}>·</span>
-                <span className={`text-[10px] font-semibold ${active ? "opacity-90" : "text-muted-foreground"}`}>{statusCounts[dbKey] || 0}</span>
+                <span>{val}</span>
+                <span className="opacity-60">·</span>
+                <span className="font-semibold">{statusCounts[val] || 0}</span>
               </button>
             );
           })}
@@ -564,9 +564,9 @@ const LeadManagement = () => {
 
                     {/* Destination */}
                     <TableCell className="py-3">
-                      {lead.destinations?.name ? (
+                      {(lead.destinations?.name || (lead as any).itineraries?.destinations?.name) ? (
                         <Badge variant="secondary" className="text-[11px] font-medium bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0 rounded-md">
-                          {lead.destinations.name}
+                          {lead.destinations?.name || (lead as any).itineraries?.destinations?.name}
                         </Badge>
                       ) : <span className="text-[13px] text-muted-foreground">—</span>}
                     </TableCell>
@@ -603,10 +603,11 @@ const LeadManagement = () => {
 
                     {/* Disposition */}
                     <TableCell className="py-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[lead.disposition] || DISP_DOT[formatLabel(lead.disposition)] || "bg-gray-300"}`} />
-                        <span className="text-[12px] text-foreground/70">{lead.disposition ? formatLabel(lead.disposition) : "—"}</span>
-                      </div>
+                      {lead.disposition ? (
+                        <Badge variant="outline" className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${DISP_BADGE[lead.disposition] || DISP_BADGE[formatLabel(lead.disposition)] || "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                          {formatLabel(lead.disposition)}
+                        </Badge>
+                      ) : <span className="text-[12px] text-muted-foreground">—</span>}
                     </TableCell>
 
                     {/* Sales Status */}
