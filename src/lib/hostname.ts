@@ -1,7 +1,7 @@
 /**
  * Hostname-based gating for the dual-domain setup:
- *   - adventourist.in (+ www) → public site only
- *   - admin.adventourist.in   → admin/CMS only
+ *   - adventourist.in (+ www) → public site + /admin CMS paths
+ *   - admin.adventourist.in   → redirects to the supported /admin CMS path on www
  *
  * Lovable preview hosts and localhost are unrestricted so the editor and
  * local dev keep working as a single combined app.
@@ -37,13 +37,9 @@ export function getCrossHostRedirect(
 
   const adminPath = isAdminPath(pathname);
 
-  if (kind === "admin" && !adminPath) {
-    // On the admin host, the root and all public-site paths should land on the CMS login.
-    return `https://${ADMIN_HOST}/admin/login${search}${hash}`;
-  }
-
-  if (kind === "public" && adminPath) {
-    return `https://${ADMIN_HOST}${pathname}${search}${hash}`;
+  if (kind === "admin") {
+    // Keep the CMS on the primary www domain under /admin.
+    return `https://www.${PUBLIC_HOST}${adminPath ? pathname : "/admin/login"}${search}${hash}`;
   }
 
   return null;

@@ -25,7 +25,7 @@ import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
 import { legacyRedirectRoutes } from "./routes/LegacyRedirects";
 import { processAutomationQueue } from "./services/automationEngine";
-import { getCrossHostRedirect, getHostKind } from "@/lib/hostname";
+import { getCrossHostRedirect, getHostKind, isAdminPath } from "@/lib/hostname";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useDBHealthCheck } from "@/hooks/useDBHealthCheck";
 
@@ -81,7 +81,7 @@ const queryClient = new QueryClient();
 // On the public marketing host we don't need auth — skip AuthProvider entirely
 // so the public site doesn't pay for supabase.auth.getSession + user-profile fetches.
 const IS_PUBLIC_HOST =
-  typeof window !== "undefined" && getHostKind() === "public";
+  typeof window !== "undefined" && getHostKind() === "public" && !isAdminPath(window.location.pathname);
 
 function MaybeAuth({ children }: { children: ReactNode }) {
   if (IS_PUBLIC_HOST) return <>{children}</>;
@@ -111,7 +111,7 @@ const App = () => {
     }
 
     // Only run automation worker on admin/preview hosts — never on the public site.
-    if (kind === "public") return;
+    if (kind === "public" && !isAdminPath(window.location.pathname)) return;
     processAutomationQueue();
     const interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
     return () => clearInterval(interval);
