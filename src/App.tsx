@@ -100,6 +100,8 @@ const App = () => {
       meta.content = "noindex, nofollow";
     }
 
+    // Only run automation worker on admin/preview hosts — never on the public site.
+    if (kind === "public") return;
     processAutomationQueue();
     const interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
     return () => clearInterval(interval);
