@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Lenis from "lenis";
 import SiteLayout from "@/site/SiteLayout";
+import SEO from "@/components/SEO";
 import HeroCinematic from "@/site/components/about-v2/HeroCinematic";
 import AdventouristWay from "@/site/components/about-v2/AdventouristWay";
 import StoryTimeline from "@/site/components/about-v2/StoryTimeline";
@@ -34,6 +35,27 @@ export default function About() {
       title="About Adventourist — We Design Journeys"
       description="Boutique Mumbai-based travel design studio. 250+ five-star reviews, handcrafted itineraries, honest pricing, and zero stress."
     >
+      <SEO
+        title="About Us — Adventourist | Mumbai's Premium Travel Company"
+        description="We are Adventourist — a Mumbai-based team of passionate explorers crafting expert-led, custom travel experiences. Meet our founders and discover our travel philosophy."
+        canonical="/about-us"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          url: "https://www.adventourist.in/about-us",
+          name: "About Adventourist",
+          description: "Learn about Adventourist — Mumbai's premium experiential travel company founded by Chirag and Minal Joshi. Our story, values, and travel philosophy.",
+          mainEntity: {
+            "@type": "TravelAgency",
+            "@id": "https://www.adventourist.in/#organization",
+            name: "Adventourist",
+            founder: [
+              { "@type": "Person", name: "Chirag Joshi" },
+              { "@type": "Person", name: "Minal Joshi" },
+            ],
+          },
+        }}
+      />
       <div className="bg-[#1A1D2E]">
         <HeroCinematic />
         <AdventouristWay />
