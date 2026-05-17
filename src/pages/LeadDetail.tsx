@@ -115,22 +115,41 @@ const LeadDetail = () => {
       // "TEMP" lead would share trips with every other "TEMP" lead.
       const tc: string | null =
         l?.traveller_code && l.traveller_code !== "TEMP" ? l.traveller_code : null;
-      // Step 1: find all lead IDs sharing this traveller_code
-      let leadIds: string[] = [id!];
-      if (tc) {
-        const { data: sharedLeads } = await supabase
-          .from("leads")
-          .select("id, created_at")
-          .eq("traveller_code", tc);
-        if (sharedLeads && sharedLeads.length > 0) {
-          leadIds = sharedLeads.map((x: any) => x.id);
-        }
+      // Step 1: collect the full identity set for this customer.
+      // Same person can have:
+      //   - multiple leads with same traveller_code
+      //   - multiple traveller_codes (duplicate customer records assigned
+      //     different codes over time)
+      // We pivot via email + mobile to gather every related lead, then derive
+      // the full set of leadIds and traveller_codes that should match.
+      const email: string | null = l?.email || null;
+      const mobile: string | null = l?.mobile || null;
+      const leadIdSet = new Set<string>([id!]);
+      const tcSet = new Set<string>();
+      if (tc) tcSet.add(tc);
+
+      const identityOr: string[] = [];
+      if (tc) identityOr.push(`traveller_code.eq.${tc}`);
+      if (email) identityOr.push(`email.eq.${email}`);
+      if (mobile) identityOr.push(`mobile.eq.${mobile}`);
+      if (identityOr.length > 0) {
+        let q = supabase.from("leads").select("id, traveller_code");
+        q = q.or(identityOr.join(","));
+        const { data: relatedLeads } = await q;
+        (relatedLeads || []).forEach((r: any) => {
+          if (r.id) leadIdSet.add(r.id);
+          if (r.traveller_code && r.traveller_code !== "TEMP") tcSet.add(r.traveller_code);
+        });
       }
-      // Step 2: cashflow — match by lead_id OR by traveller_code (some legacy
-      // cashflow rows have null lead_id but a valid traveller_code).
+      const leadIds = Array.from(leadIdSet);
+      const tcs = Array.from(tcSet);
+
+      // Step 2: cashflow — match by lead_id OR by any of the related
+      // traveller_codes (covers legacy rows with null lead_id and rows for
+      // the same customer under a duplicate traveller_code).
       const orParts: string[] = [];
       if (leadIds.length > 0) orParts.push(`lead_id.in.(${leadIds.join(",")})`);
-      if (tc) orParts.push(`traveller_code.eq.${tc}`);
+      if (tcs.length > 0) orParts.push(`traveller_code.in.(${tcs.join(",")})`);
       let q = supabase
         .from("trip_cashflow")
         .select("*, itineraries(headline, destinations(name))")
