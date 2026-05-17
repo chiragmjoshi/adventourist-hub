@@ -564,9 +564,9 @@ const LeadManagement = () => {
 
                     {/* Destination */}
                     <TableCell className="py-3">
-                      {lead.destinations?.name ? (
+                      {(lead.destinations?.name || (lead as any).itineraries?.destinations?.name) ? (
                         <Badge variant="secondary" className="text-[11px] font-medium bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0 rounded-md">
-                          {lead.destinations.name}
+                          {lead.destinations?.name || (lead as any).itineraries?.destinations?.name}
                         </Badge>
                       ) : <span className="text-[13px] text-muted-foreground">—</span>}
                     </TableCell>
@@ -603,10 +603,11 @@ const LeadManagement = () => {
 
                     {/* Disposition */}
                     <TableCell className="py-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[lead.disposition] || DISP_DOT[formatLabel(lead.disposition)] || "bg-gray-300"}`} />
-                        <span className="text-[12px] text-foreground/70">{lead.disposition ? formatLabel(lead.disposition) : "—"}</span>
-                      </div>
+                      {lead.disposition ? (
+                        <Badge variant="outline" className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${DISP_BADGE[lead.disposition] || DISP_BADGE[formatLabel(lead.disposition)] || "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                          {formatLabel(lead.disposition)}
+                        </Badge>
+                      ) : <span className="text-[12px] text-muted-foreground">—</span>}
                     </TableCell>
 
                     {/* Sales Status */}
