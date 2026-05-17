@@ -60,7 +60,7 @@ export default function JourneyCTA() {
         >
           <motion.a
             ref={btnRef}
-            href="https://wa.me/919004204446"
+            href="https://wa.me/919930400694"
             target="_blank"
             rel="noopener noreferrer"
             onMouseMove={handleMove}
