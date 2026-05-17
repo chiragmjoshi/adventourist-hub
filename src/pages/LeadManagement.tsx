@@ -290,6 +290,16 @@ const LeadManagement = () => {
 
   const mvByType = useCallback((type: string) => masterValues.filter((v: any) => v.type === type), [masterValues]);
 
+  // Cascade filter options (channel → platform → campaign type)
+  const {
+    channels: filterChannelOptions,
+    platforms: filterPlatformOptions,
+    campaignTypes: filterCampaignOptions,
+  } = useAttributionOptions(
+    filterChannel === "all" ? undefined : filterChannel,
+    filterPlatform === "all" ? undefined : filterPlatform,
+  );
+
   /* ── Create lead ── */
   const createLead = useMutation({
     mutationFn: async (f: typeof form) => {
