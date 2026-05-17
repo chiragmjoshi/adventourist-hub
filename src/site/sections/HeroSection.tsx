@@ -3,13 +3,16 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
 
-const HERO_BG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80";
+// Use Unsplash auto-format (serves WebP/AVIF) and right-sized widths.
+const HERO_BG = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1600&q=70";
+const card = (id: string) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=70`;
 
 const destinations = [
-  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",   region: "India", image: "https://images.unsplash.com/photo-1571536802807-30451e3955d8?w=1200&q=80" },
-  { name: "Rajasthan",  tagline: "Land of Kings",           region: "India", image: "https://images.unsplash.com/photo-1599661046289-e31897846e41?w=1200&q=80" },
-  { name: "Kerala",     tagline: "God's Own Country",       region: "India", image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80" },
-  { name: "Himachal",   tagline: "Where Mountains Whisper", region: "India", image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1200&q=80" },
+  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",   region: "India", image: card("photo-1571536802807-30451e3955d8") },
+  { name: "Rajasthan",  tagline: "Land of Kings",           region: "India", image: card("photo-1599661046289-e31897846e41") },
+  { name: "Kerala",     tagline: "God's Own Country",       region: "India", image: card("photo-1602216056096-3b40cc0c9944") },
+  { name: "Himachal",   tagline: "Where Mountains Whisper", region: "India", image: card("photo-1626621341517-bbf3d9990a23") },
 ];
 
 export default function HeroSection() {
@@ -101,7 +104,11 @@ export default function HeroSection() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.7 }}
               className="absolute inset-0 w-full h-full object-cover"
-              loading="eager"
+              loading={current === 0 ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={current === 0 ? "high" : "low"}
+              width={800}
+              height={400}
             />
           </AnimatePresence>
           <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/40 to-abyss/10" />
