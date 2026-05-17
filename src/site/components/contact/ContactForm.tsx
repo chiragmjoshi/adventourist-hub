@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input, Textarea, Select } from "@/site/ui/Input";
 import { captureUTM, waLink } from "@/site/lib/utils";
 import { useLeadCapture } from "@/site/hooks/useLeadCapture";
-import { WHATSAPP_NUMBER } from "@/site/lib/constants";
+import { WHATSAPP_NUMBER, WHATSAPP_URL } from "@/site/lib/constants";
 
 const DESTINATIONS = [
   "Bali", "Leh Ladakh", "Thailand", "Sri Lanka", "Singapore", "Vietnam",
@@ -68,8 +68,11 @@ export default function ContactForm() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    // Capture lead in CMS first
-    await submitLead({
+    // 1) Open WhatsApp immediately — fire-first so no lead is ever lost.
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`, "_blank");
+
+    // 2) CRM capture (fire-and-forget — never block WA hand-off).
+    submitLead({
       name: form.name,
       phone: form.phone,
       email: form.email,
@@ -79,10 +82,8 @@ export default function ContactForm() {
       travel_month: form.dates || undefined,
       message: form.message || undefined,
       page_source: "contact_page",
-    });
+    }).catch(() => { /* never block UI on CRM errors */ });
 
-    // Then open WhatsApp
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`, "_blank");
     setSubmitted(true);
   };
 
@@ -172,6 +173,21 @@ export default function ContactForm() {
       >
         Send via WhatsApp →
       </button>
+
+      {/* Parallel path — direct WhatsApp for users who don't want to fill the form */}
+      <div className="flex items-center py-0.5">
+        <div className="flex-grow h-px bg-ink/10" />
+        <span className="px-3 text-[11px] uppercase tracking-wider text-ink/40 font-body">or</span>
+        <div className="flex-grow h-px bg-ink/10" />
+      </div>
+      <a
+        href={WHATSAPP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full h-14 bg-[#25D366] hover:bg-[#1ebe58] text-white font-display font-semibold rounded-full text-base flex items-center justify-center gap-2 transition-colors"
+      >
+        💬 Chat directly on WhatsApp
+      </a>
 
       <p className="text-[11px] text-ink/40 text-center font-body">
         By submitting you agree to be contacted by our team. We never share your data.
