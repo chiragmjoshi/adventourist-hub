@@ -524,13 +524,30 @@ const LeadDetail = () => {
                         <SelectTrigger className="h-9 text-xs mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
                         <SelectContent>{destinations.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                       </Select>
+                      {(l as any).destinations?.name && getField("destination_id") && (
+                        <Link to={`/destinations`} className="text-[11px] text-[hsl(var(--blaze))] hover:underline mt-1 inline-block">
+                          View {(l as any).destinations.name} →
+                        </Link>
+                      )}
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Product (Itinerary)</Label>
-                      <Select value={getField("itinerary_id") || ""} onValueChange={v => setFormState(prev => ({...prev, itinerary_id: v}))}>
+                      <Select value={getField("itinerary_id") || ""} onValueChange={v => {
+                        const it: any = allItineraries.find((x: any) => x.id === v);
+                        setFormState(prev => ({
+                          ...prev,
+                          itinerary_id: v,
+                          destination_id: prev.destination_id || (prev as any).destination_id === "" ? (it?.destination_id || prev.destination_id) : prev.destination_id,
+                        }));
+                      }}>
                         <SelectTrigger className="h-9 text-xs mt-1 rounded-md"><SelectValue placeholder="Select" /></SelectTrigger>
                         <SelectContent>{allItineraries.map((it: any) => <SelectItem key={it.id} value={it.id}>{it.headline}</SelectItem>)}</SelectContent>
                       </Select>
+                      {getField("itinerary_id") && (l as any).itineraries?.headline && (
+                        <Link to={`/itineraries/${getField("itinerary_id")}/edit`} className="text-[11px] text-[hsl(var(--blaze))] hover:underline mt-1 inline-block">
+                          Open itinerary →
+                        </Link>
+                      )}
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Travel Date</Label>
