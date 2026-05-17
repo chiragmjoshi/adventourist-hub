@@ -497,13 +497,11 @@ const LeadManagement = () => {
       {/* ── Table toolbar ── */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[72px] h-8 text-xs rounded-md"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {[10, 25, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <span className="text-xs text-muted-foreground">entries</span>
+          <span className="text-xs text-muted-foreground">
+            {totalCount > 0
+              ? `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, totalCount)} of ${totalCount.toLocaleString()} leads`
+              : "No leads match"}
+          </span>
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -674,7 +672,7 @@ const LeadManagement = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <span className="text-xs text-muted-foreground">
-            {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
+            Page {currentPage} of {totalPages} · {totalCount.toLocaleString()} matching
           </span>
           <div className="flex gap-1">
             <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="h-7 text-xs rounded-md">Prev</Button>
