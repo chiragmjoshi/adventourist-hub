@@ -23,6 +23,7 @@ import { PrivacyPolicy, TermsConditions, RefundPolicy, PaymentPolicy } from "./s
 import NotFound from "./pages/NotFound";
 import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
+import { legacyRedirectRoutes } from "./routes/LegacyRedirects";
 import { processAutomationQueue } from "./services/automationEngine";
 import { getCrossHostRedirect, getHostKind } from "@/lib/hostname";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -115,6 +116,8 @@ const App = () => {
           <HealthCheckRunner />
           <Suspense fallback={<AdminLoader />}>
           <Routes>
+            {/* Legacy URL redirects (WordPress → new site) */}
+            {legacyRedirectRoutes()}
             {/* Public site */}
             <Route path="/" element={<SiteHome />} />
             <Route path="/trips" element={<SiteTripsList />} />
