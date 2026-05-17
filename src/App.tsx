@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, lazy, Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -83,7 +83,7 @@ const queryClient = new QueryClient();
 const IS_PUBLIC_HOST =
   typeof window !== "undefined" && getHostKind() === "public";
 
-function MaybeAuth({ children }: { children: React.ReactNode }) {
+function MaybeAuth({ children }: { children: ReactNode }) {
   if (IS_PUBLIC_HOST) return <>{children}</>;
   return <AuthProvider>{children}</AuthProvider>;
 }
