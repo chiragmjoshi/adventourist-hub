@@ -12,10 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Plus, Search, Pencil, Trash2, Eye, BookOpen, ImageOff } from "lucide-react";
 import { toast } from "sonner";
 
-const CATEGORIES = [
-  "Destination Guide", "Travel Tips", "Client Story",
-  "Food & Culture", "Adventure", "Honeymoon",
+const CATEGORIES: { value: string; label: string }[] = [
+  { value: "travel-stories",     label: "Travel Stories" },
+  { value: "things-to-do",       label: "Things To Do" },
+  { value: "destination-guides", label: "Destination Guides" },
 ];
+const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.value, c.label]),
+);
 
 const StoryList = () => {
   const navigate = useNavigate();
@@ -29,20 +33,24 @@ const StoryList = () => {
     queryKey: ["stories"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("stories" as any)
+        .from("travel_stories" as any)
         .select("*")
         .order("published_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as any[];
+      return ((data || []) as any[]).map((s) => ({
+        ...s,
+        is_published: s.status === "published",
+        cover_image_url: s.thumbnail_url,
+      }));
     },
   });
 
   const togglePublishMutation = useMutation({
     mutationFn: async ({ id, publish, hadPublishedAt }: { id: string; publish: boolean; hadPublishedAt: boolean }) => {
-      const patch: Record<string, any> = { is_published: publish };
+      const patch: Record<string, any> = { status: publish ? "published" : "draft" };
       if (publish && !hadPublishedAt) patch.published_at = new Date().toISOString();
-      const { error } = await supabase.from("stories" as any).update(patch).eq("id", id);
+      const { error } = await supabase.from("travel_stories" as any).update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, vars) => {
@@ -54,7 +62,7 @@ const StoryList = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("stories" as any).delete().eq("id", id);
+      const { error } = await supabase.from("travel_stories" as any).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -107,7 +115,7 @@ const StoryList = () => {
           <SelectTrigger className="w-[180px] h-8 rounded-md text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <div className="flex items-center border border-input rounded-md h-8 text-xs overflow-hidden">
@@ -181,7 +189,7 @@ const StoryList = () => {
                   </td>
                   <td className="px-3 py-3">
                     {s.category && (
-                      <Badge variant="secondary" className="text-[10px] rounded-md font-normal">{s.category}</Badge>
+                      <Badge variant="secondary" className="text-[10px] rounded-md font-normal">{CATEGORY_LABEL[s.category] ?? s.category}</Badge>
                     )}
                   </td>
                   <td className="px-3 py-3 text-muted-foreground">{s.author || "—"}</td>
