@@ -404,6 +404,73 @@ export default function Contact() {
           </dl>
         </div>
       </section>
+
+      {/* WhatsApp lead-capture modal — captures CMS lead first, then opens WA */}
+      {waModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wa-modal-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-abyss/60 backdrop-blur-sm p-4"
+          onClick={() => !waBusy && setWaModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-7 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => !waBusy && setWaModal(null)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full hover:bg-drift flex items-center justify-center text-ink/60"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <h3 id="wa-modal-title" className="font-display font-black text-xl text-abyss mb-1">
+              Chat with {waModal.name.split(" ")[0]} on WhatsApp
+            </h3>
+            <p className="font-body text-sm text-ink/60 mb-5">
+              Quick intro — so {waModal.name.split(" ")[0]} can greet you by name and follow up if the chat drops.
+            </p>
+            <form onSubmit={submitWaCapture} className="space-y-3">
+              <div>
+                <label className="block text-xs font-display font-semibold text-abyss mb-1.5">Your name</label>
+                <input
+                  type="text"
+                  value={waForm.name}
+                  onChange={(e) => setWaForm({ ...waForm, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-abyss/15 rounded-lg font-body text-sm focus:outline-none focus:border-blaze focus:ring-2 focus:ring-blaze/20"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-display font-semibold text-abyss mb-1.5">Mobile number</label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="10-digit Indian mobile"
+                  value={waForm.phone}
+                  onChange={(e) => setWaForm({ ...waForm, phone: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-abyss/15 rounded-lg font-body text-sm focus:outline-none focus:border-blaze focus:ring-2 focus:ring-blaze/20"
+                  required
+                />
+              </div>
+              {waErr && <p className="text-xs text-red-600 font-body">{waErr}</p>}
+              <button
+                type="submit"
+                disabled={waBusy}
+                className="w-full bg-[#25D366] hover:bg-[#1ebe58] disabled:opacity-60 text-white font-display font-semibold py-3 rounded-full transition-colors flex items-center justify-center gap-2"
+              >
+                {waBusy ? "Opening WhatsApp…" : `💬 Continue to WhatsApp`}
+              </button>
+              <p className="text-[11px] text-ink/40 text-center font-body">
+                We respond within 2 business hours · Mon–Sat 9AM–9PM IST
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
     </SiteLayout>
   );
 }
