@@ -919,20 +919,7 @@ const LeadDetail = () => {
         </div>
       </div>
 
-      <Dialog open={cashflowPrompt} onOpenChange={setCashflowPrompt}>
-        <DialogContent className="rounded-xl">
-          <DialogHeader>
-            <DialogTitle>Mark as File Closed?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will mark the trip as confirmed. Would you like to create a Trip Cashflow entry for this lead?
-          </p>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setCashflowPrompt(false)} className="rounded-md">Just Close File</Button>
-            <Button onClick={handleCreateCashflow} className="rounded-md">Close & Create Cashflow</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QuickCashflowModal open={cashflowPrompt} onOpenChange={setCashflowPrompt} lead={lead as any} />
       <AddReminderModal open={remindOpen} onOpenChange={setRemindOpen} lead={lead as any} />
     </AppLayout>
   );
