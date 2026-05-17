@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronDown, Star, X } from "lucide-react";
+import { ChevronDown, Star, X } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
 import { LandingPageData, ItineraryData, FALLBACK_TESTIMONIALS, WHATSAPP_URL } from "../shared";
 import LandingNavbar from "../components/LandingNavbar";
@@ -29,7 +29,6 @@ export default function BoldTemplate({ page, itinerary }: Props) {
   const days = (itinerary?.itinerary_days as any[]) || [];
   const inclusionsText = page.custom_inclusions || itinerary?.inclusions || "";
   const exclusionsText = page.custom_exclusions || itinerary?.exclusions || "";
-  const highlights: any[] = (itinerary?.highlights as any[]) || [];
   const gallery = (page.gallery && page.gallery.length ? page.gallery : itinerary?.gallery) || [];
   const flightsIncluded = !!itinerary?.flights_included;
   const stayIncluded = !!itinerary?.stay_included;
