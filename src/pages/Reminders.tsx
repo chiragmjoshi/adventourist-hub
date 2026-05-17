@@ -49,10 +49,38 @@ const Reminders = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reminders" as any)
-        .select("*, leads(id, name, traveller_code), trip_cashflow(id, cashflow_code), users:assigned_to(id, name)")
+        .select("*")
         .order("due_at", { ascending: true });
       if (error) throw error;
-      return (data as any[]) || [];
+      const rows = (data as any[]) || [];
+      if (rows.length === 0) return rows;
+
+      const leadIds = Array.from(new Set(rows.map((r) => r.lead_id).filter(Boolean)));
+      const tripIds = Array.from(new Set(rows.map((r) => r.trip_id).filter(Boolean)));
+      const userIds = Array.from(new Set(rows.map((r) => r.assigned_to).filter(Boolean)));
+
+      const [leadsRes, tripsRes, usersRes] = await Promise.all([
+        leadIds.length
+          ? supabase.from("leads").select("id, name, traveller_code").in("id", leadIds)
+          : Promise.resolve({ data: [] as any[] }),
+        tripIds.length
+          ? supabase.from("trip_cashflow").select("id, cashflow_code").in("id", tripIds)
+          : Promise.resolve({ data: [] as any[] }),
+        userIds.length
+          ? supabase.from("users").select("id, name").in("id", userIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const leadMap = new Map((leadsRes.data || []).map((l: any) => [l.id, l]));
+      const tripMap = new Map((tripsRes.data || []).map((t: any) => [t.id, t]));
+      const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]));
+
+      return rows.map((r) => ({
+        ...r,
+        leads: r.lead_id ? leadMap.get(r.lead_id) || null : null,
+        trip_cashflow: r.trip_id ? tripMap.get(r.trip_id) || null : null,
+        users: r.assigned_to ? userMap.get(r.assigned_to) || null : null,
+      }));
     },
   });
 
