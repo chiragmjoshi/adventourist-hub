@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 
-const BASE = "https://adventourist.in";
+const BASE = "https://www.adventourist.in";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +57,10 @@ Deno.serve(async (req) => {
     { loc: `${BASE}/about-us`, changefreq: "monthly", priority: 0.7 },
     { loc: `${BASE}/contact`, changefreq: "monthly", priority: 0.7 },
     { loc: `${BASE}/faqs`, changefreq: "monthly", priority: 0.6 },
+    { loc: `${BASE}/privacy-policy`, changefreq: "yearly", priority: 0.3 },
+    { loc: `${BASE}/terms-and-conditions`, changefreq: "yearly", priority: 0.3 },
+    { loc: `${BASE}/refund-and-cancellation-policy`, changefreq: "yearly", priority: 0.3 },
+    { loc: `${BASE}/payment-policy`, changefreq: "yearly", priority: 0.3 },
   ];
 
   try {
@@ -66,9 +70,9 @@ Deno.serve(async (req) => {
         .select("slug, published_at, updated_at")
         .eq("status", "published"),
       supabase
-        .from("stories")
+        .from("travel_stories")
         .select("slug, published_at, updated_at")
-        .eq("is_published", true),
+        .eq("status", "published"),
     ]);
 
     const tripUrls: UrlEntry[] = (trips ?? []).map((t: any) => ({

@@ -16,6 +16,16 @@ export default function ThankYouPage() {
 
   useEffect(() => {
     document.title = "Thank you · Adventourist";
+    // Prevent search engines from indexing the thank-you / conversion page
+    let robots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    const created = !robots;
+    if (!robots) {
+      robots = document.createElement("meta");
+      robots.setAttribute("name", "robots");
+      document.head.appendChild(robots);
+    }
+    const prev = robots.getAttribute("content");
+    robots.setAttribute("content", "noindex, nofollow");
     (async () => {
       try {
         const { data } = await supabase
@@ -31,6 +41,10 @@ export default function ThankYouPage() {
         /* ignore */
       }
     })();
+    return () => {
+      if (created) robots?.remove();
+      else if (prev) robots?.setAttribute("content", prev);
+    };
   }, [slug]);
 
   return (
