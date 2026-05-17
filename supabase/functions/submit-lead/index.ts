@@ -157,7 +157,16 @@ Deno.serve(async (req) => {
     }
     const traveller_code = codeData as string;
 
-    // Insert lead
+    // Merge structured extras into notes (leads has no group_size/budget columns)
+    const extraNotes: string[] = [];
+    if (body.notes) extraNotes.push(body.notes);
+    if (body.group_size) extraNotes.push(`Group size: ${body.group_size}`);
+    if (body.budget_range) extraNotes.push(`Budget: ${body.budget_range}`);
+    if (body.page_source) extraNotes.push(`Source page: ${body.page_source}`);
+    if (body.landing_url) extraNotes.push(`Landing URL: ${body.landing_url}`);
+    if (body.referrer_url) extraNotes.push(`Referrer: ${body.referrer_url}`);
+
+    // Insert lead — only columns that exist on public.leads
     const insertPayload = {
       traveller_code,
       name,
@@ -165,22 +174,14 @@ Deno.serve(async (req) => {
       email: body.email ?? null,
       destination_id,
       itinerary_id,
+      landing_page_id: body.landing_page_id ?? null,
       travel_date: body.travel_date ?? null,
-      group_size: body.group_size ?? null,
-      budget_range: body.budget_range ?? null,
-      notes: body.notes ?? null,
+      notes: extraNotes.length ? extraNotes.join("\n") : null,
       channel: body.channel ?? "Website",
       platform: body.platform ?? "Organic",
-      landing_page_id: body.landing_page_id ?? null,
-      utm_source: body.utm_source ?? null,
-      utm_medium: body.utm_medium ?? null,
-      utm_campaign: body.utm_campaign ?? null,
-      utm_content: body.utm_content ?? null,
-      utm_term: body.utm_term ?? null,
-      landing_url: body.landing_url ?? null,
-      referrer_url: body.referrer_url ?? null,
-      sales_status: "new_lead",
-      disposition: "not_contacted",
+      source: "website",
+      sales_status: "New Lead",
+      disposition: "Not Contacted",
     };
 
     const { data: lead, error: leadErr } = await supabase
@@ -194,25 +195,57 @@ Deno.serve(async (req) => {
       return json(500, { error: "Failed to create lead" });
     }
 
+    // Persist UTM / attribution into lead_tracking
+    if (
+      body.utm_source || body.utm_medium || body.utm_campaign ||
+      body.utm_content || body.utm_term
+    ) {
+      const { error: trErr } = await supabase.from("lead_tracking").insert({
+        lead_id: lead.id,
+        utm_source: body.utm_source ?? null,
+        utm_medium: body.utm_medium ?? null,
+        utm_campaign: body.utm_campaign ?? null,
+        utm_content: body.utm_content ?? null,
+        utm_term: body.utm_term ?? null,
+      });
+      if (trErr) console.error("submit-lead: lead_tracking insert error", trErr);
+    }
+
     // Timeline
     const { error: tlErr } = await supabase.from("lead_timeline").insert({
       lead_id: lead.id,
       event_type: "lead_created",
-      note: "Lead submitted from website",
+      note: body.page_source
+        ? `Lead submitted from website (${body.page_source})`
+        : "Lead submitted from website",
       metadata: {
         channel: insertPayload.channel,
         platform: insertPayload.platform,
         landing_page_id: insertPayload.landing_page_id,
-        utm_source: insertPayload.utm_source,
-        utm_medium: insertPayload.utm_medium,
-        utm_campaign: insertPayload.utm_campaign,
-        utm_content: insertPayload.utm_content,
-        utm_term: insertPayload.utm_term,
-        landing_url: insertPayload.landing_url,
-        referrer_url: insertPayload.referrer_url,
+        itinerary_id,
+        destination_id,
+        itinerary_slug: body.itinerary_slug ?? null,
+        page_source: body.page_source ?? null,
+        utm_source: body.utm_source ?? null,
+        utm_medium: body.utm_medium ?? null,
+        utm_campaign: body.utm_campaign ?? null,
+        utm_content: body.utm_content ?? null,
+        utm_term: body.utm_term ?? null,
+        landing_url: body.landing_url ?? null,
+        referrer_url: body.referrer_url ?? null,
       },
     });
     if (tlErr) console.error("submit-lead: timeline insert error", tlErr);
+
+    console.log("submit-lead: created", {
+      lead_id: lead.id,
+      traveller_code: lead.traveller_code,
+      destination_id,
+      itinerary_id,
+      channel: insertPayload.channel,
+      platform: insertPayload.platform,
+      page_source: body.page_source ?? null,
+    });
 
     return json(200, {
       success: true,
