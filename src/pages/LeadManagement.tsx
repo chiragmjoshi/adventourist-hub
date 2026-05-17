@@ -430,17 +430,28 @@ const LeadManagement = () => {
     filterAdGroup !== "all" || filterDestination !== "all" ||
     activeDispositions.size > 0 || activeStatuses.size > 0;
 
-  const SmallSelect = ({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) => (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-8 text-xs rounded-md border-border/60 min-w-[120px]">
-        <SelectValue placeholder={label} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All {label}</SelectItem>
-        {options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-      </SelectContent>
-    </Select>
-  );
+  const SmallSelect = ({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) => {
+    const active = value !== "all";
+    const selectedLabel = active ? options.find(o => o.value === value)?.label ?? label : `All ${label}`;
+    return (
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger
+          className={`h-8 text-xs rounded-md gap-1.5 px-2.5 w-auto min-w-0 ${
+            active
+              ? "border-primary/40 bg-primary/5 text-foreground"
+              : "border-border/60 text-muted-foreground"
+          }`}
+        >
+          <span className="font-medium text-foreground/70">{label}:</span>
+          <span className="truncate max-w-[140px]">{selectedLabel}</span>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All {label}</SelectItem>
+          {options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    );
+  };
 
   return (
     <AppLayout title="Lead Management">
@@ -455,13 +466,14 @@ const LeadManagement = () => {
         </Button>
       </div>
 
-      {/* ── Smart Filter Bar — single compact row ── */}
-      <div className="flex items-center flex-wrap gap-2 mb-4 px-3 py-2 border border-border/50 rounded-lg bg-background">
+      {/* ── Smart Filter Bar — compact inline row ── */}
+      <div className="flex items-center flex-wrap gap-1.5 mb-4 px-2.5 py-1.5 border border-border/50 rounded-lg bg-background">
         <DateRangePicker
           from={dateFrom}
           to={dateTo}
           onChange={(f, t) => { setDateFrom(f); setDateTo(t); }}
         />
+        <div className="h-5 w-px bg-border/60 mx-0.5" />
         <SmallSelect label="Destination" value={filterDestination} onChange={setFilterDestination}
           options={destinations.map((d: any) => ({ value: d.id, label: d.name }))} />
         <SmallSelect label="Channel" value={filterChannel}
@@ -475,13 +487,12 @@ const LeadManagement = () => {
         <SmallSelect label="Ad Group" value={filterAdGroup} onChange={setFilterAdGroup}
           options={[]} />
 
-        {anyFiltersActive && (
-          <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 whitespace-nowrap">
-            <RotateCcw className="h-3 w-3" />Reset
-          </button>
-        )}
-
-        <div className="ml-auto flex-shrink-0">
+        <div className="ml-auto flex items-center gap-1.5">
+          {anyFiltersActive && (
+            <button onClick={resetFilters} className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 whitespace-nowrap rounded-md">
+              <RotateCcw className="h-3 w-3" />Reset
+            </button>
+          )}
           <Button variant="outline" size="sm" className="h-8 text-xs rounded-md gap-1.5" onClick={handleExport}>
             <Download className="h-3.5 w-3.5" />Export
           </Button>
