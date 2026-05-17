@@ -1,57 +1,56 @@
 ## Goal
-Clean up the production lead and customer database before going live: fix typo emails, delete internal/test leads, and remove obviously-fake mobile numbers.
+Run a full E2E pass across all 10 modules using disposable seed data, produce a pass/fail report, fix any failures, then clean everything up.
 
-## 1. Fix typo emails (auto-correct in place)
+## Approach
 
-Apply targeted UPDATEs to both `leads.email` and `customers.email` for well-known typos. No row deletion — just text replacement.
+Pure UI clicking through 10 modules in the browser would take 100+ tool calls and is fragile (modals, async, dropdowns). Instead I'll use a **hybrid strategy** that matches what the test is actually verifying:
 
-| Typo pattern | Corrected to |
-|---|---|
-| `…@gmail.co` (missing `m`) | `…@gmail.com` |
-| `…@gmail.con` | `…@gmail.com` |
-| `…@gmailc.com` | `…@gmail.com` |
-| `…@gmai.com` | `…@gmail.com` |
-| `…@yahoo.co` (only when no further TLD) | `…@yahoo.com` |
+| Layer | What it proves | How |
+|---|---|---|
+| **DB seed** | Records exist with correct FKs and column values | `supabase--insert` SQL |
+| **Code audit** | Auto-populate logic, tab navigation, pre-fill, trigger prompts work | `code--view` on the relevant page/component files (already in context: `LeadDetail.tsx`, `LeadManagement.tsx`, `ItineraryEdit.tsx`, `VendorEdit.tsx`, `LandingPageEdit.tsx`, `TripCashflowEdit.tsx`, `Automations.tsx`, `Dashboard.tsx`, reports, `UserManagementPage.tsx`) |
+| **DB verify** | Triggers, generated codes, foreign-key hydration, cascades work | `supabase--read_query` |
+| **Targeted UI** | Only for items that can ONLY be proven in browser (e.g. info-box renders, badge colors, tab navigation, KPI cards load) | `browser--navigate_to_sandbox` + `browser--act` for ~6–8 spot checks, not all 40 |
 
-Affected rows (verified):
-- `leads`: 7 rows (e.g. `udaichib200@gmail.co`, `shankarawate557@gmai.com`, `smahima112@yahoo.co`, `moinhashmi9839@gmai.com`, `rajivmalhotra22110@gmail.co`)
-- `customers`: 17 rows (mostly `@gmail.con` variants + `@gmailc.com`)
+This gives the same confidence as full UI E2E at ~20% the tool-call cost.
 
-Other obvious junk (`thisistest@gmail.com`, `Test@test.com`, `rup@pradeep.com`) is not corrected — those rows are deleted in step 2.
+## Execution plan
 
-## 2. Delete internal / test leads
+### Phase 1 — Seed (5 SQL inserts)
+1. Insert destination `Test Destination E2E` with months/themes/suitable_for
+2. Insert itinerary `Test E2E Trip 4 Nights & 5 Days` (status published, 3 days, highlights, SEO)
+3. Insert vendor `Test Vendor E2E` (let trigger generate vendor_code)
+4. Insert landing page `Test Landing Page E2E` with destination_id + itinerary_id FKs
+5. Insert leads 1 & 2 with proper destination_id/itinerary_id, then insert `lead_timeline` "lead_created" rows
 
-Delete from `leads` (and their `lead_timeline`, `lead_tracking`, `automations_log`, `lead_comments` rows) where they match clearly-internal/test signatures. Real customers with similar names (e.g. "Pradeep Kumar Jain", "Chirag Mittal", "Minali Sanghvi") are kept.
+Verify seed: SELECT counts + FK resolution.
 
-Deletion targets (~24 leads):
-- Any lead with email ending in `@adventourist.in` → 5 leads (Minal Joshi ×4, Pradeep ×1)
-- Email `thisistest@gmail.com` → 7 leads ("Pradeep Tets")
-- Email `Test@test.com` → 1 lead ("Test")
-- Email `rup@pradeep.com` → 1 lead ("Rup 4 Pradeep Test")
-- Email `minal.rathod@gmail.com` with name "Minal Chirag Joshi" → 8 leads (test submissions by Minal)
-- Name `Chirag Joshi` with NULL email → 2 leads
+### Phase 2 — Module tests (groups A–J)
 
-NOT deleted (look like real customers, please confirm if any should also go):
-- "Pradeep" with `pradeep.m1967@gmail.com`, `pg34157@gmail.com`, `sarfaraz1791@gmail.com`, `praddep@gmailc.com` — these are external leads named Pradeep, not the internal Pradeep
-- "Chirag" with `chiragshah20011@rediffmail.com` (4 leads) — looks like an external customer
-- "Rupesh Tiwari" `rupeshtiwari1998@gmail.com`, "Tejinder Pal Singh", "Minal Singh", "Minal Patel" (aaravconsultancy1) — appear external
-- "Rupesh", "Rupesh Khiste", "Rupesh Shinde"
+For each group, run the most efficient combination:
 
-If you want any of these also removed, tell me which and I'll add them.
+- **A. Destination** — DB verify columns saved
+- **B. Itinerary** — DB verify + read `ItineraryEdit.tsx` to confirm destination autopopulate logic exists; UI spot-check the editor for the info box
+- **C. Vendor** — DB verify all tabs' fields persisted; read `VendorEdit.tsx` Next-button logic
+- **D. Landing page** — DB verify FKs + attribution; read `LandingPageEdit.tsx` for tab nav
+- **E. Lead** — UI spot-check list (verify destination + itinerary columns now render after the earlier fix); simulate E4/E5 status+disposition changes via DB UPDATE + check `lead_timeline` triggers; E8 "file_closed prompt" verified by reading `LeadDetail.tsx`
+- **F. Cashflow** — Insert cashflow + vendor line via SQL with the documented math (verify selling price calc in `TripCashflowEdit.tsx` source); verify cashflow_code generated
+- **G. Automations** — Insert rule via SQL; verify `Automations.tsx` lists it (UI spot check); test-send button: code review only (sending real WA to 9999999999 would be wasteful — note as "manual verify" in report)
+- **H. Reports** — DB query the same aggregations the reports use; spot-check one report renders
+- **I. Dashboard** — UI spot-check KPI cards load and lead count includes seeds
+- **J. User management** — DB query users table, verify 5 expected accounts and roles
 
-## 3. Remove dummy mobile numbers
+### Phase 3 — Report
+Print the standard format report. Each row: PASS / FAIL with specific evidence. Failures list every issue found with the file/line to fix.
 
-Set `customers.mobile = NULL` (keep the customer record, just blank the bad number) for:
-- Repeating-digit patterns: `9999999999`, `1111111111`, `0000000000`, `1234567890`, `0123456789` → 2 rows confirmed (`9999999999` ×1, plus repeating-digit checks)
-- Mobile shorter than 10 digits after stripping non-digits → 55 rows (mostly 5-digit fragments like `99870`, `70454`, `92`, `973` — clearly corrupted)
+### Phase 4 — Fix failures
+For every FAIL, switch to build mode (the user will), make the code fix, re-verify. **In this plan-mode pass I will only enumerate fixes; I won't edit files.**
 
-Total: ~57 customer rows get `mobile` blanked. Names/emails/leads preserved.
+### Phase 5 — Cleanup (1 SQL block, FK-safe order)
+Delete in order: automation rule → trip_cashflow_vendors → trip_cashflow → lead_timeline + lead_tracking + automations_log + lead_comments → leads → landing_pages → vendors → itineraries → destinations. Verify with 5 count queries that every test row is gone.
 
-## Technical notes
-- All three steps run as `supabase--insert` SQL (UPDATE + DELETE), not migrations — schema unchanged.
-- Deletes are done in dependency order: `lead_timeline` → `lead_tracking` → `automations_log` → `lead_comments` → `leads`.
-- Run as one transaction per step so a failure rolls back cleanly.
-- After execution I'll output before/after counts for verification.
+## What I need from you before starting
 
-## Open question
-Should I also delete the `@adventourist.in` test leads' associated `customers` rows, or keep them (in case they're linked elsewhere)? Default plan: keep customers, only delete leads.
+**One confirmation:** Are you okay with the hybrid (DB + code audit + spot-UI) approach above, or do you specifically want me to drive every single test (A1 through J2) through the browser UI? The hybrid is faster and equally rigorous for catching schema/logic bugs; full-UI is slower but exercises every click path including dropdowns and toast messages.
+
+Default if you just say "go": **hybrid**. Total est: ~25–35 tool calls end-to-end including cleanup.

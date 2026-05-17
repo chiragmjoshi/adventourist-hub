@@ -246,6 +246,12 @@ const LeadDetail = () => {
         events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
         evaluateRulesForLead(id!, "disposition_changed");
       }
+      if (updates.follow_up_date !== undefined && updates.follow_up_date !== oldLead.follow_up_date) {
+        const txt = updates.follow_up_date
+          ? `Follow-up set to ${updates.follow_up_date} by ${profile?.name || "User"}`
+          : `Follow-up cleared by ${profile?.name || "User"}`;
+        events.push({ event_type: "follow_up_set", note: txt });
+      }
       if (updates.notes !== undefined && updates.notes !== oldLead.notes) {
         events.push({ event_type: "note_added", note: `Note added by ${profile?.name || "User"}` });
       }
@@ -350,6 +356,13 @@ const LeadDetail = () => {
           <span className="font-mono font-semibold" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>
         </div>
         <div className="flex items-center gap-2">
+          <input
+            type="date"
+            title="Follow-up date"
+            value={getField("follow_up_date") || (l as any).follow_up_date || ""}
+            onChange={e => handleStatusChange("follow_up_date", e.target.value || null as any)}
+            className="h-8 text-xs rounded-md border border-border/60 px-2 bg-background"
+          />
           <Select value={getField("disposition") || l.disposition || ""} onValueChange={v => handleStatusChange("disposition", v)}>
             <SelectTrigger className="h-8 text-xs rounded-md w-48 border-border/60">
               <div className="flex items-center gap-1.5 truncate">
