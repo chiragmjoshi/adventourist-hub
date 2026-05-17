@@ -705,7 +705,7 @@ const LeadManagement = () => {
                          destination_id: prev.destination_id || it?.destination_id || "",
                        }));
                      }}>
-                      <SelectTrigger className="rounded-md"><SelectValue placeholder={form.destination_id ? "Select itinerary" : "Select destination first"} /></SelectTrigger>
+                       <SelectTrigger className="rounded-md"><SelectValue placeholder="Select itinerary" /></SelectTrigger>
                       <SelectContent>{itineraries.map((it: any) => <SelectItem key={it.id} value={it.id}>{it.headline}</SelectItem>)}</SelectContent>
                     </Select></div>
                   <div><Label className="text-xs mb-1 block">Assigned To</Label>
