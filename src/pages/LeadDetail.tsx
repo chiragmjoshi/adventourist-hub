@@ -23,6 +23,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { evaluateRulesForLead } from "@/services/automationEngine";
 import AddReminderModal from "@/components/reminders/AddReminderModal";
 import LeadReminderStrip from "@/components/reminders/LeadReminderStrip";
+import QuickCashflowModal from "@/components/QuickCashflowModal";
 import {
   tomorrowAt, inHours, fromDateAt, dispKey,
 } from "@/lib/reminderHelpers";
@@ -389,15 +390,10 @@ const LeadDetail = () => {
     },
   });
 
-  const handleCreateCashflow = async () => {
-    const l = lead as any;
-    await supabase.from("trip_cashflow").insert({
-      lead_id: l.id, traveller_code: l.traveller_code, traveller_name: l.name,
-      destination_id: l.destination_id || null, itinerary_id: l.itinerary_id || null,
-      assigned_to: l.assigned_to || null,
-    });
-    setCashflowPrompt(false);
-    toast.success("Trip Cashflow entry created");
+  const handleCreateCashflow = () => {
+    // Legacy entry point kept for backwards compat — opens the quick modal.
+    setCashflowPrompt(true);
+  };
     navigate("/admin/trip-cashflow");
   };
 
