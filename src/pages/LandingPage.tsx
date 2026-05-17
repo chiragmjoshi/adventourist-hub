@@ -93,6 +93,11 @@ const LandingPage = () => {
   /* ─── form submit ─── */
   const submitMutation = useMutation({
     mutationFn: async () => {
+      // Open WhatsApp immediately so no lead is ever lost — fire BEFORE the
+      // CRM call so a network hiccup can never block the WA hand-off.
+      const waMsg = `Hi! I'm ${formData.name || "interested"}. I enquired about the "${(page as any)?.hero_headline || (page as any)?.name || "trip"}" landing page${(page as any)?.destinations?.name ? ` (${(page as any).destinations.name})` : ""}. [src:landing_${slug}]`;
+      try { window.open(waLink(waMsg), "_blank"); } catch { /* ignore popup blockers */ }
+
       const { data, error } = await supabase.functions.invoke("submit-lead", {
         body: {
           name: formData.name,
