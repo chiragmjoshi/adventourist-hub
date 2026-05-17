@@ -54,6 +54,7 @@ const TripCashflowEdit = () => {
     pax_count: 1, gst_billing: true, margin_percent: 0, status: "draft",
     assigned_to: "", lead_id: "", pan_card_url: "", zoho_invoice_ref: "", notes: "",
     is_customized: false, custom_itinerary_url: "",
+    agreed_selling_price: 0,
   });
 
   const STEPS = [
@@ -147,6 +148,7 @@ const TripCashflowEdit = () => {
         notes: existing.notes || "",
         is_customized: (existing as any).is_customized || false,
         custom_itinerary_url: (existing as any).custom_itinerary_url || "",
+        agreed_selling_price: parseFloat(String((existing as any).agreed_selling_price)) || 0,
       });
     }
   }, [existing]);
@@ -211,6 +213,7 @@ const TripCashflowEdit = () => {
         notes: form.notes || null,
         is_customized: form.is_customized,
         custom_itinerary_url: form.custom_itinerary_url || null,
+        agreed_selling_price: form.agreed_selling_price || null,
       };
 
       let cashflowId = id;
@@ -253,6 +256,7 @@ const TripCashflowEdit = () => {
     },
     onSuccess: (cfId) => {
       queryClient.invalidateQueries({ queryKey: ["trip_cashflow"] });
+      queryClient.invalidateQueries({ queryKey: ["lead_trips"] });
       setLastSaved(new Date());
       toast.success("Cashflow saved");
       // Trip-level automations are handled by the new automation engine
@@ -581,6 +585,32 @@ const TripCashflowEdit = () => {
           <Card className="border-border/50 shadow-none">
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm">Margin</CardTitle></CardHeader>
             <CardContent className="px-5 pb-4 space-y-3">
+              {form.agreed_selling_price > 0 && (
+                <div className="flex items-center justify-between rounded-md border border-[hsl(var(--horizon))]/40 bg-[hsl(var(--horizon))]/10 px-3 py-2">
+                  <div className="text-xs">
+                    <div className="font-semibold">Agreed selling price (at file close)</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {formatINR(form.agreed_selling_price)} — back-solve margin to match this price.
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs rounded-md"
+                    disabled={totalVendorCost === 0}
+                    onClick={() => {
+                      const gstMult = form.gst_billing ? 1 + gstRate / 100 : 1;
+                      const targetExGst = form.agreed_selling_price / gstMult;
+                      const marginRs = targetExGst - totalVendorCost;
+                      const pct = totalVendorCost > 0 ? (marginRs / totalVendorCost) * 100 : 0;
+                      setField("margin_percent", Math.round(pct * 100) / 100);
+                    }}
+                  >
+                    Match this price
+                  </Button>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs text-muted-foreground">Margin %</Label>

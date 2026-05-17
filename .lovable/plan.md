@@ -1,71 +1,52 @@
-## Lead Detail — full QC + restructure
+## Final fixes for the Lead → Cashflow flow
 
-Scope: `/admin/leads/:id`. Three real bugs + four structural changes.
-
----
-
-### 1. Bugs to fix
-
-**A. Cashflow modal doesn't update the lead.**
-`QuickCashflowModal` only inserts into `trip_cashflow`. The lead row's `travel_date`, `destination_id`, `itinerary_id`, `pax_count` stay blank, so the "Current Enquiry" card looks empty even after Save.
-Fix: in the same mutation, also `UPDATE leads SET destination_id, itinerary_id, travel_date, pax_count` for the source lead, and invalidate `["lead", id]`.
-
-**B. Dead fields in Current Enquiry.**
-`Proposed Price`, `Vendor Cost Price`, `Margin`, `Vendor` are hard-coded inputs with no state, no save, no DB column. They are confusing the user into thinking saved cashflow data should appear here.
-Fix: remove them. Cost / margin / vendor live on Trip Cashflow only and are already shown in the Trips tab.
-
-**C. Reminder added on lead detail isn't on /admin/reminders.**
-Insert + invalidation are correct, but global react-query config is `staleTime: 5 min`, `refetchOnWindowFocus: false`. If the Reminders page was opened earlier in the session, the cached empty list can stick.
-Fix on the Reminders page query:
-- `staleTime: 0`
-- `refetchOnMount: "always"`
-- `refetchOnWindowFocus: true`
-
-Also: `LeadDetail` references a `customer_tag` column that doesn't exist on `leads`. Remove the field (silent update failure today).
+I reproduced both issues on lead `JU2500001`. Diagnosis below, then the fix.
 
 ---
 
-### 2. Tab restructure
+### Bug 1 — Trip doesn't show in the lead's Trips tab
 
-Tabs become: **Current Enquiry · Trips · Activity**.
+The cashflow row `TC2600008` is correctly in the DB with `lead_id` and `traveller_code` matching the lead. The query that powers the Trips tab (`lead_trips`) is correct.
 
-**Current Enquiry** (slimmed):
-Destination · Itinerary · Travel Date · Pax · Created On · Internal Notes (existing textarea, now clearing after save so a fresh note can be typed).
-Drop the cost/vendor block (point 1B).
+The problem is **stale react-query cache**. The global config sets `staleTime: 5 min`. When the user:
+1. opens lead detail (caches `lead_trips` = empty),
+2. opens the modal, creates the draft cashflow,
+3. clicks into `/admin/trip-cashflow/...`, fills vendors + margin + saves,
+4. clicks back to the lead,
 
-**Trips** — convert the existing cards to a real table:
-Columns: Destination · Itinerary · Booking Date · Travel Date · Pax · Selling Price · Cost · Margin (₹ + %) · Status · Cashflow Code → links to `/admin/trip-cashflow/:id`.
-Keep the existing loyalty summary bar (Trips · Total Spend · Avg / Trip · Since). For `sales` role keep hiding Cost / Margin columns.
-Data source unchanged — already gathers every cashflow for this traveller across all of their leads via traveller_code + email + mobile.
+…the LeadDetail page re-mounts but react-query serves the cached empty list. `TripCashflowEdit`'s save mutation only invalidates `["cashflow", id]` and `["cashflow_lines", id]` — never `["lead_trips", …]`.
 
-**Activity** (replaces Comments):
-Move the existing Activity Timeline (currently rendered as a separate card below the tabs) into this tab. Delete the standalone timeline card. Comments tab + `lead_comments` reads removed — Internal Notes covers that need.
-
----
-
-### 3. New Inquiry action
-
-Header button "New Inquiry" next to "Remind". Creates a new row in `leads`:
-- copy `traveller_code`, `name`, `email`, `mobile`, `customer_id`
-- blank `destination_id`, `itinerary_id`, `travel_date`, `pax_count`, `notes`
-- `sales_status: "New Lead"`, `disposition: "Not Contacted"`, `source: "crm"`, `assigned_to` = current user
-- log `lead_created` in `lead_timeline`
-- navigate to the new lead's detail page
-
-That same traveller's Trips tab will continue to show all past trips because the trip query already pivots on traveller_code + email + mobile.
+**Fix**
+- `LeadDetail` `lead_trips` query → `staleTime: 0, refetchOnMount: "always"`.
+- `TripCashflowEdit` save mutation → also invalidate `["lead_trips"]` (broad, since the lead id may not be in scope at save time).
 
 ---
 
-### Files touched
+### Bug 2 — Selling price entered in the modal isn't in Trip Cashflow
 
-- `src/pages/LeadDetail.tsx` — drop dead fields, drop Comments tab + `lead_comments` query, move Timeline into Activity tab, clear notes textarea after save, add New Inquiry button + mutation, remove `customer_tag` field.
-- `src/components/QuickCashflowModal.tsx` — also update parent lead row; invalidate `["lead", id]`.
-- `src/pages/Reminders.tsx` — query options: `staleTime: 0`, `refetchOnMount: "always"`, `refetchOnWindowFocus: true`.
+`trip_cashflow` has no `selling_price` column. Selling price is derived: `vendor_cost × (1 + margin%) × (1 + gst)`. The "Final selling price" field in `QuickCashflowModal` is currently appended to the `notes` text and then forgotten — `TripCashflowEdit` never reads it, so ops can't see what was agreed and can't reconcile margin against it.
 
-No schema migration. No changes to public site, no changes to other pages.
+**Fix**
+- Migration: add `agreed_selling_price numeric` to `trip_cashflow`.
+- `QuickCashflowModal` writes `agreed_selling_price` (and stops stuffing it into `notes`).
+- `TripCashflowEdit`:
+  - Load `agreed_selling_price` into state.
+  - In the Pricing & Margin step, show a read-only banner: **"Agreed selling price (set at file close): ₹X"** with a one-click **"Match this price"** button that back-solves `margin_percent` from the current vendor total and gst toggle, so the Pricing summary matches what the customer was quoted. User can still override margin manually.
+  - Persist `agreed_selling_price` on save so it stays editable later.
+
+---
+
+### Files
+
+- `supabase/migrations/...` — `ALTER TABLE public.trip_cashflow ADD COLUMN agreed_selling_price numeric;`
+- `src/components/QuickCashflowModal.tsx` — write `agreed_selling_price`, drop the auto-note hack.
+- `src/pages/LeadDetail.tsx` — `lead_trips` query options.
+- `src/pages/TripCashflowEdit.tsx` — load/save `agreed_selling_price`, show banner + "Match this price" helper, invalidate `["lead_trips"]` on save.
+
+No other pages touched. No public-site changes.
 
 ### Verification
-- Mark a lead File Closed → fill modal → Save → lead detail's Destination / Itinerary / Travel Date / Pax now show those values and Trips tab shows the new row.
-- Add a reminder from lead detail → open Reminders page → it appears in Today/Upcoming.
-- Click "New Inquiry" on a lead with traveller_code ADV-… → lands on new lead, traveller_code preserved, Trips tab on either lead shows the same past trips.
-- Type a note → Save Notes → textarea clears, lead.notes persisted (visible after refresh).
+1. On `JU2500001`, open Trips tab → **TC2600008 now appears** (cache fix).
+2. Create a fresh File-Close on any lead, enter selling price ₹85,000, Save → open the resulting cashflow → Pricing step shows **"Agreed selling price: ₹85,000"** + "Match this price" button.
+3. Add vendor lines, click Match → margin% is back-solved so final price = ₹85,000. Save → reopen → value persists.
+4. Back to lead → Trips tab shows the new row immediately, no refresh needed.

@@ -108,6 +108,9 @@ const LeadDetail = () => {
 
   const { data: trips = [] } = useQuery({
     queryKey: ["lead_trips", id],
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const l = lead as any;
       // Treat "TEMP" / blank as no traveller_code — it's a placeholder used

@@ -1710,6 +1710,7 @@ export type Database = {
       }
       trip_cashflow: {
         Row: {
+          agreed_selling_price: number | null
           assigned_to: string | null
           booking_date: string | null
           cashflow_code: string
@@ -1736,6 +1737,7 @@ export type Database = {
           zoho_invoice_ref: string | null
         }
         Insert: {
+          agreed_selling_price?: number | null
           assigned_to?: string | null
           booking_date?: string | null
           cashflow_code?: string
@@ -1762,6 +1764,7 @@ export type Database = {
           zoho_invoice_ref?: string | null
         }
         Update: {
+          agreed_selling_price?: number | null
           assigned_to?: string | null
           booking_date?: string | null
           cashflow_code?: string
