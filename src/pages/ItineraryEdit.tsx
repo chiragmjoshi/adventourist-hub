@@ -493,6 +493,12 @@ const ItineraryEdit = () => {
                 value={form.hero_image}
                 onChange={(url) => setField("hero_image", url)}
               />
+              {!form.hero_image && (selectedDest as any)?.hero_image && (
+                <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-2">
+                  <p className="text-[11px] font-medium text-blue-700 mb-1.5">Using destination image (fallback)</p>
+                  <img src={(selectedDest as any).hero_image} alt="" className="w-full max-h-40 object-cover rounded" />
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card className="border-border/50 shadow-none">
