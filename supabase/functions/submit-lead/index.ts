@@ -147,16 +147,6 @@ Deno.serve(async (req) => {
       destination_id = it?.destination_id ?? null;
     }
 
-    // Generate ADV traveller code
-    const { data: codeData, error: codeErr } = await supabase.rpc(
-      "generate_adv_traveller_code",
-    );
-    if (codeErr || !codeData) {
-      console.error("submit-lead: traveller code error", codeErr);
-      return json(500, { error: "Failed to create lead" });
-    }
-    const traveller_code = codeData as string;
-
     // Merge structured extras into notes (leads has no group_size/budget columns)
     const extraNotes: string[] = [];
     if (body.notes) extraNotes.push(body.notes);
@@ -166,9 +156,10 @@ Deno.serve(async (req) => {
     if (body.landing_url) extraNotes.push(`Landing URL: ${body.landing_url}`);
     if (body.referrer_url) extraNotes.push(`Referrer: ${body.referrer_url}`);
 
-    // Insert lead — only columns that exist on public.leads
+    // Insert lead — leave traveller_code empty so the DB trigger
+    // (generate_traveller_code) produces the standard MA26… format.
     const insertPayload = {
-      traveller_code,
+      traveller_code: "",
       name,
       mobile,
       email: body.email ?? null,
