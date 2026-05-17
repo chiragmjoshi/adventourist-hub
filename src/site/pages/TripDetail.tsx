@@ -9,6 +9,14 @@ import { waLink } from "@/site/lib/utils";
 
 const SITE = "https://adventourist.in";
 
+// Aliases for /trips/:slug — old/short URLs that aren't the real Supabase slug.
+const TRIPS_ALIAS_MAP: Record<string, string> = {
+  "leh-ladakh-6-nights-7-days": "leh-backpacking-trip-with-turtuk-6-nights-7-days",
+  "leh-ladakh-7-days":          "explore-ladakh-via-manali-in-7-nights-8-days",
+  "kashmir-itinerary":          "paradise-on-earth-kashmir-trip-5-nights-6-days",
+  "bali-trip":                  "bali-bliss-trip-5-nights-6-days",
+};
+
 function stripHtml(s?: string) {
   if (!s) return "";
   return s.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -25,7 +33,8 @@ function htmlToList(s?: string): string[] {
 }
 
 export default function TripDetail() {
-  const { slug = "" } = useParams();
+  const { slug: rawSlug = "" } = useParams();
+  const slug = TRIPS_ALIAS_MAP[rawSlug] || rawSlug;
   const [trip, setTrip] = useState<CMSItinerary | null>(null);
   const [related, setRelated] = useState<CMSItinerary[]>([]);
   const [loading, setLoading] = useState(true);

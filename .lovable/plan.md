@@ -1,52 +1,72 @@
-## Final fixes for the Lead → Cashflow flow
+# Fix Trip Detail 404s & Add Slug Redirects
 
-I reproduced both issues on lead `JU2500001`. Diagnosis below, then the fix.
+## Important finding
 
----
+`src/site/pages/TripDetail.tsx` is **already fetching from Supabase**. `@/site/lib/api`'s `getItineraryBySlug` queries `itineraries` table with `status='published'` and maps the row into the legacy `CMSItinerary` shape that the page renders. All 72 itineraries exist as `published` rows. So FIX 1 from the instructions (rewrite TripDetail to use a `@/public-site/lib/api`) is **not needed** — that module doesn't exist and would just duplicate `src/site/lib/api`. The 404s on `/trips/:slug` are purely slug-mismatch issues.
 
-### Bug 1 — Trip doesn't show in the lead's Trips tab
+I will not create a duplicate API module. Instead I'll fix the slug resolution at the routing layer plus add an alias map inside `TripDetail`.
 
-The cashflow row `TC2600008` is correctly in the DB with `lead_id` and `traveller_code` matching the lead. The query that powers the Trips tab (`lead_trips`) is correct.
+## Changes
 
-The problem is **stale react-query cache**. The global config sets `staleTime: 5 min`. When the user:
-1. opens lead detail (caches `lead_trips` = empty),
-2. opens the modal, creates the draft cashflow,
-3. clicks into `/admin/trip-cashflow/...`, fills vendors + margin + saves,
-4. clicks back to the lead,
+### 1. `src/site/pages/TripDetail.tsx` — alias map
 
-…the LeadDetail page re-mounts but react-query serves the cached empty list. `TripCashflowEdit`'s save mutation only invalidates `["cashflow", id]` and `["cashflow_lines", id]` — never `["lead_trips", …]`.
+At the top of the component, before the API call:
 
-**Fix**
-- `LeadDetail` `lead_trips` query → `staleTime: 0, refetchOnMount: "always"`.
-- `TripCashflowEdit` save mutation → also invalidate `["lead_trips"]` (broad, since the lead id may not be in scope at save time).
+```ts
+const TRIPS_ALIAS_MAP: Record<string, string> = {
+  "leh-ladakh-6-nights-7-days": "leh-backpacking-trip-with-turtuk-6-nights-7-days",
+  "leh-ladakh-7-days":          "explore-ladakh-via-manali-in-7-nights-8-days",
+  "kashmir-itinerary":          "paradise-on-earth-kashmir-trip-5-nights-6-days",
+  "bali-trip":                  "bali-bliss-trip-5-nights-6-days",
+};
+const resolvedSlug = TRIPS_ALIAS_MAP[slug] || slug;
+```
 
----
+Pass `resolvedSlug` to `getItineraryBySlug` and use it in canonical/SEO URLs. No other rendering logic changes.
 
-### Bug 2 — Selling price entered in the modal isn't in Trip Cashflow
+### 2. `src/routes/LegacyRedirects.tsx` — fix `ITINERARY_MAP`
 
-`trip_cashflow` has no `selling_price` column. Selling price is derived: `vendor_cost × (1 + margin%) × (1 + gst)`. The "Final selling price" field in `QuickCashflowModal` is currently appended to the `notes` text and then forgotten — `TripCashflowEdit` never reads it, so ops can't see what was agreed and can't reconcile margin against it.
+Current map points to slugs that don't exist in Supabase. Replace with correct slugs + add lowercase-normalisation in `ItineraryRedirect`:
 
-**Fix**
-- Migration: add `agreed_selling_price numeric` to `trip_cashflow`.
-- `QuickCashflowModal` writes `agreed_selling_price` (and stops stuffing it into `notes`).
-- `TripCashflowEdit`:
-  - Load `agreed_selling_price` into state.
-  - In the Pricing & Margin step, show a read-only banner: **"Agreed selling price (set at file close): ₹X"** with a one-click **"Match this price"** button that back-solves `margin_percent` from the current vendor total and gst toggle, so the Pricing summary matches what the customer was quoted. User can still override margin manually.
-  - Persist `agreed_selling_price` on save so it stays editable later.
+```ts
+const ITINERARY_MAP: Record<string, string> = {
+  "6-nights-and-7-days-leh-ladakh-itinerary-":   "leh-backpacking-trip-with-turtuk-6-nights-7-days",
+  "bhutan-itinerary-for-8-days":                 "beautiful-bhutan-trip-6-nights-7-days",
+  "spiti-valley-itinerary-6-days":               "spiti-valley-trip-8-nights-9-days",
+  "kashmir-trip-itinerary":                      "paradise-on-earth-kashmir-trip-5-nights-6-days",
+  "srilanka-maldives-itinerary-7-nights":        "scenic-srilanka-5-nights-6-days",
+  "bali-5days-4nights":                          "bali-bliss-trip-5-nights-6-days",
+  "vietnam-tour-package":                        "vibrant-vietnam-5-nights-6-days",
+  "itinerary-darjeeling-pelling-sikkim-gangtok": "north-east-vacation-in-8-nights-9-days",
+};
 
----
+function ItineraryRedirect() {
+  const { slug = "" } = useParams();
+  const norm = slug.toLowerCase().replace(/[_\s]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  const mapped = ITINERARY_MAP[norm];
+  return <Navigate to={mapped ? `/trips/${mapped}` : "/trips"} replace />;
+}
+```
 
-### Files
+Also remove the stale single-route `/explore-ladakh-via-manali-in-7-nights-8-days → /trips/leh-ladakh-6-nights-7-days` (it points to a non-existent slug; the page itself works directly).
 
-- `supabase/migrations/...` — `ALTER TABLE public.trip_cashflow ADD COLUMN agreed_selling_price numeric;`
-- `src/components/QuickCashflowModal.tsx` — write `agreed_selling_price`, drop the auto-note hack.
-- `src/pages/LeadDetail.tsx` — `lead_trips` query options.
-- `src/pages/TripCashflowEdit.tsx` — load/save `agreed_selling_price`, show banner + "Match this price" helper, invalidate `["lead_trips"]` on save.
+### 3. `src/routes/LegacyRedirects.tsx` — root-slug catcher
 
-No other pages touched. No public-site changes.
+Add a `ROOT_SLUG_MAP` (12 slugs from the instructions) and a `RootSlugRedirect` route registered at `/:slug`. Falls through to NotFound if no match. Mounted in `legacyRedirectRoutes()` so it sits before the catch-all but after all known top-level routes (React Router picks more-specific static routes first, so `/`, `/trips`, `/about-us`, etc. still win).
 
-### Verification
-1. On `JU2500001`, open Trips tab → **TC2600008 now appears** (cache fix).
-2. Create a fresh File-Close on any lead, enter selling price ₹85,000, Save → open the resulting cashflow → Pricing step shows **"Agreed selling price: ₹85,000"** + "Match this price" button.
-3. Add vendor lines, click Match → margin% is back-solved so final price = ₹85,000. Save → reopen → value persists.
-4. Back to lead → Trips tab shows the new row immediately, no refresh needed.
+### 4. `src/pages/NotFound.tsx` — friendlier trip 404
+
+Detect `/trips/` or `/itinerary/` prefix and show a "This itinerary has moved — browse all trips" message with a "Browse All Trips" button linking to `/trips`. Uses existing brand tokens (`bg-blaze`, `text-abyss`, `font-display`).
+
+## Out of scope
+
+- No changes to admin pages, CMS, reports, kanban, lead/cashflow flow.
+- No new `public-site/lib/api` module (existing `site/lib/api` already does exactly this).
+
+## Verification
+
+- Visit `/trips/leh-ladakh-6-nights-7-days` → loads Leh Backpacking with Turtuk page.
+- Visit `/itinerary/Bhutan-Itinerary-for-8-Days` → 301s to `/trips/beautiful-bhutan-trip-6-nights-7-days`.
+- Visit `/bali-bliss-trip-5-nights-6-days` → 301s to `/trips/bali-bliss-trip-5-nights-6-days`.
+- Visit `/trips/does-not-exist` → friendly trip-aware 404 page.
+- Spot-check 3 random slugs from the 72 published itineraries → all render.
