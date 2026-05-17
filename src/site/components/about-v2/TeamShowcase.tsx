@@ -1,5 +1,8 @@
 import { useRef, useState, MouseEvent } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import minalImg from "@/assets/team-minal.jpg";
+import pinkyImg from "@/assets/team-pinky.jpg";
+import mukundImg from "@/assets/team-mukund.jpg";
 
 const TEAM = [
   {
@@ -8,6 +11,7 @@ const TEAM = [
     bio: "Spent the last decade designing 600+ journeys across Asia. Believes every trip should feel like fiction.",
     accent: "linear-gradient(140deg,#FF6F4C 0%, #C9A86B 100%)",
     initials: "MJ",
+    image: minalImg,
   },
   {
     name: "Pinky Prajapati",
@@ -15,6 +19,7 @@ const TEAM = [
     bio: "Our Himalayas specialist. Knows the difference between a good homestay and the right homestay.",
     accent: "linear-gradient(140deg,#64CBB9 0%, #056147 100%)",
     initials: "PP",
+    image: pinkyImg,
   },
   {
     name: "Mukund Joshi",
@@ -22,6 +27,7 @@ const TEAM = [
     bio: "Keeps the books honest and the partners paid on time. The reason we're proudly zero-debt.",
     accent: "linear-gradient(140deg,#1A1D2E 0%, #4A5470 100%)",
     initials: "MJ",
+    image: mukundImg,
   },
 ];
 
@@ -92,12 +98,14 @@ function TeamCard({ member, index }: { member: typeof TEAM[number]; index: numbe
         className="absolute inset-0"
         style={{ background: member.accent }}
       >
-        <div
-          className="absolute inset-0 flex items-center justify-center text-[10rem] font-light text-white/15"
-          style={{ fontFamily: "'Fraunces', serif" }}
-        >
-          {member.initials}
-        </div>
+        <img
+          src={member.image}
+          alt={member.name}
+          width={768}
+          height={1024}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover opacity-95 mix-blend-luminosity"
+        />
       </motion.div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
