@@ -1,31 +1,47 @@
 ## Goal
-Seed 14 automation rules into `automation_rules` table, all active, default IST window 09:00–21:00 unless rule specifies otherwise.
 
-## Schema mapping
-Columns used: `name`, `trigger_event`, `trigger_days_before`, `trigger_inactivity_days`, `delay_hours`, `condition_status`, `condition_disposition`, `send_time_window_start`, `send_time_window_end`, `is_active=true`, `wa_enabled`, `wa_recipient`, `wa_message_body`, `wa_template_name` (null), `email_enabled`, `email_recipient`, `email_subject`, `email_body`, `email_format='html'`.
+When a visitor submits the "Plan This Trip Your Way" form on a trip / itinerary page:
+1. Lead is created in **Lead Management** (CRM) with Platform = `Organic`, Channel = `Website`.
+2. Lead is linked to the correct **destination** and **itinerary** row (so you can filter "all leads for Bali", "all leads for Bali 5N6D itinerary").
+3. WhatsApp opens to the main number with a prefilled message tagged with the trip slug.
 
-## Trigger event normalization
-- `lead_created`, `status_changed`, `disposition_changed`, `travel_date_approaching`, `travel_date_passed`, `inactivity_days` — all already supported by automation engine pattern.
+## What's already in place
 
-## Rule 14 special handling
-The schema stores one channel-recipient pair per rule (single `wa_recipient`). Rule 14 has both customer + agent WA messages → split into **two rows**: `"Inactive — 7 Day Check-in (Customer)"` and `"Inactive — 7 Day Check-in (Agent)"`. Total inserted rows = **15**.
+- `TripLeadForm` opens WhatsApp first, then fires `submitLead(...)` (fire-and-forget).
+- `useLeadCapture` calls the `submit-lead` edge function with `channel: "Website"`, `platform: "Organic"`, UTMs, landing URL, and referrer.
+- `submit-lead` resolves `destination_id` by name and inserts into `leads` with the ADV traveller code.
 
-## Pre-seed cleanup
-Delete any existing rule whose `name` matches the 15 names being inserted, to keep the operation idempotent (no duplicates if re-run).
+## Gaps to close
 
-## Execution
-1. Single `supabase--insert` call:
-   - `DELETE FROM automation_rules WHERE name IN (...15 names...)`
-   - `INSERT INTO automation_rules (...) VALUES (...15 rows...)`
-2. Verify with `supabase--read_query`:
-   - Count = 15, all `is_active = true`
-   - Group by `trigger_event` to confirm distribution
-   - Group by `wa_enabled`, `email_enabled` flags
+1. **Itinerary is not linked.** `TripLeadForm` sends `trip_slug` only inside `notes`. `submit-lead` only resolves `itinerary_id` when a `landing_page_id` is provided, so the lead row's `itinerary_id` stays NULL for organic trip-detail visits.
+2. **Page source granularity.** `page_source` is passed by the hook but not forwarded to the edge function, so the lead loses the "which trip page" attribution beyond the notes blob.
+3. **No silent-failure visibility.** Because the CRM call is fire-and-forget, a failing submit produces no toast and no log — the user can't tell if leads are actually being saved. We should surface a non-blocking error toast and keep an edge-function log line.
 
-## Verification checklist (post-seed)
-- 15 rows present, all active
-- Rules with email content: 1, 3, 4, 8, 10, 11, 12 (7 emails)
-- Agent-recipient rules: 2, 6, 14b (3 agent rules)
-- Time windows set on rules 8, 9, 10, 11, 12 (and default 09:00–21:00 on others)
+## Changes
 
-Hand back a one-line pass/fail summary after verification.
+### 1. Edge function `supabase/functions/submit-lead/index.ts`
+- Accept new optional fields: `itinerary_slug`, `page_source`.
+- Resolution order for `itinerary_id`:
+  1. From `landing_page_id` (existing).
+  2. **New:** from `itinerary_slug` → `itineraries.id` where `slug = $1`.
+- If itinerary is resolved and `destination_id` is still null, hydrate `destination_id` from that itinerary (already implemented — keep).
+- Persist `page_source` into the `leads.source_page` column (or into notes if the column doesn't exist — verify in migration step).
+- Add a structured `console.log` on every successful insert: `{ traveller_code, destination_id, itinerary_id, channel, platform }` so you can confirm in logs.
+
+### 2. Hook `src/site/hooks/useLeadCapture.ts`
+- Forward `trip_slug` as `itinerary_slug` and `page_source` to the edge function body.
+- On error, emit a non-blocking `toast.error("Could not save lead — please WhatsApp us directly.")` so silent failures stop happening.
+
+### 3. `TripLeadForm.tsx`
+- Already passes `trip_slug`, `destination`, `page_source: trip_detail_<slug>` — no UI change needed; it just starts arriving at the edge function now.
+
+### 4. Verification step (after deploy)
+- Submit the form from `/trips/<some-slug>`.
+- Confirm in Lead Management that a new row appears with destination + itinerary populated and `Platform: Organic / Channel: Website`.
+- Open the lead's timeline — note should contain the trip title and slug.
+- Confirm WhatsApp tab opens with the prefilled message.
+
+## Out of scope
+
+- Changing how AiSensy / automation reacts to the new lead (handled separately by your automations).
+- Touching the homepage modal or contact form flows beyond what's needed for shared hook/edge changes (those will inherit the toast + page_source improvements automatically).
