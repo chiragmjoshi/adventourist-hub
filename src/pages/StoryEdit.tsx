@@ -19,9 +19,10 @@ import { useAutoSaveDraft } from "@/components/forms/useAutoSaveDraft";
 import UnsavedChangesDialog from "@/components/forms/UnsavedChangesDialog";
 
 const AUTHORS = ["Minal Joshi", "Pinky Prajapati", "Team Adventourist"];
-const CATEGORIES = [
-  "Destination Guide", "Travel Tips", "Client Story",
-  "Food & Culture", "Adventure", "Honeymoon",
+const CATEGORIES: { value: string; label: string }[] = [
+  { value: "travel-stories",     label: "Travel Stories" },
+  { value: "things-to-do",       label: "Things To Do" },
+  { value: "destination-guides", label: "Destination Guides" },
 ];
 
 type StoryForm = {
@@ -44,7 +45,7 @@ type StoryForm = {
 
 const EMPTY: StoryForm = {
   title: "", slug: "", excerpt: "", content: "", cover_image_url: "",
-  author: "Minal Joshi", category: "Destination Guide", tags: [],
+  author: "Minal Joshi", category: "travel-stories", tags: [],
   destination_id: null, read_time_minutes: 5,
   is_published: false, published_at: null,
   seo_title: "", seo_description: "", og_image_url: "",
@@ -87,33 +88,40 @@ const StoryEdit = () => {
     queryKey: ["story", id],
     enabled: !isNew,
     queryFn: async () => {
-      const { data, error } = await supabase.from("stories" as any).select("*").eq("id", id!).maybeSingle();
+      const { data, error } = await supabase
+        .from("travel_stories" as any)
+        .select("*")
+        .eq("id", id!)
+        .maybeSingle();
       if (error) throw error;
       if (data) {
-        const d = data as any;
-        const loaded: StoryForm = {
-          title: d.title || "",
-          slug: d.slug || "",
-          excerpt: d.excerpt || "",
-          content: d.content || "",
-          cover_image_url: d.cover_image_url || "",
-          author: d.author || "Minal Joshi",
-          category: d.category || "Destination Guide",
-          tags: d.tags || [],
-          destination_id: d.destination_id || null,
-          read_time_minutes: d.read_time_minutes ?? 5,
-          is_published: !!d.is_published,
-          published_at: d.published_at || null,
-          seo_title: d.seo_title || "",
-          seo_description: d.seo_description || "",
-          og_image_url: d.og_image_url || "",
-        };
+        const loaded: StoryForm = mapRowToForm(data as any);
         setForm(loaded);
         resetSnapshot(loaded);
       }
       return data;
     },
   });
+
+  function mapRowToForm(d: any): StoryForm {
+    return {
+      title: d.title || "",
+      slug: d.slug || "",
+      excerpt: d.excerpt || "",
+      content: d.content_html || "",
+      cover_image_url: d.thumbnail_url || "",
+      author: d.author || "Minal Joshi",
+      category: d.category || "travel-stories",
+      tags: d.tags || [],
+      destination_id: null,
+      read_time_minutes: d.read_time_minutes ?? 5,
+      is_published: d.status === "published",
+      published_at: d.published_at || null,
+      seo_title: d.seo_title || "",
+      seo_description: d.seo_description || "",
+      og_image_url: "",
+    };
+  }
 
   const { data: destinations = [] } = useQuery({
     queryKey: ["destinations_active_min"],
@@ -164,23 +172,21 @@ const StoryEdit = () => {
         title: form.title,
         slug: form.slug,
         excerpt: form.excerpt || null,
-        content: form.content || null,
-        cover_image_url: form.cover_image_url || null,
+        content_html: form.content || null,
+        thumbnail_url: form.cover_image_url || null,
         author: form.author,
         category: form.category,
         tags: form.tags,
-        destination_id: form.destination_id || null,
         read_time_minutes: form.read_time_minutes || 1,
-        is_published: willPublish,
+        status: willPublish ? "published" : "draft",
         published_at: willPublish && !form.published_at ? new Date().toISOString() : form.published_at,
         seo_title: form.seo_title || null,
         seo_description: form.seo_description || null,
-        og_image_url: form.og_image_url || null,
       };
 
       let savedId = recordId;
       if (!savedId) {
-        const { data, error } = await supabase.from("stories" as any).insert(payload).select("id, published_at").single();
+        const { data, error } = await supabase.from("travel_stories" as any).insert(payload).select("id, published_at").single();
         if (error) throw error;
         savedId = (data as any).id;
         setRecordId(savedId);
@@ -188,7 +194,7 @@ const StoryEdit = () => {
         // swap URL to edit route without losing state
         window.history.replaceState(null, "", `/admin/stories/${savedId}/edit`);
       } else {
-        const { error } = await supabase.from("stories" as any).update(payload).eq("id", savedId);
+        const { error } = await supabase.from("travel_stories" as any).update(payload).eq("id", savedId);
         if (error) throw error;
       }
 
@@ -388,7 +394,7 @@ const StoryEdit = () => {
                 <Select value={form.category} onValueChange={(v) => update("category", v)}>
                   <SelectTrigger className="h-8 rounded-md text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
