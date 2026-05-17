@@ -78,6 +78,16 @@ function AdminLoader() {
 
 const queryClient = new QueryClient();
 
+// On the public marketing host we don't need auth — skip AuthProvider entirely
+// so the public site doesn't pay for supabase.auth.getSession + user-profile fetches.
+const IS_PUBLIC_HOST =
+  typeof window !== "undefined" && getHostKind() === "public";
+
+function MaybeAuth({ children }: { children: React.ReactNode }) {
+  if (IS_PUBLIC_HOST) return <>{children}</>;
+  return <AuthProvider>{children}</AuthProvider>;
+}
+
 const App = () => {
   useEffect(() => {
     // Hostname-based gating: redirect cross-domain traffic before anything renders.
@@ -114,7 +124,7 @@ const App = () => {
       <Sonner />
       <OfflineBanner />
       <BrowserRouter>
-        <AuthProvider>
+        <MaybeAuth>
           {getHostKind() !== "public" && <HealthCheckRunner />}
           <Suspense fallback={<AdminLoader />}>
           <Routes>
@@ -182,7 +192,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
-        </AuthProvider>
+        </MaybeAuth>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
