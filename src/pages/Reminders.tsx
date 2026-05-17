@@ -43,6 +43,9 @@ const Reminders = () => {
 
   const { data: reminders = [] } = useQuery({
     queryKey: ["reminders"],
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reminders" as any)
