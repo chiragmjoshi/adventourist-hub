@@ -934,6 +934,7 @@ const LeadDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <AddReminderModal open={remindOpen} onOpenChange={setRemindOpen} lead={lead as any} />
     </AppLayout>
   );
 };
