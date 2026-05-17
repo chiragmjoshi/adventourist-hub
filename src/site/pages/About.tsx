@@ -34,7 +34,7 @@ export default function About() {
       title="About Adventourist — We Design Journeys"
       description="Boutique Mumbai-based travel design studio. 250+ five-star reviews, handcrafted itineraries, honest pricing, and zero stress."
     >
-      <div className="bg-[#1B0D07]">
+      <div className="bg-[#1A1D2E]">
         <HeroCinematic />
         <AdventouristWay />
         <StoryTimeline />

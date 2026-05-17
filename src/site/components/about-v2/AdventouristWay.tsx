@@ -62,7 +62,7 @@ export default function AdventouristWay() {
                 stiffness: 110,
                 damping: 18,
               }}
-              className="group relative overflow-hidden rounded-2xl border border-white/40 bg-white/50 p-7 backdrop-blur-xl shadow-[0_10px_40px_-20px_rgba(26,29,46,0.25)]"
+              className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/70 p-7 shadow-[0_10px_40px_-20px_rgba(26,29,46,0.25)]"
             >
               <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#FF6F4C] text-white">
                 <c.icon className="h-5 w-5" />
