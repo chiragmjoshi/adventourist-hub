@@ -46,8 +46,7 @@ export default function StoryTimeline() {
   return (
     <section
       ref={ref}
-      className="relative bg-[#1B0D07] text-white"
-      style={{ minHeight: `${STEPS.length * 55}vh` }}
+      className="relative bg-[#1A1D2E] text-white"
     >
       <div className="mx-auto grid max-w-7xl gap-10 px-6 py-16 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-20 lg:py-20">
         {/* Left sticky */}
@@ -83,7 +82,7 @@ export default function StoryTimeline() {
                 transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 className="relative"
               >
-                <span className="absolute -left-[26px] top-2 h-3 w-3 rounded-full bg-[#FF6F4C] ring-4 ring-[#1B0D07] lg:-left-[34px]" />
+                <span className="absolute -left-[26px] top-2 h-3 w-3 rounded-full bg-[#FF6F4C] ring-4 ring-[#1A1D2E] lg:-left-[34px]" />
                 <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#FDC436]">{s.year}</p>
                 <h3
                   className="mb-4 text-3xl leading-tight tracking-tight sm:text-4xl lg:text-5xl"

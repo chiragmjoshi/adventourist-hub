@@ -33,7 +33,7 @@ const TEAM = [
 
 export default function TeamShowcase() {
   return (
-    <section className="bg-[#1B0D07] px-6 py-20 text-white sm:px-10 lg:px-20 lg:py-28">
+    <section className="bg-[#1A1D2E] px-6 py-20 text-white sm:px-10 lg:px-20 lg:py-28">
       <div className="mx-auto max-w-7xl">
         <p className="mb-6 text-[11px] uppercase tracking-[0.4em] text-[#FF6F4C]">The People</p>
         <h2
