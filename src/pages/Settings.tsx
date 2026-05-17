@@ -383,7 +383,7 @@ const Settings = () => {
                       <div className="relative mt-1">
                         <Input
                           type={showSmtpPassword ? "text" : "password"}
-                          value={autoForm[field.key] || ""}
+                          value={getAutomationFieldValue(field.key)}
                           onChange={(e) => updateAutoField(field.key, e.target.value)}
                           className="pr-9 rounded-md"
                           placeholder={field.placeholder}
@@ -395,7 +395,7 @@ const Settings = () => {
                     ) : (
                       <Input
                         type={field.type}
-                        value={autoForm[field.key] || ""}
+                        value={getAutomationFieldValue(field.key)}
                         onChange={(e) => updateAutoField(field.key, e.target.value)}
                         className="mt-1 rounded-md"
                         placeholder={field.placeholder}
@@ -407,26 +407,8 @@ const Settings = () => {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={smtpTesting || !isSmtpConfigured}
-                onClick={async () => {
-                  if (!isSmtpConfigured) {
-                    toast.error("Please fill SMTP Host and Username, then click Save before testing.");
-                    return;
-                  }
-                  setSmtpTesting(true);
-                  try {
-                    const { data, error } = await supabase.functions.invoke("send-test-email", {
-                      body: { to: profile?.email },
-                    });
-                    if (error) throw error;
-                    if ((data as any)?.error) throw new Error((data as any).error);
-                    toast.success(`Test email sent to ${(data as any)?.to || profile?.email}`);
-                  } catch (e: any) {
-                    toast.error(e?.message || "Failed to send test email");
-                  } finally {
-                    setSmtpTesting(false);
-                  }
-                }}
+                disabled={smtpTesting}
+                onClick={handleSendTestEmail}
               >
                 {smtpTesting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Mail className="h-3.5 w-3.5 mr-1" />}
                 {smtpTesting ? "Sending…" : "Send Test Email"}
