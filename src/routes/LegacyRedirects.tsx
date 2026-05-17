@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Route, Navigate, useParams, useLocation } from "react-router-dom";
 
 /**
@@ -15,6 +16,14 @@ function RedirectParam({ to }: { to: string }) {
 
 function RedirectStatic({ to }: { to: string }) {
   return <Navigate to={to} replace />;
+}
+
+/** Hard redirect to a path served by the host (e.g. /sitemap.xml in /public). */
+function ExternalRedirect({ to }: { to: string }) {
+  useEffect(() => {
+    window.location.replace(to);
+  }, [to]);
+  return null;
 }
 
 // Itinerary slug map (old → new)
@@ -118,7 +127,7 @@ export function legacyRedirectRoutes() {
 
       {/* Typo + sitemap */}
       <Route path="/travelstories" element={<RedirectStatic to="/travel-stories" />} />
-      <Route path="/sitemaps" element={<RedirectStatic to="/sitemap.xml" />} />
+      <Route path="/sitemaps" element={<ExternalRedirect to="/sitemap.xml" />} />
     </>
   );
 }
