@@ -121,7 +121,34 @@ export default function TravelStories() {
   return (
     <SiteLayout
       title="Travel Stories & Inspiration | Adventourist"
-      description="Real travel stories, destination guides and trip inspiration from Adventourist. Bali honeymoons, Ladakh adventures, Thailand escapes, Sri Lanka getaways — told by real travellers."
+      description="Real travel stories and trip inspiration — Bali honeymoons, Ladakh adventures, Thailand escapes and Sri Lanka getaways from real travellers."
+      jsonLd={[
+        {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Travel Stories & Inspiration — Adventourist",
+          url: "https://www.adventourist.in/travel-stories",
+          description:
+            "Real travel stories and trip inspiration from Adventourist customers and experts.",
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: (stories ?? []).slice(0, 20).map((s, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              url: `https://www.adventourist.in/travel-stories/${s.slug}`,
+              name: s.title,
+            })),
+          },
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://www.adventourist.in/" },
+            { "@type": "ListItem", position: 2, name: "Travel Stories", item: "https://www.adventourist.in/travel-stories" },
+          ],
+        },
+      ]}
     >
       <section className="bg-drift py-16 lg:py-20">
         <div className="max-w-3xl mx-auto px-4 text-center">
