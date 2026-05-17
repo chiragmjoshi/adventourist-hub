@@ -102,7 +102,7 @@ const TripsKanban = () => {
       return (
         (t.traveller_name || "").toLowerCase().includes(q) ||
         (t.cashflow_code || "").toLowerCase().includes(q) ||
-        (t.destinations?.name || "").toLowerCase().includes(q) ||
+        (t.destination?.name || "").toLowerCase().includes(q) ||
         (t.leads?.mobile || "").toLowerCase().includes(q)
       );
     });
@@ -278,9 +278,9 @@ const TripsKanban = () => {
                           return null;
                         })()}
 
-                        {t.destinations?.name && (
+                        {t.destination?.name && (
                           <Badge variant="secondary" className="mt-1.5 text-[10px] px-1.5 py-0 bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0 rounded">
-                            {t.destinations.name}
+                            {t.destination.name}
                           </Badge>
                         )}
 
@@ -293,9 +293,9 @@ const TripsKanban = () => {
                           </div>
                         )}
 
-                        {t.users?.name && (
+                        {t.assignedUser?.name && (
                           <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
-                            <User className="h-3 w-3" />{t.users.name}
+                            <User className="h-3 w-3" />{t.assignedUser.name}
                           </div>
                         )}
 
