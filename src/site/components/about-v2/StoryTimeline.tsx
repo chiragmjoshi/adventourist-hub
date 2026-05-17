@@ -46,18 +46,18 @@ export default function StoryTimeline() {
   return (
     <section
       ref={ref}
-      className="relative bg-[#0B0B0E] text-white"
-      style={{ minHeight: `${STEPS.length * 90}vh` }}
+      className="relative bg-[#1B0D07] text-white"
+      style={{ minHeight: `${STEPS.length * 55}vh` }}
     >
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-20 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-20 lg:py-32">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-16 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-20 lg:py-20">
         {/* Left sticky */}
         <div className="lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center">
-          <p className="mb-5 text-[11px] uppercase tracking-[0.4em] text-[#C9A86B]">Our Story</p>
+          <p className="mb-5 text-[11px] uppercase tracking-[0.4em] text-[#FF6F4C]">Our Story</p>
           <h2
             className="mb-8 text-4xl tracking-tight sm:text-6xl lg:text-7xl"
             style={{ fontFamily: "'Fraunces', serif", fontWeight: 400 }}
           >
-            How it all <em className="text-[#C9A86B] not-italic">started</em>
+            How it all <em className="text-[#FF6F4C] not-italic">started</em>
           </h2>
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-white/5 lg:aspect-[4/5] lg:max-w-md">
             <ActiveImage activeIndex={activeIndex} />
@@ -70,10 +70,10 @@ export default function StoryTimeline() {
           <div className="absolute left-2 top-0 h-full w-px bg-white/10 lg:left-4" />
           <motion.div
             style={{ scaleY: lineScale, transformOrigin: "top" }}
-            className="absolute left-2 top-0 h-full w-px bg-gradient-to-b from-[#FF6F4C] via-[#C9A86B] to-[#FDC436] lg:left-4"
+            className="absolute left-2 top-0 h-full w-px bg-gradient-to-b from-[#FF6F4C] via-[#FDC436] to-[#FF6F4C] lg:left-4"
           />
 
-          <div className="space-y-28 py-12 lg:space-y-44">
+          <div className="space-y-20 py-8 lg:space-y-28">
             {STEPS.map((s, i) => (
               <motion.div
                 key={s.year}
@@ -83,8 +83,8 @@ export default function StoryTimeline() {
                 transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 className="relative"
               >
-                <span className="absolute -left-[26px] top-2 h-3 w-3 rounded-full bg-[#FF6F4C] ring-4 ring-[#0B0B0E] lg:-left-[34px]" />
-                <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#C9A86B]">{s.year}</p>
+                <span className="absolute -left-[26px] top-2 h-3 w-3 rounded-full bg-[#FF6F4C] ring-4 ring-[#1B0D07] lg:-left-[34px]" />
+                <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#FDC436]">{s.year}</p>
                 <h3
                   className="mb-4 text-3xl leading-tight tracking-tight sm:text-4xl lg:text-5xl"
                   style={{ fontFamily: "'Fraunces', serif", fontWeight: 400 }}

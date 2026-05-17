@@ -21,13 +21,13 @@ export default function JourneyCTA() {
   }
 
   return (
-    <section className="relative z-10 overflow-hidden bg-[#0B0B0E] px-6 py-32 text-white sm:px-10 lg:px-20 lg:py-48">
+    <section className="relative z-10 overflow-hidden bg-[#FF6F4C] px-6 py-24 text-white sm:px-10 lg:px-20 lg:py-32">
       {/* radial accent */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-60"
+        className="pointer-events-none absolute inset-0 opacity-80"
         style={{
           background:
-            "radial-gradient(60% 60% at 50% 40%, rgba(255,111,76,0.18) 0%, transparent 70%)",
+            "radial-gradient(60% 60% at 50% 40%, rgba(253,196,54,0.35) 0%, transparent 70%)",
         }}
       />
       <div className="relative mx-auto flex max-w-7xl flex-col items-center text-center">
@@ -36,7 +36,7 @@ export default function JourneyCTA() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-6 text-[11px] uppercase tracking-[0.4em] text-[#C9A86B]"
+          className="mb-6 text-[11px] uppercase tracking-[0.4em] text-[#FDC436]"
         >
           Your turn
         </motion.p>
@@ -48,7 +48,7 @@ export default function JourneyCTA() {
           className="max-w-5xl text-4xl leading-[1.05] tracking-tight sm:text-7xl lg:text-[7rem]"
           style={{ fontFamily: "'Fraunces', serif", fontWeight: 400 }}
         >
-          Let's plan your <em className="text-[#C9A86B] not-italic">next journey.</em>
+          Let's plan your <em className="text-[#FDC436] not-italic">next journey.</em>
         </motion.h2>
 
         <motion.div
@@ -71,7 +71,7 @@ export default function JourneyCTA() {
               y.set(0);
             }}
             style={{ x: sx, y: sy }}
-            className="group relative flex h-44 w-44 items-center justify-center rounded-full bg-[#FF6F4C] text-center text-sm font-medium uppercase tracking-[0.2em] text-white shadow-[0_20px_60px_-15px_rgba(255,111,76,0.5)] sm:h-56 sm:w-56"
+            className="group relative flex h-44 w-44 items-center justify-center rounded-full bg-white text-center text-sm font-medium uppercase tracking-[0.2em] text-[#FF6F4C] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.45)] sm:h-56 sm:w-56"
           >
             <motion.span
               animate={{ scale: hover ? 1.08 : 1 }}
@@ -83,11 +83,11 @@ export default function JourneyCTA() {
               Planning
               <ArrowUpRight className="h-5 w-5" />
             </motion.span>
-            <span className="absolute inset-0 rounded-full ring-1 ring-white/20" />
+            <span className="absolute inset-0 rounded-full ring-1 ring-white/40" />
           </motion.a>
         </motion.div>
 
-        <p className="mt-10 max-w-md text-sm text-white/50">
+        <p className="mt-10 max-w-md text-sm text-white/75">
           Or call our team in Mumbai — we usually pick up on the first ring.
         </p>
       </div>
