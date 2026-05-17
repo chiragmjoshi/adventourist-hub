@@ -123,6 +123,20 @@ Deno.serve(async (req) => {
       destination_id = dest?.id ?? null;
     }
 
+    // Resolve itinerary by slug (organic trip-detail submissions)
+    if (!itinerary_id && body.itinerary_slug?.trim()) {
+      const { data: it, error: itErr } = await supabase
+        .from("itineraries")
+        .select("id, destination_id")
+        .eq("slug", body.itinerary_slug.trim())
+        .maybeSingle();
+      if (itErr) console.error("submit-lead: itinerary slug lookup", itErr);
+      if (it) {
+        itinerary_id = it.id;
+        if (!destination_id) destination_id = it.destination_id ?? null;
+      }
+    }
+
     // If we got an itinerary but no destination, hydrate destination from itinerary
     if (itinerary_id && !destination_id) {
       const { data: it } = await supabase
