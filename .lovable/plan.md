@@ -1,51 +1,28 @@
-## Lead Management — filter & search UX fixes
+## Trips Kanban — fix blank board & UX additions
 
-Four problems to fix on `/admin/leads`. All changes are scoped to `src/pages/LeadManagement.tsx` and `src/components/DateRangePicker.tsx`.
+### Current state (verified by reading `src/pages/TripsKanban.tsx`)
+The file **already** uses `travel_start_date` / `travel_end_date`, already selects `pax_count`, and already renders pax. So FIX 1 and FIX 5 are largely no-ops. The real gaps are: no error surface, unsafe stage fallback, no urgency badge, no completed-toggle, and existing rows may have NULL `trip_stage`.
 
-### 1. Date picker — add "All Time" + "Custom Range"
+### Changes to `src/pages/TripsKanban.tsx`
 
-`DateRangePicker.tsx` presets are extended:
+1. **Expose query error** — destructure `isError, error: queryError` from `useQuery`.
+2. **Error banner** — above the kanban scroll container, render a destructive banner when `isError` is true.
+3. **Safe stage grouping** — replace `const k = t.trip_stage || "trip_sold"` with:
+   ```ts
+   const k = (t.trip_stage && STAGES.find(s => s.key === t.trip_stage))
+     ? t.trip_stage : "trip_sold";
+   ```
+4. **Urgency badge** — add a red (≤7d) / amber (≤30d) `Badge` right after the `cashflow_code` line using `differenceInDays` (already imported). Keep the existing `T-{d}d` top-right badge untouched (it only covers ≤14d and lives in a different spot — both are fine, or we can drop the duplicate if you prefer; default: keep both since spec says additive).
+5. **"Show completed" toggle** — add `hideCompleted` state (default `true`), render a checkbox next to the existing "Mine only" switch in the header, and filter `trips` in the `grouped` memo when active.
+6. **No changes** to drag/drop (none exists here — only click-advance), card click nav, mutations, or dialogs.
 
-- **This Month**
-- **Last Month**
-- **Last 3 Months**
-- **Last 6 Months** (current default)
-- **Last 12 Months**
-- **This Year**
-- **All Time** — sets `from = 2020-01-01` (or min `created_at` from DB; static date is simpler), `to = today`. Trigger button shows "All time" instead of the date range.
-- **Custom Range** — keeps the popover open so the user picks two dates on the calendar; only closes on second click. Today the popover auto-closes the moment a `from` is picked, which breaks custom selection. Fix: only close when `range.from && range.to` are both set AND a preset wasn't used; keep open otherwise.
-
-Display: when `from <= 2020-01-01`, the trigger button reads "All time" instead of "Jan 1, 2020 – May 18, 2026".
-
-### 2. Search should ignore the date filter
-
-Today, the search box (`name / email / mobile / traveller_code`) is AND-ed with the date range. So searching "Minal" while the range is "Last 6 Months" misses older leads.
-
-Fix: when `search.trim().length > 0`, drop the `gte/lte created_at` clauses in both `applyBaseFilters` (leads page query) and the chip-count query. Show a subtle hint chip next to the search input: "Searching across all dates" with a small × to clear the search.
-
-This matches user mental model: typing in search = global lookup, filters = browsing.
-
-### 3. Remove "More / Less" — show all filters inline
-
-The bar has room for the Ad Group filter. Remove `moreFilters` state and the toggle button; always render Destination, Platform, Channel, Campaign, **Ad Group** in one row. On <1280px screens the bar wraps to two rows naturally (`flex-wrap`).
-
-### 4. Persist filters & search across navigation
-
-Today, opening a lead and clicking Back resets everything because state is component-local. Two practical options — recommend **(b)**:
-
-- **(a)** URL query params (`?from=…&to=…&q=…&dest=…&disp=…`). Bookmarkable & shareable but more code.
-- **(b) sessionStorage**, key `leadmgmt.filters.v1` — restored on mount, written on every change. Survives back-navigation within the session, cleared on browser close. Minimal code, no URL noise. Reset button also clears the storage entry.
-
-Will implement **(b)**. Stored shape:
-
-```ts
-{ dateFrom, dateTo, filterDestination, filterPlatform, filterChannel,
-  filterCampaign, filterAdGroup, search, activeDispositions: string[],
-  activeStatuses: string[], currentPage }
+### Database backfill (separate migration)
+```sql
+UPDATE trip_cashflow
+SET trip_stage = 'trip_sold'
+WHERE trip_stage IS NULL AND status <> 'cancelled';
 ```
-
-On mount: `useState` initializers read from sessionStorage and fall back to current defaults. A single `useEffect` writes the snapshot whenever any of those values change. `resetFilters()` also calls `sessionStorage.removeItem(...)`.
+Run via migration tool so existing rows surface in the "Trip Sold" column.
 
 ### Out of scope
-
-No UI restyling, no schema changes, no business-logic changes — purely filter/search behaviour and the date picker presets.
+Column rename fixes (already correct), pax display (already present), styling/layout changes, other pages.

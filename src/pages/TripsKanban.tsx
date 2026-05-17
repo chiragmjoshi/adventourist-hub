@@ -43,10 +43,11 @@ const TripsKanban = () => {
   const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [mineOnly, setMineOnly] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(true);
   const [logCall, setLogCall] = useState<LogCallTarget>(null);
   const [remind, setRemind] = useState<ReminderTarget>(null);
 
-  const { data: trips = [], isLoading } = useQuery({
+  const { data: trips = [], isLoading, isError, error: queryError } = useQuery({
     queryKey: ["trips_kanban"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -104,12 +105,16 @@ const TripsKanban = () => {
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {};
     STAGES.forEach((s) => (map[s.key] = []));
-    filtered.forEach((t) => {
-      const k = t.trip_stage || "trip_sold";
-      (map[k] = map[k] || []).push(t);
-    });
+    filtered
+      .filter((t) => !hideCompleted || t.trip_stage !== "trip_completed")
+      .forEach((t) => {
+        const k = (t.trip_stage && STAGES.find((s) => s.key === t.trip_stage))
+          ? t.trip_stage
+          : "trip_sold";
+        (map[k] = map[k] || []).push(t);
+      });
     return map;
-  }, [filtered]);
+  }, [filtered, hideCompleted]);
 
   const advanceStage = useMutation({
     mutationFn: async ({ trip, target }: { trip: any; target: string }) => {
@@ -169,8 +174,23 @@ const TripsKanban = () => {
             <Switch id="mine" checked={mineOnly} onCheckedChange={setMineOnly} />
             <Label htmlFor="mine" className="text-xs cursor-pointer">Mine only</Label>
           </div>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!hideCompleted}
+              onChange={(e) => setHideCompleted(!e.target.checked)}
+              className="rounded"
+            />
+            Show completed
+          </label>
         </div>
       </div>
+
+      {isError && (
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+          Failed to load trips: {(queryError as any)?.message || "Unknown error"}. Please refresh the page.
+        </div>
+      )}
 
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-3 min-w-max">
@@ -232,6 +252,25 @@ const TripsKanban = () => {
                           )}
                         </div>
                         <div className="text-[11px] font-mono text-primary mt-0.5">{t.cashflow_code}</div>
+
+                        {(() => {
+                          if (!t.travel_start_date) return null;
+                          const d = differenceInDays(new Date(t.travel_start_date), new Date());
+                          if (d < 0) return null;
+                          if (d <= 7)
+                            return (
+                              <Badge className="mt-1 text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-0 rounded">
+                                🔴 {d === 0 ? "Today" : `${d}d away`}
+                              </Badge>
+                            );
+                          if (d <= 30)
+                            return (
+                              <Badge className="mt-1 text-[10px] px-1.5 py-0 bg-[hsl(var(--horizon))]/20 text-[hsl(var(--horizon))] border-0 rounded">
+                                🟡 {d}d away
+                              </Badge>
+                            );
+                          return null;
+                        })()}
 
                         {t.destinations?.name && (
                           <Badge variant="secondary" className="mt-1.5 text-[10px] px-1.5 py-0 bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0 rounded">
