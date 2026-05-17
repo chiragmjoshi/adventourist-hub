@@ -1,15 +1,36 @@
-## Resume hero image generation
+## Fix destination update error + duplicate options
 
-Status: destinations 37/37 ✅, itineraries 3/72, landing_pages 0/11 — 80 remaining.
+Two unrelated bugs surfaced in the screenshot:
 
-### Approach
+### 1. `invalid input syntax for type integer: "Apr"`
 
-Re-run the existing idempotent script `/tmp/genimg/run.py` (skips records that already have `hero_image`). Each run generates ~30–40 images before the sandbox 10-minute cap, so this will take ~2–3 turns:
+`destinations.best_months` and `itineraries.best_months` are `integer[]` columns (1–12), but the UI stores/sends month name strings (`"Apr"`, `"May"`, …). Saving fails as soon as a month chip is selected.
 
-1. Turn 1: resume → finish remaining itineraries (likely ~35 of 69).
-2. Turn 2: finish itineraries + all 11 landing pages.
-3. Verify final counts (72/72 + 11/11), summarize in `/mnt/documents/image_generation_report.md`.
+Fix in `src/pages/Destinations.tsx` and `src/pages/ItineraryEdit.tsx`:
+- Keep `MONTHS` array as the chip labels (1-indexed maps cleanly: `Jan=1 … Dec=12`).
+- On load: convert `integer[]` from DB → month-name `string[]` for form state.
+- On save: convert form `string[]` → `integer[]` (`MONTHS.indexOf(m) + 1`) before writing.
+- Apply same conversion to the read-only month list rendered in the Destinations table row.
 
-Nothing else changes — same cinematic prompt, `google/gemini-3.1-flash-image-preview` (fast), upload to `legacy-media/hero/{table}/{slug}.png`, PATCH `hero_image` via service-role REST.
+LandingPages uses `time_to_visit text[]` already — no change.
 
-If you'd prefer I batch the remaining work asynchronously with `nohup` again instead of foreground runs, say so — otherwise I'll start the foreground resume.
+### 2. Duplicate categorization options
+
+`master_values` has 21 duplicate rows across `destination_type` (14) and `destination_suitable_type` (7) — one set was inserted by the seed migration, another by the legacy import. Data fix only, no code change:
+
+```sql
+DELETE FROM master_values mv
+USING master_values dup
+WHERE mv.type = dup.type
+  AND mv.value = dup.value
+  AND mv.type IN ('destination_type','destination_suitable_type')
+  AND mv.ctid > dup.ctid;     -- keep the earliest row, drop later copies
+```
+
+### Verification
+
+1. Reopen Destinations → Edit any row → toggle months/themes → Save → toast success, no RLS / type errors in console.
+2. Categorization tab shows each chip exactly once.
+3. Repeat on Itineraries edit page.
+
+No schema changes; the only DB write is the dedupe `DELETE`.
