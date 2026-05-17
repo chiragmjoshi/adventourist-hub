@@ -246,6 +246,12 @@ const LeadDetail = () => {
         events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
         evaluateRulesForLead(id!, "disposition_changed");
       }
+      if (updates.follow_up_date !== undefined && updates.follow_up_date !== oldLead.follow_up_date) {
+        const txt = updates.follow_up_date
+          ? `Follow-up set to ${updates.follow_up_date} by ${profile?.name || "User"}`
+          : `Follow-up cleared by ${profile?.name || "User"}`;
+        events.push({ event_type: "follow_up_set", note: txt });
+      }
       if (updates.notes !== undefined && updates.notes !== oldLead.notes) {
         events.push({ event_type: "note_added", note: `Note added by ${profile?.name || "User"}` });
       }
