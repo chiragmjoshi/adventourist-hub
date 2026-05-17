@@ -76,7 +76,16 @@ function AdminLoader() {
   );
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // On the public marketing host we don't need auth — skip AuthProvider entirely
 // so the public site doesn't pay for supabase.auth.getSession + user-profile fetches.
