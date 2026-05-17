@@ -70,7 +70,7 @@ const VendorDetail = () => {
 
   if (isLoading || !vendor) return <AppLayout title="Vendor"><div className="text-center py-12 text-sm text-muted-foreground">Loading...</div></AppLayout>;
 
-  const getDestName = (destId: string) => destinations.find((d: any) => d.id === destId)?.name || destId;
+  const getDestName = (destId: string) => destinations.find((d: any) => d.id === destId)?.name || null;
   const contacts = (Array.isArray(vendor.contact_points) ? vendor.contact_points : []) as ContactPoint[];
   const totalVendorCost = trips.reduce((sum: number, t: any) => sum + (t.total_vendor_cost || 0), 0);
   const maskedPan = vendor.pan ? vendor.pan.slice(0, 5) + "****" + vendor.pan.slice(9) : "—";
