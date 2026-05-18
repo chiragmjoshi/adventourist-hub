@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
 import { getDestinationImage } from "@/site/lib/destinationImages";
 
-const HERO_BG = "/site-images/bg-home-page.jpg";
+const HERO_BG = "/site-images/hero-mountains-v3.jpg";
 
 const destinations = [
   { name: "Bali",       tagline: "Island of the Gods",       region: "Indonesia", image: getDestinationImage("bali") },
@@ -32,7 +32,7 @@ export default function HeroSection() {
         aria-hidden="true"
       />
       {/* Dark overlay */}
-      <div className="absolute inset-0" style={{ backgroundColor: "rgba(26, 29, 46, 0.65)" }} />
+      <div className="absolute inset-0" style={{ backgroundColor: "rgba(26, 29, 46, 0.35)" }} />
       <div className="absolute inset-0 bg-gradient-to-t from-abyss via-abyss/30 to-transparent" />
 
       {/* Giant translucent wordmark */}
