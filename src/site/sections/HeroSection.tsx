@@ -32,7 +32,7 @@ export default function HeroSection() {
         aria-hidden="true"
       />
       {/* Dark overlay */}
-      <div className="absolute inset-0" style={{ backgroundColor: "rgba(26, 29, 46, 0.65)" }} />
+      <div className="absolute inset-0" style={{ backgroundColor: "rgba(26, 29, 46, 0.35)" }} />
       <div className="absolute inset-0 bg-gradient-to-t from-abyss via-abyss/30 to-transparent" />
 
       {/* Giant translucent wordmark */}
