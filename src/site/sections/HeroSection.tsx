@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
 import { getDestinationImage } from "@/site/lib/destinationImages";
 
-const HERO_BG = "/site-images/bg-home-page.jpg";
+const HERO_BG = "/site-images/hero-mountains-v3.jpg";
 
 const destinations = [
   { name: "Bali",       tagline: "Island of the Gods",       region: "Indonesia", image: getDestinationImage("bali") },
