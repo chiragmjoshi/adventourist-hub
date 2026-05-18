@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
 import { getDestinationImage } from "@/site/lib/destinationImages";
+import heroImg from "@/assets/about-hero.jpg";
 
-const HERO_BG = "/site-images/hero-mountains-v3.jpg";
+const HERO_BG = heroImg;
 
 const destinations = [
   { name: "Bali",       tagline: "Island of the Gods",       region: "Indonesia", image: getDestinationImage("bali") },
