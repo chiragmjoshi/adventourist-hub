@@ -297,8 +297,22 @@ const VendorEdit = () => {
               <div>
                 <Label className="text-xs text-muted-foreground">Service Destinations <span className="text-destructive">*</span></Label>
                 <div className="flex flex-wrap gap-1.5 mt-2">
+                  <button
+                    key="__any__"
+                    onClick={() => setField("serve_destinations", form.serve_destinations.includes("ANY") ? [] : ["ANY"])}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
+                      form.serve_destinations.includes("ANY")
+                        ? "bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-[hsl(var(--lagoon))]/30"
+                        : "border-border/50 hover:border-border"
+                    }`}
+                  >Any</button>
                   {destinations.map((d: any) => (
-                    <button key={d.id} onClick={() => toggleArrayItem("serve_destinations", d.id)}
+                    <button key={d.id} onClick={() => {
+                      setForm(prev => {
+                        const arr = (prev.serve_destinations as string[]).filter(x => x !== "ANY");
+                        return { ...prev, serve_destinations: arr.includes(d.id) ? arr.filter(i => i !== d.id) : [...arr, d.id] };
+                      });
+                    }}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 ${
                         form.serve_destinations.includes(d.id)
                           ? "bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-[hsl(var(--lagoon))]/30" : "border-border/50 hover:border-border"
