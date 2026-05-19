@@ -121,12 +121,12 @@ const VendorDetail = () => {
                 <p className="text-[10px] text-muted-foreground mb-1">Destinations Served</p>
                 <div className="flex flex-wrap gap-1">
                   {((vendor.serve_destinations || []) as string[])
-                    .map((d) => ({ id: d, name: getDestName(d) }))
+                    .map((d) => ({ id: d, name: d === "ANY" ? "Any Destination" : getDestName(d) }))
                     .filter((x) => !!x.name)
                     .map((x, i) => (
                       <Badge key={i} variant="secondary" className="text-[10px] rounded-md bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0">{x.name}</Badge>
                     ))}
-                  {((vendor.serve_destinations || []) as string[]).filter((d) => !!getDestName(d)).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                  {((vendor.serve_destinations || []) as string[]).filter((d) => d === "ANY" || !!getDestName(d)).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
                 </div>
               </div>
               <div>
