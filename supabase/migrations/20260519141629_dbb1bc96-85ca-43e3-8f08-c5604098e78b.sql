@@ -1,0 +1,22 @@
+DELETE FROM lead_timeline WHERE lead_id IN (
+  '1c9d28fe-d42f-438f-9d61-ab5f639233ea',
+  'f440387c-178d-4e81-ad8d-ad33c3812afb',
+  '131f3bdd-7a47-44ef-8b98-8aab0f326041',
+  '73b523c8-c801-4da9-bef9-9cee889a3afa',
+  '1b85c626-8423-4546-88f2-5c0451d81e8a',
+  'a1430de3-a806-4b70-9d5e-158601e54cd4',
+  'a2222219-5030-434c-83e5-317800f5403a',
+  '3ab36c83-0592-4e88-8e62-a0f95c3c2778',
+  '98bdf512-0534-4462-ad13-bc7f36ec8dc9'
+);
+DELETE FROM leads WHERE id IN (
+  '1c9d28fe-d42f-438f-9d61-ab5f639233ea',
+  'f440387c-178d-4e81-ad8d-ad33c3812afb',
+  '131f3bdd-7a47-44ef-8b98-8aab0f326041',
+  '73b523c8-c801-4da9-bef9-9cee889a3afa',
+  '1b85c626-8423-4546-88f2-5c0451d81e8a',
+  'a1430de3-a806-4b70-9d5e-158601e54cd4',
+  'a2222219-5030-434c-83e5-317800f5403a',
+  '3ab36c83-0592-4e88-8e62-a0f95c3c2778',
+  '98bdf512-0534-4462-ad13-bc7f36ec8dc9'
+);
