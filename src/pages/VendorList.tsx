@@ -188,7 +188,7 @@ const VendorList = () => {
             <tbody>
               {filtered.map((v: any) => {
                 const pc = getPrimaryContact(v.contact_points);
-                const dests = ((v.serve_destinations || []) as string[]).filter((d) => !!getDestName(d));
+                const dests = ((v.serve_destinations || []) as string[]).filter((d) => d === "ANY" || !!getDestName(d));
                 const svcs = (v.services || []) as string[];
                 return (
                   <tr key={v.id} onClick={() => navigate(`/admin/vendors/${v.id}`)}
@@ -204,7 +204,7 @@ const VendorList = () => {
                       <div className="flex flex-wrap gap-1">
                         {dests.slice(0, 2).map((d, i) => (
                           <Badge key={i} variant="secondary" className="text-[10px] rounded-md bg-[hsl(var(--lagoon))]/10 text-[hsl(var(--lagoon))] border-0">
-                            {getDestName(d)}
+                            {d === "ANY" ? "Any Destination" : getDestName(d)}
                           </Badge>
                         ))}
                         {dests.length > 2 && <Badge variant="outline" className="text-[10px] rounded-md">+{dests.length - 2}</Badge>}
