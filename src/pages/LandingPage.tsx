@@ -72,7 +72,7 @@ const LandingPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-pulse text-lg font-medium text-gray-400">Loading...</div>
+        <div className="animate-pulse text-lg font-medium text-muted-foreground">Loading...</div>
       </div>
     );
   }
