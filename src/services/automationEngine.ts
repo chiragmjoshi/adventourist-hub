@@ -147,9 +147,25 @@ async function dispatchExecution(executionId: string, rule: any, ctx: VariableCo
       if (!success) errorMessage = JSON.stringify(result.response).slice(0, 500);
     } else if (channel === "email") {
       const body = resolveVariables(rule.email_body || "", ctx);
+      const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist", ctx);
       messagePreview = body.replace(/<[^>]+>/g, "").slice(0, 200);
-      success = false;
-      errorMessage = "Email transport not configured";
+      try {
+        const { data, error } = await supabase.functions.invoke("send-email", {
+          body: { to: recipientContact, subject, html: body },
+        });
+        if (error) {
+          success = false;
+          errorMessage = (error.message || String(error)).slice(0, 500);
+        } else if (data && (data as any).success) {
+          success = true;
+        } else {
+          success = false;
+          errorMessage = ((data as any)?.error || "Email send failed").toString().slice(0, 500);
+        }
+      } catch (e: any) {
+        success = false;
+        errorMessage = (e?.message || String(e)).slice(0, 500);
+      }
     }
   } catch (e: any) {
     errorMessage = e?.message || String(e);
