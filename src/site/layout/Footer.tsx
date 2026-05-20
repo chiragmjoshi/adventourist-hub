@@ -123,7 +123,7 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-            <div className="space-y-1.5 text-xs text-white/40">
+            <div className="space-y-1.5 text-xs text-white/70">
               <p>{SUPPORT_EMAIL}</p>
               <p>{PHONE_DISPLAY}</p>
               <p>Mon–Sat, 9AM–9PM IST</p>
@@ -135,10 +135,10 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-white/40 text-center sm:text-left">
+          <p className="text-xs text-white/70 text-center sm:text-left">
             © 2026 Adventourist. Crafted with ❤️ for explorers everywhere.
           </p>
-          <p className="text-xs text-white/30">Mumbai, Maharashtra, India</p>
+          <p className="text-xs text-white/70">Mumbai, Maharashtra, India</p>
         </div>
       </div>
     </footer>
