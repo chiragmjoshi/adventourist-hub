@@ -65,6 +65,62 @@ const ROOT_SLUG_MAP: Record<string, string> = {
   "wildlife-of-rajasthan-in-5-nights-6-days":           "wildlife-of-rajasthan-in-5-nights-6-days",
 };
 
+// Additional root-level legacy slugs from the Nov 2026 redirect list (CSV).
+// All map identically to /trips/<slug> on the new site.
+const EXTRA_ROOT_SLUGS = [
+  "jaisalmer-desert-camping-2-nights-and-3-days",
+  "best-of-laos-in-5-nights-6-days",
+  "manila-the-perfect-getaway-3-nights-4-days",
+  "explore-thailand-in-9-days-8-nights",
+  "thai-away-chiang-mai-and-chiang-rai-5-days-4-nights",
+  "leh-backpacking-trip-with-hanle-tsomoriri-7-nights-8-days",
+  "leh-backpacking-trip-with-turtuk-hanle-tsomoriri-8-nights-9-days",
+  "winter-wonderland-scandinavia-7-nights-8-days",
+  "pilgrim-nepal-3-nights-4-days",
+  "explore-the-wildlife-of-tadoba-in-3-nights-4-days",
+  "shri-mata-vaishno-devi-yatra-2-nights-3-days",
+  "kailash-mansarovar-yatra-by-helicopter-8-nights-9-days",
+  "dazzling-dubai-trip-3-nights-4-days",
+  "beautiful-bhutan-trip-6-nights-7-days",
+  "memorable-melbourne-trip-5-nights-6-days",
+  "fabulous-finland-trip-8-nights-9-days",
+  "awesome-australia-trip-6-nights-7-days",
+  "graceful-greece-trip-6-nights-7-days",
+  "char-dham-yatra-11-nights-12-days",
+  "pristine-philippines-in-5-nights-6-days",
+  "bali-honeymoon-special-in-6-nights-7-days",
+  "baku-gabala-in-4-nights-5-days",
+  "port-blair-havelock-in-4-nights-5-days",
+  "wonderful-washington-dc-in-5-nights-6-days",
+  "best-of-west-bengal-in-4-nights-5-days",
+  "remarkable-russia-5-nights-6-days",
+  "thrilling-turkey-trip-5-nights-6-days",
+  "majestic-maharashtra-trip-7-nights-8-days",
+  "unwind-arunachal-pradesh-in-7-nights-8-days",
+  "experience-kerala-in-5-nights-6-days",
+  "wayanad-ooty-mysore-getaway-6-nights-7-days",
+  "glimpse-of-gujarat-in-5-nights-6-days",
+  "exciting-egypt-trip-4-nights-5-days",
+  "big-five-kenya-safari-7-nights-8-days",
+  "mesmerizing-maldives-trip-4-nights-5-days",
+  "andaman-nicobar-islands-5-nights-6-days",
+  "graceful-goa-trip-4-nights-5-days",
+  "native-nepal-trip-5-nights-6-days",
+  "offbeat-odisha-trip-6-nights-7-days",
+  "breathtaking-bhutan-trip-5-nights-6-days",
+  "paradise-on-earth-kashmir-trip-5-nights-6-days",
+  "epic-europre-trip-12-nights-13-days",
+  "spiti-valley-trip-8-nights-9-days",
+  "unmatched-uttarakhand-trip-6-nights-7-days",
+  "dubai-with-abu-dhabi-trip-5-nights-6-days",
+  "royal-rajasthan-trip-6-nights-7-days",
+  "splendid-singapore-trip-4-nights-5-days",
+  "gorgeous-georgia-trip-5-nights-6-days",
+  "best-of-baku-5-nights-6-days",
+  "scenic-srilanka-5-nights-6-days",
+];
+for (const s of EXTRA_ROOT_SLUGS) ROOT_SLUG_MAP[s] = s;
+
 function RootSlugRedirect() {
   const { slug = "" } = useParams();
   const mapped = ROOT_SLUG_MAP[normaliseSlug(slug)];
