@@ -24,6 +24,7 @@ import { evaluateRulesForLead } from "@/services/automationEngine";
 import AddReminderModal from "@/components/reminders/AddReminderModal";
 import LeadReminderStrip from "@/components/reminders/LeadReminderStrip";
 import QuickCashflowModal from "@/components/QuickCashflowModal";
+import { useRealtimeInvalidate } from "@/hooks/useRealtimeInvalidate";
 import {
   tomorrowAt, inHours, fromDateAt, dispKey,
 } from "@/lib/reminderHelpers";
@@ -80,6 +81,10 @@ const LeadDetail = () => {
   const [cashflowPrompt, setCashflowPrompt] = useState(false);
   const [formState, setFormState] = useState<Record<string, any>>({});
   const [remindOpen, setRemindOpen] = useState(false);
+
+  /* Realtime: keep this lead & its timeline live */
+  useRealtimeInvalidate("leads", [["lead", id]], { filter: id ? `id=eq.${id}` : undefined });
+  useRealtimeInvalidate("lead_timeline", [["lead_timeline", id]], { filter: id ? `lead_id=eq.${id}` : undefined });
 
   /* ── Queries ── */
   const { data: lead, isLoading } = useQuery({
@@ -432,7 +437,8 @@ const LeadDetail = () => {
       return data;
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["leads_page"] });
+      queryClient.invalidateQueries({ queryKey: ["leads_chip_counts"] });
       toast.success("New inquiry created");
       navigate(`/admin/leads/${data.id}`);
     },
@@ -537,7 +543,8 @@ const LeadDetail = () => {
                       supabase.from("leads").update({ is_hot: newVal } as any).eq("id", id!).then(({ error }) => {
                         if (error) { toast.error("Failed to update"); return; }
                         queryClient.invalidateQueries({ queryKey: ["lead", id] });
-                        queryClient.invalidateQueries({ queryKey: ["leads"] });
+                        queryClient.invalidateQueries({ queryKey: ["leads_page"] });
+                        queryClient.invalidateQueries({ queryKey: ["leads_chip_counts"] });
                         toast.success(newVal ? "Marked as hot lead 🔥" : "Removed hot lead tag");
                       });
                     }}
