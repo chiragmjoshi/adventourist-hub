@@ -82,6 +82,10 @@ const LeadDetail = () => {
   const [formState, setFormState] = useState<Record<string, any>>({});
   const [remindOpen, setRemindOpen] = useState(false);
 
+  /* Realtime: keep this lead & its timeline live */
+  useRealtimeInvalidate("leads", [["lead", id]], { filter: id ? `id=eq.${id}` : undefined });
+  useRealtimeInvalidate("lead_timeline", [["lead_timeline", id]], { filter: id ? `lead_id=eq.${id}` : undefined });
+
   /* ── Queries ── */
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
