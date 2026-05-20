@@ -154,6 +154,17 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
 
   const handleTest = async () => {
     if (!testContact) { toast.error("Enter a recipient"); return; }
+    if (testChannel === "email") {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testContact.trim())) {
+        toast.error("Enter a valid email address");
+        return;
+      }
+    } else {
+      if (!/^\+?\d[\d\s-]{7,}$/.test(testContact.trim())) {
+        toast.error("Enter a valid mobile number with country code");
+        return;
+      }
+    }
     const result = await sendTestMessage(form, testChannel, testContact);
     if (result.success) toast.success("Test message sent");
     else toast.error(`Test failed: ${(result.response as any)?.error || "Unknown"}`);
