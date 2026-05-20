@@ -230,8 +230,9 @@ export default function DestinationDetail() {
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-abyss/5">
                     <TripImage
-                      src={getCMSImageUrl(t.thumbnail?.file_path ?? t.pictures?.[0]?.file_path)}
+                      path={t.thumbnail?.file_path ?? t.pictures?.[0]?.file_path}
                       alt={t.headline}
+                      destination={dest.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
