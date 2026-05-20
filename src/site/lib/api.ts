@@ -167,6 +167,69 @@ export async function getItineraryBySlug(slug: string): Promise<CMSItinerary | n
   return mapItinerary(data);
 }
 
+// ── Destinations (public) ─────────────────────────────────────────────────────
+export interface CMSDestinationFull {
+  id: string;
+  slug: string;
+  name: string;
+  about?: string;
+  hero_image?: string;
+  gallery: string[];
+  themes: string[];
+  suitable_for: string[];
+  best_months: number[];
+  seo_title?: string;
+  seo_description?: string;
+}
+
+function mapDestinationFull(row: any): CMSDestinationFull {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    about: row.about ?? undefined,
+    hero_image: row.hero_image ?? undefined,
+    gallery: Array.isArray(row.gallery) ? row.gallery : [],
+    themes: row.themes ?? [],
+    suitable_for: row.suitable_for ?? [],
+    best_months: row.best_months ?? [],
+    seo_title: row.seo_title ?? undefined,
+    seo_description: row.seo_description ?? undefined,
+  };
+}
+
+export async function getPublicDestinations(): Promise<CMSDestinationFull[]> {
+  const { data, error } = await supabase
+    .from("destinations")
+    .select("id, slug, name, about, hero_image, gallery, themes, suitable_for, best_months, seo_title, seo_description")
+    .eq("is_active", true)
+    .order("name");
+  if (error || !data) return [];
+  return data.filter((d: any) => d.slug).map(mapDestinationFull);
+}
+
+export async function getDestinationBySlug(slug: string): Promise<CMSDestinationFull | null> {
+  const { data, error } = await supabase
+    .from("destinations")
+    .select("id, slug, name, about, hero_image, gallery, themes, suitable_for, best_months, seo_title, seo_description")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error || !data) return null;
+  return mapDestinationFull(data);
+}
+
+export async function getItinerariesByDestinationId(destinationId: string): Promise<CMSItinerary[]> {
+  const { data, error } = await supabase
+    .from("itineraries")
+    .select(ITINERARY_SELECT)
+    .eq("status", "published")
+    .eq("destination_id", destinationId)
+    .order("price_per_person", { ascending: true });
+  if (error || !data) return [];
+  return data.map(mapItinerary);
+}
+
 export async function getMasterData(): Promise<CMSMasterData | null> {
   const [destResult, themeResult, suitableResult, monthResult] = await Promise.all([
     supabase
