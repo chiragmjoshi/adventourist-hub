@@ -56,10 +56,13 @@ export default function HeroSection() {
           </span>
         </div>
 
+        <span className="block font-body text-white/70 text-xs sm:text-sm tracking-[0.2em] uppercase mb-3">
+          Travel Designed For You
+        </span>
         <h1 className="font-display font-black leading-[0.92] mb-6 max-w-4xl">
-          <span className="block text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>Travel</span>
-          <span className="block text-blaze italic" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>Designed</span>
-          <span className="block text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>For You.</span>
+          <span className="block text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>Custom Trips</span>
+          <span className="block text-blaze italic" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>Planned</span>
+          <span className="block text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 6.25rem)" }}>Around You.</span>
         </h1>
 
         <p className="font-body text-base sm:text-lg text-white/85 max-w-xl leading-relaxed mb-8">
