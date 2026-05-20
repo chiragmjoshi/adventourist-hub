@@ -601,15 +601,12 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        {/* TAB 5: System */}
-        <TabsContent value="system" className="space-y-4">
-        </TabsContent>
-
         <TabsContent value="api" className="space-y-4">
           <ExternalApiTab />
         </TabsContent>
 
-        <TabsContent value="system_real" className="hidden">
+        {/* TAB 5: System */}
+        <TabsContent value="system" className="space-y-4">
           <Card className="border-border/50 shadow-none">
             <CardContent className="px-5 py-4 space-y-3">
               <div className="flex justify-between">
