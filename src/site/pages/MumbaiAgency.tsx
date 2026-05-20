@@ -196,7 +196,7 @@ export default function MumbaiAgency() {
               <li><strong className="text-abyss font-display">No off-the-shelf packages.</strong> Every itinerary is built from scratch around your dates, group, food and pace.</li>
               <li><strong className="text-abyss font-display">One planner end-to-end.</strong> You're not bounced around a call centre — one Mumbai-based planner handles your trip from enquiry to return.</li>
               <li><strong className="text-abyss font-display">Zero booking fees.</strong> Our planning service is free. You only pay for what we book for you.</li>
-              <li><strong className="text-abyss font-started">Local-on-ground partners.</strong> Vetted hotels, drivers and guides in every destination — not just GDS bookings.</li>
+              <li><strong className="text-abyss font-display">Local-on-ground partners.</strong> Vetted hotels, drivers and guides in every destination — not just GDS bookings.</li>
               <li><strong className="text-abyss font-display">WhatsApp support during travel.</strong> If something changes mid-trip, your planner is one message away.</li>
             </ul>
           </div>
