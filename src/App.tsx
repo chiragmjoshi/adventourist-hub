@@ -19,6 +19,9 @@ import SiteFAQs from "./site/pages/FAQs";
 import SiteTeam from "./site/pages/Team";
 import SiteTravelStories from "./site/pages/TravelStories";
 import SiteStoryDetail from "./site/pages/StoryDetail";
+import SiteDestinationsList from "./site/pages/DestinationsList";
+import SiteDestinationDetail from "./site/pages/DestinationDetail";
+import SiteMumbaiAgency from "./site/pages/MumbaiAgency";
 import { PrivacyPolicy, TermsConditions, RefundPolicy, PaymentPolicy } from "./site/pages/PolicyPage";
 import NotFound from "./pages/NotFound";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -145,6 +148,9 @@ const App = () => {
             <Route path="/" element={<SiteHome />} />
             <Route path="/trips" element={<SiteTripsList />} />
             <Route path="/trips/:slug" element={<SiteTripDetail />} />
+            <Route path="/destinations" element={<SiteDestinationsList />} />
+            <Route path="/destinations/:slug" element={<SiteDestinationDetail />} />
+            <Route path="/travel-agency-mumbai" element={<SiteMumbaiAgency />} />
             <Route path="/about-us" element={<SiteAbout />} />
             <Route path="/contact" element={<SiteContact />} />
             <Route path="/faqs" element={<SiteFAQs />} />
