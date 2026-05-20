@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 
 const NotFound = () => {
   const { pathname } = useLocation();
@@ -11,10 +12,16 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-drift/40 px-4">
+      <Helmet>
+        <title>404 — Page Not Found | Adventourist</title>
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="prerender-status-code" content="404" />
+        <meta httpEquiv="Status" content="404 Not Found" />
+      </Helmet>
       <div className="text-center max-w-lg">
         <div className="text-6xl mb-4">🗺️</div>
         <h1 className="font-display font-black text-3xl sm:text-4xl text-abyss mb-3">
-          {isTrip ? "This itinerary has moved" : "Page not found"}
+          {isTrip ? "404 — This itinerary has moved" : "404 — Page not found"}
         </h1>
         <p className="font-body text-ink/70 mb-8">
           {isTrip
