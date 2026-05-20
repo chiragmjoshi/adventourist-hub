@@ -14,7 +14,6 @@ const destinations = [
 
 const company = [
   { label: "About Us",  href: "/about-us" },
-  { label: "Our Team",  href: "/about-us#team" },
   { label: "Blog",      href: "/travel-stories" },
   { label: "Careers",   href: "/contact" },
   { label: "Contact",   href: "/contact" },

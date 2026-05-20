@@ -408,7 +408,7 @@ export const PrivacyPolicy = () => (
     canonicalPath="/privacy-policy"
     lastUpdated={LAST_UPDATED}
     intro={`At Adventourist ("we," "us," or "our"), we are committed to protecting your privacy and personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website (adventourist.in) or use our services.`}
-    contact={{ email: "privacy@adventourist.in", ...CONTACT_DEFAULT }}
+    contact={{ email: "support@adventourist.in", ...CONTACT_DEFAULT }}
     related={relatedExcept("/privacy-policy")}
     sections={[
       {
@@ -495,7 +495,7 @@ export const PrivacyPolicy = () => (
               "Withdraw consent where processing is based on consent",
             ],
           },
-          { type: "p", text: "To exercise these rights, contact us at [privacy@adventourist.in](mailto:privacy@adventourist.in)." },
+          { type: "p", text: "To exercise these rights, contact us at [support@adventourist.in](mailto:support@adventourist.in)." },
         ],
       },
       {
