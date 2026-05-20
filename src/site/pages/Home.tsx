@@ -76,11 +76,11 @@ export default function Home() {
       jsonLd={HOME_JSONLD}
     >
       <SEO
-        title="Adventourist — Premium Experiential Travel from Mumbai"
-        description="Adventourist crafts custom, expert-led travel experiences for curious explorers. Discover curated itineraries, group tours, and honeymoon packages from Mumbai."
+        title="Custom Travel Planner in Mumbai | Adventourist"
+        description="Plan personalised family holidays, honeymoons and experiential trips with Adventourist — a Mumbai-based custom travel planner. No fixed packages. Real experts. WhatsApp support."
         canonical="/"
         schema={HOME_JSONLD}
-        keywords="experiential travel, custom itineraries, travel packages Mumbai, group tours India, honeymoon packages, curated travel"
+        keywords="travel agency in Mumbai, custom travel planner Mumbai, family holiday planner Mumbai, honeymoon planner Mumbai, luxury travel planner Mumbai, international tour planner Mumbai, personalised travel packages from Mumbai"
       />
       <HeroSection />
       <HeroTrustStrip />
