@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import DateRangePicker, { ALL_TIME_FROM } from "@/components/DateRangePicker";
 import AttributionFields from "@/components/AttributionFields";
 import { useAttributionOptions } from "@/hooks/useAttributionOptions";
+import { useRealtimeInvalidate } from "@/hooks/useRealtimeInvalidate";
 
 /* DB now stores the display value directly (e.g. "Not Contacted").
  * No translation between display labels and DB keys is needed anymore. */
@@ -104,6 +105,9 @@ const LeadManagement = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
+
+  /* Realtime: refresh list & chip counts on any change to leads */
+  useRealtimeInvalidate("leads", [["leads_page"], ["leads_chip_counts"]]);
 
   /* ── Filters ── */
   // Default = "Last 6 Months to date": start of the month 5 months ago → today.
@@ -334,7 +338,8 @@ const LeadManagement = () => {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["leads_page"] });
+      queryClient.invalidateQueries({ queryKey: ["leads_chip_counts"] });
       setSheetOpen(false);
       setForm({ name: "", email: "", mobile: "", travel_date: "", destination_id: "", itinerary_id: "", assigned_to: "", channel: "", platform: "", campaign_type: "", ad_group: "", notes: "" });
       toast.success(`Lead ${data.traveller_code} created successfully`);
@@ -624,7 +629,8 @@ const LeadManagement = () => {
                             const newVal = !(lead as any).is_hot;
                             supabase.from("leads").update({ is_hot: newVal } as any).eq("id", lead.id).then(({ error }) => {
                               if (error) { toast.error("Failed to update"); return; }
-                              queryClient.invalidateQueries({ queryKey: ["leads"] });
+                              queryClient.invalidateQueries({ queryKey: ["leads_page"] });
+                              queryClient.invalidateQueries({ queryKey: ["leads_chip_counts"] });
                               toast.success(newVal ? "Marked as hot lead 🔥" : "Removed hot lead tag");
                             });
                           }}
