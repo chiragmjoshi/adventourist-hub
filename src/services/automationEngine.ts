@@ -331,7 +331,18 @@ export async function sendTestMessage(rule: any, channel: "whatsapp" | "email", 
     const body = resolveVariables(rule.wa_message_body || "", dummyCtx);
     return await sendWhatsAppMessage(rule.wa_template_name || "", contact, [body], dummyCtx.lead.name);
   }
-  return { success: false, response: { error: "Email transport not configured" } };
+  const html = resolveVariables(rule.email_body || "", dummyCtx);
+  const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist (Test)", dummyCtx);
+  try {
+    const { data, error } = await supabase.functions.invoke("send-email", {
+      body: { to: contact, subject: `[TEST] ${subject}`, html },
+    });
+    if (error) return { success: false, response: { error: error.message || String(error) } };
+    if (data && (data as any).success) return { success: true, response: data };
+    return { success: false, response: data || { error: "Email send failed" } };
+  } catch (e: any) {
+    return { success: false, response: { error: e?.message || String(e) } };
+  }
 }
 
 export const DUMMY_PREVIEW_CTX: VariableContext = {
