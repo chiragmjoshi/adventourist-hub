@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_settings: {
+        Row: {
+          external_publish_enabled: boolean
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          external_publish_enabled?: boolean
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          external_publish_enabled?: boolean
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       automation_executions: {
         Row: {
           channel: string | null
