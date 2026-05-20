@@ -16,6 +16,7 @@ import { Save, Eye, EyeOff, CheckCircle, XCircle, ChevronDown, Download, Trash2,
 import { toast } from "sonner";
 import { useRBAC } from "@/hooks/useRBAC";
 import { useAuth } from "@/contexts/AuthContext";
+import ExternalApiTab from "./settings/ExternalApiTab";
 
 const TEMPLATE_VARS: Record<string, string[]> = {
   file_closed: ["{{1}} = Customer first name", "{{2}} = Destination name", "{{3}} = Travel start date (formatted DD MMM YYYY)", "{{4}} = Assigned agent name"],
@@ -252,6 +253,7 @@ const Settings = () => {
           <TabsTrigger value="financial">Financial</TabsTrigger>
           <TabsTrigger value="automations">Automations</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="api">API</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
@@ -597,6 +599,10 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="api" className="space-y-4">
+          <ExternalApiTab />
         </TabsContent>
 
         {/* TAB 5: System */}
