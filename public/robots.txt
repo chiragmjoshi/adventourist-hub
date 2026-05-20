@@ -1,6 +1,8 @@
 # Adventourist — robots.txt
 # Public marketing site is fully crawlable; admin CMS is gated by auth.
 
+Sitemap: https://www.adventourist.in/sitemap.xml
+
 # Search engines
 User-agent: Googlebot
 Allow: /

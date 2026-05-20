@@ -199,6 +199,8 @@ export function legacyRedirectRoutes() {
       <Route path="/travel-blog/:slug/*" element={<RedirectParam to="/travel-stories/:slug" />} />
 
       {/* Itineraries */}
+      <Route path="/itinerary" element={<RedirectStatic to="/trips" />} />
+      <Route path="/itineraries" element={<RedirectStatic to="/trips" />} />
       <Route path="/itinerary/:slug" element={<ItineraryRedirect />} />
       <Route path="/itineraries/*" element={<RedirectStatic to="/trips" />} />
 

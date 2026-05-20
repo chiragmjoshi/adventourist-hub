@@ -101,20 +101,34 @@ export default function StoryDetail() {
   const shareText = `${story.title} — Adventourist`;
   const ctaSubject = story.focus_keyword?.trim();
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: story.title,
-    description: story.seo_description ?? story.excerpt ?? undefined,
-    image: cover,
-    author: { "@type": "Person", name: story.author ?? "Adventourist" },
-    datePublished: story.published_at ?? undefined,
-    publisher: {
-      "@type": "Organization",
-      name: "Adventourist",
-      logo: { "@type": "ImageObject", url: "https://adventourist.in/logo.png" },
+  const storyUrl = `https://www.adventourist.in/travel-stories/${story.slug}`;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: story.title,
+      description: story.seo_description ?? story.excerpt ?? undefined,
+      image: cover,
+      author: { "@type": "Person", name: story.author ?? "Adventourist" },
+      datePublished: story.published_at ?? undefined,
+      dateModified: (story as any).updated_at ?? story.published_at ?? undefined,
+      mainEntityOfPage: { "@type": "WebPage", "@id": storyUrl },
+      publisher: {
+        "@type": "Organization",
+        name: "Adventourist",
+        logo: { "@type": "ImageObject", url: "https://www.adventourist.in/logo/logo-square-color.svg" },
+      },
     },
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://www.adventourist.in/" },
+        { "@type": "ListItem", position: 2, name: "Travel Stories", item: "https://www.adventourist.in/travel-stories" },
+        { "@type": "ListItem", position: 3, name: story.title, item: storyUrl },
+      ],
+    },
+  ];
 
   return (
     <SiteLayout

@@ -20,7 +20,7 @@
 
     <link rel="icon" type="image/svg+xml" href="/logo/logo-square-color.svg" />
     <link rel="apple-touch-icon" href="/logo/logo-square-color.svg" />
-    <link rel="canonical" href="https://adventourist.in/" />
+    <!-- Per-route canonical is set by the <SEO /> component via react-helmet-async. Avoid duplicate canonical here. -->
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 
     <!-- Performance: preconnect / dns-prefetch -->
@@ -76,7 +76,7 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "TravelAgency",
+      "@type": ["TravelAgency", "LocalBusiness"],
       "@id": "https://adventourist.in/#org",
       "name": "Adventourist",
       "url": "https://adventourist.in/",
@@ -84,6 +84,7 @@
       "image": "https://adventourist.in/site-images/bg-home-page.jpg",
       "description": "Mumbai-based experiential travel company designing bespoke itineraries to Bali, Ladakh, Thailand, Sri Lanka, Singapore and beyond.",
       "telephone": "+919930400694",
+      "email": "support@adventourist.in",
       "priceRange": "₹₹–₹₹₹",
       "address": {
         "@type": "PostalAddress",
@@ -93,6 +94,16 @@
         "postalCode": "400056",
         "addressCountry": "IN"
       },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 19.0998,
+        "longitude": 72.8478
+      },
+      "areaServed": [
+        { "@type": "Country", "name": "India" },
+        { "@type": "AdministrativeArea", "name": "Maharashtra" },
+        { "@type": "City", "name": "Mumbai" }
+      ],
       "openingHoursSpecification": [{
         "@type": "OpeningHoursSpecification",
         "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
@@ -105,6 +116,23 @@
         "https://www.facebook.com/adventourist.in",
         "https://www.linkedin.com/company/adventourist"
       ]
+    }
+    </script>
+
+    <!-- WebSite + SearchAction (sitelinks search box) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://www.adventourist.in/#website",
+      "name": "Adventourist",
+      "url": "https://www.adventourist.in/",
+      "publisher": { "@id": "https://adventourist.in/#org" },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.adventourist.in/trips?destination={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
     }
     </script>
   </head>
