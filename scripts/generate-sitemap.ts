@@ -22,6 +22,8 @@ interface Entry {
 const staticEntries: Entry[] = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/trips", changefreq: "daily", priority: "0.9" },
+  { path: "/destinations", changefreq: "weekly", priority: "0.9" },
+  { path: "/travel-agency-mumbai", changefreq: "monthly", priority: "0.9" },
   { path: "/travel-stories", changefreq: "weekly", priority: "0.8" },
   { path: "/about-us", changefreq: "monthly", priority: "0.7" },
   { path: "/contact", changefreq: "monthly", priority: "0.7" },
@@ -74,9 +76,10 @@ function render(entries: Entry[]) {
 }
 
 async function main() {
-  const [trips, stories] = await Promise.all([
+  const [trips, stories, dests] = await Promise.all([
     fetchTable("itineraries", "select=slug,updated_at&status=eq.published&order=updated_at.desc"),
     fetchTable("travel_stories", "select=slug,updated_at&status=eq.published&order=updated_at.desc"),
+    fetchTable("destinations", "select=slug,updated_at&is_active=eq.true&order=name.asc"),
   ]);
 
   const tripEntries: Entry[] = trips
@@ -97,11 +100,20 @@ async function main() {
       priority: "0.6",
     }));
 
-  const all = [...staticEntries, ...tripEntries, ...storyEntries];
+  const destEntries: Entry[] = dests
+    .filter((d) => d.slug)
+    .map((d) => ({
+      path: `/destinations/${d.slug}`,
+      lastmod: d.updated_at ? new Date(d.updated_at).toISOString().slice(0, 10) : undefined,
+      changefreq: "weekly",
+      priority: "0.75",
+    }));
+
+  const all = [...staticEntries, ...tripEntries, ...destEntries, ...storyEntries];
   const xml = render(all);
   writeFileSync(resolve("public/sitemap.xml"), xml);
   console.log(
-    `[sitemap] wrote ${all.length} URLs (${tripEntries.length} trips, ${storyEntries.length} stories)`,
+    `[sitemap] wrote ${all.length} URLs (${tripEntries.length} trips, ${destEntries.length} destinations, ${storyEntries.length} stories)`,
   );
 }
 
