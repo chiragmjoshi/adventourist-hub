@@ -1,45 +1,59 @@
-# SEO Phase 1 — Execution Plan
+# Legacy Trip Cashflow Import — 203 rows
 
-All three open questions are now resolved. This plan ships the remaining Phase 1 work.
+## CSV validation results
 
-## Decisions locked in
-1. **H1 change approved** — Homepage gets a new H1 with the old tagline kept as a smaller eyebrow above it.
-2. **Canonical host = `https://www.adventourist.in`** — All canonicals, og:url, sitemap entries, and JSON-LD URLs use the `www` host. Other hosts (`adventourist.in`, `adventourist-zenith.lovable.app`, preview URLs) stay non-canonical and will point back to www via `<link rel="canonical">`.
-3. **"+91 9826000000 / No predefined itinerary" — NOT in this codebase or database.** Grepped the entire repo, `landing_pages`, `itineraries`, `legacy_landing_pages`, `legacy_itineraries`, and `travel_stories.content_html` for `9826`, `9826000000`, and `No predefined itinerary` → zero matches. That URL must be either (a) an old WordPress page still cached/indexed on the legacy host (`blog.adventourist.in` or the original `adventourist.in` site before migration), or (b) a third-party listing. **Action required from you:** paste the URL Google is showing so I can confirm the host. If it's the legacy host, the fix is a Cloudflare bulk redirect (out of repo).
+| Check | Result |
+|---|---|
+| Total rows | 203 |
+| Required fields (traveller_code, name, vendor_code_1, vendor_cost, selling_price) | All present |
+| Vendor codes referenced | 62 unique, **all exist** in vendors table |
+| Date format | All valid ISO (`YYYY-MM-DD`) where present |
+| Numeric fields | All parse cleanly |
+| Multi-vendor rows | 14 (2–4 vendors each, combined `vendor_cost`) |
+| Empty `travel_end_date` / `booking_date` / `destination_name` | 203 / 203 / 203 → will be NULL (expected) |
+| Empty `zoho_invoice_ref` | 63 → will be NULL |
 
-## What this plan ships
+## Flags to confirm (not blockers)
 
-### 1. Homepage H1 change (`src/site/pages/Home.tsx`)
-- Replace current H1 (`Travel Designed For You`) with:
-  - Eyebrow (small, uppercase, muted): `Travel Designed For You`
-  - H1 (hero scale): `Custom Trips Planned Around You`
-- Keep existing hero subtext, CTAs, layout untouched.
+1. **27 duplicate `traveller_code` values** (same traveller, multiple trips — e.g. `OT2200001` appears 4×, `NV1900005` 3×). Each becomes its own cashflow row with its own `cashflow_code`. Confirm this is the intent (not data error).
+2. **4 rows where `selling_price < vendor_cost`** (negative margin, contradicts the positive `margin_percent` column):
+   - Row 62 `OT2200001` — cost 73,500 / sold 73,400
+   - Row 122 `AU2400021` — cost 196,108 / sold 173,960
+   - Row 130 `SP2400005` — cost 201,851 / sold 200,000
+   - Row 166 `OT2500007` — cost 168,039 / sold 162,000.30
+   I'll import as-is (we'll trust the `margin_percent` value from CSV rather than recomputing). You can fix in-app later.
 
-### 2. Canonical host enforcement
-- Audit `src/site/components/SEO.tsx` (or per-route `<Helmet>` blocks added in Phase 1) and confirm every `canonical` + `og:url` uses `https://www.adventourist.in`. Fix any that hard-code apex or `lovable.app`.
-- Audit `scripts/generate-sitemap.ts` `BASE_URL` → already `https://www.adventourist.in`. Confirm.
-- Audit `index.html` JSON-LD `url` fields → set to www.
-- **Note:** Actual host-level 301 (`adventourist.in` → `www.adventourist.in`) is a DNS/Cloudflare redirect, not a code change. Flagged as out-of-repo follow-up.
+## Import behavior
 
-### 3. Phone number audit
-- Grep frontend for any phone string and normalize to `+91-9930400694`. Current matches to verify: `src/site/layout/Footer.tsx`, `src/site/pages/Contact.tsx`, `index.html` JSON-LD `telephone`, any `tel:` links, WhatsApp links.
-- Confirm no instance of `9826000000` ships in the bundle.
-- Skip DB rewrite — already verified clean.
+For each CSV row, create:
 
-### 4. Bad-itinerary-page follow-up (pending your URL)
-- Once you paste the Google-indexed URL, I'll either:
-  - **If it's a route in this app** (e.g. `/l/some-slug`) → fix the seed data in `landing_pages` or 301 the slug.
-  - **If it's the legacy host** → add it to the Cloudflare bulk redirect CSV (already on the Phase 1 deliverables list).
+**1) `trip_cashflow` row**
+- `traveller_code`, `traveller_name`, `travel_start_date`, `pax_count` from CSV
+- `cashflow_code` — auto-generated from `cashflow_code_sequence` using the year of `travel_start_date`
+- `agreed_selling_price` ← `selling_price`
+- `margin_percent` ← CSV value (kept as-is, even if inconsistent)
+- `trip_stage` = `trip_sold`, `status` = `closed` (legacy → closed)
+- `gst_billing` = true (default)
+- `zoho_invoice_ref`, `notes` from CSV
+- `destination_id`, `itinerary_id`, `lead_id`, `assigned_to`, `created_by` = NULL
+- `is_customized` = false
 
-## Files touched
-- `src/site/pages/Home.tsx` — H1 + eyebrow
-- `src/site/layout/Footer.tsx` — phone audit
-- `src/site/pages/Contact.tsx` — phone audit
-- `index.html` — JSON-LD `telephone` + `url`
-- `src/site/components/SEO.tsx` (or equivalent) — canonical host audit
+**2) `trip_cashflow_vendors` row(s)** — one per non-empty `vendor_code_N`
+- For single-vendor rows: full `vendor_cost` goes to vendor 1
+- For multi-vendor rows: **entire combined `vendor_cost` on vendor 1**, vendors 2–4 get `cost_per_pax_incl_gst = 0` and `amount_paid = 0`. Per-vendor split is preserved in the `notes` field on `trip_cashflow` (already done in CSV). This keeps trip totals exact without inventing splits.
+- `service_type` = `'legacy'`
+- `payment_status` = `'paid'` (legacy trips, settled)
+- `amount_paid` = `cost_per_pax_incl_gst` (fully paid)
+- `sort_order` = 1, 2, 3, 4
 
-## Out of scope (Phase 2/3 or external)
-- Cloudflare DNS apex→www redirect
-- Cloudflare bulk redirects for `blog.adventourist.in`
-- 8 destination landing pages (Phase 2 — still need destination list from you)
-- Image AVIF/WebP conversion (Phase 3)
+## Execution
+
+Single SQL migration that:
+1. Creates a temp table, loads the 203 rows
+2. Loops: insert `trip_cashflow` (RETURNING id), insert linked `trip_cashflow_vendors`
+3. Returns count + sample of inserted `cashflow_code`s for verification
+
+After approval, I'll run the migration. No app code changes needed.
+
+## Switch to build mode to proceed
+Reply with any adjustments (especially the 4 negative-margin rows and the multi-vendor split convention), then switch to build mode and I'll run the import.
