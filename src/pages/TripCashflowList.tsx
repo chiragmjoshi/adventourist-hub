@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,8 @@ const TripCashflowList = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [destFilter, setDestFilter] = useState("_all");
   const [assignedFilter, setAssignedFilter] = useState("_all");
+  // Period filter: 'all' | 'fy:YYYY' (Apr-Mar) | 'cy:YYYY' (Jan-Dec) | 'ym:YYYY-MM'
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
 
   const { data: cashflows = [], isLoading } = useQuery({
     queryKey: ["trip_cashflow_list"],
@@ -94,6 +96,87 @@ const TripCashflowList = () => {
   const getDestName = (id: string) => destinations.find((d: any) => d.id === id)?.name || "—";
   const filtersActive = search || statusFilter !== "all" || destFilter !== "_all" || assignedFilter !== "_all";
 
+  // Build available periods from data
+  const periodOptions = useMemo(() => {
+    const fySet = new Set<number>();
+    const cySet = new Set<number>();
+    const ymSet = new Set<string>();
+    cashflows.forEach((c: any) => {
+      const d = c.travel_start_date ? new Date(c.travel_start_date) : null;
+      if (!d || isNaN(d.getTime())) return;
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      cySet.add(y);
+      const fyStart = m >= 4 ? y : y - 1;
+      fySet.add(fyStart);
+      ymSet.add(`${y}-${String(m).padStart(2, "0")}`);
+    });
+    return {
+      fy: [...fySet].sort((a, b) => b - a),
+      cy: [...cySet].sort((a, b) => b - a),
+      ym: [...ymSet].sort().reverse(),
+    };
+  }, [cashflows]);
+
+  const inPeriod = (cf: any) => {
+    if (periodFilter === "all") return true;
+    const d = cf.travel_start_date ? new Date(cf.travel_start_date) : null;
+    if (!d || isNaN(d.getTime())) return false;
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    if (periodFilter.startsWith("fy:")) {
+      const fyStart = parseInt(periodFilter.slice(3));
+      const fyStartDate = new Date(fyStart, 3, 1); // Apr 1
+      const fyEndDate = new Date(fyStart + 1, 3, 1); // next Apr 1
+      return d >= fyStartDate && d < fyEndDate;
+    }
+    if (periodFilter.startsWith("cy:")) {
+      return y === parseInt(periodFilter.slice(3));
+    }
+    if (periodFilter.startsWith("ym:")) {
+      return `${y}-${String(m).padStart(2, "0")}` === periodFilter.slice(3);
+    }
+    return true;
+  };
+
+  // Apply period filter to the rows we summarise
+  const periodCfs = cashflows.filter(inPeriod);
+  filtered = filtered.filter(inPeriod);
+
+  // Revenue-focused KPIs over the selected period
+  const completedInPeriod = periodCfs.filter((c: any) => c.status === "completed");
+  const revenue = completedInPeriod.reduce((s: number, c: any) => s + calcFinancials(c).sellingExGst, 0);
+  const margin = completedInPeriod.reduce((s: number, c: any) => s + calcFinancials(c).marginAmount, 0);
+  const vendorSpend = completedInPeriod.reduce((s: number, c: any) => s + calcFinancials(c).totalVendorCost, 0);
+  const avgMarginPct = completedInPeriod.length > 0
+    ? completedInPeriod.reduce((s: number, c: any) => s + calcFinancials(c).marginPct, 0) / completedInPeriod.length
+    : 0;
+  const totalPax = completedInPeriod.reduce((s: number, c: any) => s + (c.pax_count || 0), 0);
+  const avgTicket = completedInPeriod.length > 0 ? revenue / completedInPeriod.length : 0;
+
+  // Monthly trend within the selected period (or all-time if 'all')
+  const monthlyTrend = useMemo(() => {
+    const map = new Map<string, { revenue: number; margin: number; count: number }>();
+    completedInPeriod.forEach((c: any) => {
+      const d = c.travel_start_date ? new Date(c.travel_start_date) : null;
+      if (!d || isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const fin = calcFinancials(c);
+      const entry = map.get(key) || { revenue: 0, margin: 0, count: 0 };
+      entry.revenue += fin.sellingExGst;
+      entry.margin += fin.marginAmount;
+      entry.count += 1;
+      map.set(key, entry);
+    });
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [completedInPeriod, vendorLines, settings]);
+
+  const periodLabel = periodFilter === "all"
+    ? "All time"
+    : periodFilter.startsWith("fy:") ? `FY ${periodFilter.slice(3)}–${(parseInt(periodFilter.slice(3)) + 1).toString().slice(-2)}`
+    : periodFilter.startsWith("cy:") ? `CY ${periodFilter.slice(3)}`
+    : new Date(periodFilter.slice(3) + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+
   return (
     <AppLayout title="Trip Cashflow">
       {/* Header */}
@@ -101,21 +184,49 @@ const TripCashflowList = () => {
         <div>
           <h1 className="text-xl font-semibold text-foreground">Trip Cashflow</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {cashflows.length} trips · {formatINR(totalRevenue)} confirmed revenue · {formatINR(pipelineValue)} pipeline
+            {periodLabel} · {completedInPeriod.length} completed trips · {formatINR(revenue)} revenue · {formatINR(margin)} margin
           </p>
         </div>
-        <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/admin/trip-cashflow/new")}>
-          <Plus className="h-3.5 w-3.5 mr-1" />New Cashflow
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="h-8 text-xs w-[180px] rounded-md"><SelectValue placeholder="Period" /></SelectTrigger>
+            <SelectContent className="max-h-[400px]">
+              <SelectItem value="all">All time</SelectItem>
+              {periodOptions.fy.length > 0 && (
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Financial Year</div>
+              )}
+              {periodOptions.fy.map((y) => (
+                <SelectItem key={`fy${y}`} value={`fy:${y}`}>FY {y}–{(y + 1).toString().slice(-2)}</SelectItem>
+              ))}
+              {periodOptions.cy.length > 0 && (
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Calendar Year</div>
+              )}
+              {periodOptions.cy.map((y) => (
+                <SelectItem key={`cy${y}`} value={`cy:${y}`}>CY {y}</SelectItem>
+              ))}
+              {periodOptions.ym.length > 0 && (
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Month</div>
+              )}
+              {periodOptions.ym.map((ym) => (
+                <SelectItem key={ym} value={`ym:${ym}`}>
+                  {new Date(ym + "-01").toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" className="rounded-md text-xs" onClick={() => navigate("/admin/trip-cashflow/new")}>
+            <Plus className="h-3.5 w-3.5 mr-1" />New Cashflow
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-3 my-4">
         {[
-          { label: "Total Revenue", value: formatINR(totalRevenue), sub: "Completed trips" },
-          { label: "Total Margin", value: formatINR(totalMargin), sub: "Completed trips" },
-          { label: "Avg Margin %", value: avgMargin.toFixed(1) + "%", sub: "Completed trips" },
-          { label: "Pipeline Value", value: formatINR(pipelineValue), sub: `${pipelineCfs.length} trips` },
+          { label: "Revenue", value: formatINR(revenue), sub: `${completedInPeriod.length} trips · ${totalPax} pax` },
+          { label: "Margin", value: formatINR(margin), sub: `${avgMarginPct.toFixed(1)}% avg margin` },
+          { label: "Vendor Spend", value: formatINR(vendorSpend), sub: "Cost paid out" },
+          { label: "Avg Ticket Size", value: formatINR(avgTicket), sub: "Revenue per trip" },
         ].map((c, i) => (
           <Card key={i} className="border-border/40 shadow-none">
             <CardContent className="p-4">
@@ -126,6 +237,48 @@ const TripCashflowList = () => {
           </Card>
         ))}
       </div>
+
+      {/* Monthly trend strip */}
+      {monthlyTrend.length > 1 && (
+        <Card className="border-border/40 shadow-none mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-foreground">Monthly Revenue & Margin</p>
+              <p className="text-[10px] text-muted-foreground">{periodLabel}</p>
+            </div>
+            <div className="flex items-end gap-1 h-24">
+              {(() => {
+                const maxRev = Math.max(...monthlyTrend.map(([, v]) => v.revenue), 1);
+                return monthlyTrend.map(([key, v]) => {
+                  const h = (v.revenue / maxRev) * 100;
+                  const mh = v.revenue > 0 ? (v.margin / v.revenue) * h : 0;
+                  return (
+                    <div key={key} className="flex-1 flex flex-col items-center group relative">
+                      <div className="w-full bg-[hsl(var(--lagoon))]/15 rounded-t relative" style={{ height: `${h}%` }}>
+                        <div className="absolute bottom-0 left-0 right-0 bg-[hsl(var(--ridge))] rounded-t" style={{ height: `${mh}%` }} />
+                      </div>
+                      <div className="absolute -top-12 hidden group-hover:block bg-popover border border-border/40 rounded-md px-2 py-1 text-[10px] whitespace-nowrap z-10 shadow-sm">
+                        <div className="font-medium">{new Date(key + "-01").toLocaleDateString("en-IN", { month: "short", year: "2-digit" })}</div>
+                        <div className="text-[hsl(var(--lagoon))]">Rev: {formatINR(v.revenue)}</div>
+                        <div className="text-[hsl(var(--ridge))]">Margin: {formatINR(v.margin)}</div>
+                        <div className="text-muted-foreground">{v.count} trips</div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            <div className="flex justify-between mt-1 text-[9px] text-muted-foreground">
+              <span>{new Date(monthlyTrend[0][0] + "-01").toLocaleDateString("en-IN", { month: "short", year: "2-digit" })}</span>
+              <span>{new Date(monthlyTrend[monthlyTrend.length - 1][0] + "-01").toLocaleDateString("en-IN", { month: "short", year: "2-digit" })}</span>
+            </div>
+            <div className="flex gap-3 mt-2 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-[hsl(var(--lagoon))]/40" />Revenue</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-[hsl(var(--ridge))]" />Margin</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filter bar */}
       <div className="flex items-center gap-2 py-3 border-b border-border/40 mb-4">
