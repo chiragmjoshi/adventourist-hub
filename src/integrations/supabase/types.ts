@@ -1887,6 +1887,13 @@ export type Database = {
             referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "trip_cashflow_vendors_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors_lookup"
+            referencedColumns: ["id"]
+          },
         ]
       }
       users: {
@@ -2089,6 +2096,36 @@ export type Database = {
           trip_stage?: string | null
           updated_at?: string | null
           zoho_invoice_ref?: string | null
+        }
+        Relationships: []
+      }
+      vendors_lookup: {
+        Row: {
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          nick_name: string | null
+          serve_destinations: string[] | null
+          services: string[] | null
+          vendor_code: string | null
+        }
+        Insert: {
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          nick_name?: string | null
+          serve_destinations?: string[] | null
+          services?: string[] | null
+          vendor_code?: string | null
+        }
+        Update: {
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          nick_name?: string | null
+          serve_destinations?: string[] | null
+          services?: string[] | null
+          vendor_code?: string | null
         }
         Relationships: []
       }
