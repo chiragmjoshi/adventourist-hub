@@ -253,7 +253,7 @@ const LeadDetail = () => {
         supabase.from("users").select("id, name").eq("is_active", true),
         supabase.from("destinations").select("id, name").eq("is_active", true),
         supabase.from("itineraries").select("id, headline, destination_id"),
-        supabase.from("vendors").select("id, name").eq("is_active", true),
+        supabase.from("vendors_lookup").select("id, name").eq("is_active", true),
       ]);
       return {
         masterValues: mvRes.data || [],

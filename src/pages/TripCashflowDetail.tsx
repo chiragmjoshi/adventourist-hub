@@ -50,7 +50,7 @@ const TripCashflowDetail = () => {
 
   const { data: vendors = [] } = useQuery({
     queryKey: ["vendors_all_for_detail"],
-    queryFn: async () => { const { data } = await supabase.from("vendors").select("id, name, nick_name"); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("vendors_lookup").select("id, name, nick_name"); return data || []; },
   });
 
   const { data: destinations = [] } = useQuery({

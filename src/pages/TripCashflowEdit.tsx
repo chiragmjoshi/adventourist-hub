@@ -111,7 +111,7 @@ const TripCashflowEdit = () => {
 
   const { data: vendors = [] } = useQuery({
     queryKey: ["vendors_active"],
-    queryFn: async () => { const { data } = await supabase.from("vendors").select("id, name, nick_name, services").eq("is_active", true).order("name"); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("vendors_lookup").select("id, name, nick_name, services").eq("is_active", true).order("name"); return data || []; },
   });
 
   const { data: serviceTypes = [] } = useQuery({
