@@ -105,8 +105,12 @@ export type Database = {
           delay_hours: number
           description: string | null
           email_body: string | null
+          email_cta_label: string | null
+          email_cta_url: string | null
           email_enabled: boolean
           email_format: string
+          email_hero_subtitle: string | null
+          email_hero_title: string | null
           email_recipient: string
           email_subject: string | null
           id: string
@@ -135,8 +139,12 @@ export type Database = {
           delay_hours?: number
           description?: string | null
           email_body?: string | null
+          email_cta_label?: string | null
+          email_cta_url?: string | null
           email_enabled?: boolean
           email_format?: string
+          email_hero_subtitle?: string | null
+          email_hero_title?: string | null
           email_recipient?: string
           email_subject?: string | null
           id?: string
@@ -165,8 +173,12 @@ export type Database = {
           delay_hours?: number
           description?: string | null
           email_body?: string | null
+          email_cta_label?: string | null
+          email_cta_url?: string | null
           email_enabled?: boolean
           email_format?: string
+          email_hero_subtitle?: string | null
+          email_hero_title?: string | null
           email_recipient?: string
           email_subject?: string | null
           id?: string
