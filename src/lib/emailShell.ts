@@ -175,31 +175,25 @@ a { color:${COLORS.blaze}; }
 `;
 
   const heroCell = `
-<!--[if mso]>
-<v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:640px;height:420px;">
-<v:fill type="frame" src="${escapeAttr(heroImage)}" color="${COLORS.abyss}"/>
-<v:textbox inset="0,0,0,0"><div>
-<![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
   <tr>
-    <td class="hero-pad" background="${escapeAttr(heroImage)}" bgcolor="${COLORS.abyss}" valign="top"
-      style="background-image:url('${escapeAttr(heroImage)}');background-size:cover;background-position:center;background-color:${COLORS.abyss};padding:64px 48px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${gradientOverlay};border-collapse:collapse;">
+    <td class="hero-pad" bgcolor="${COLORS.drift}" valign="top"
+      style="background-color:${COLORS.drift};background-image:linear-gradient(160deg, #F6EFE2 0%, ${COLORS.drift} 55%, #E6DCC8 100%);padding:64px 48px;border-bottom:3px solid ${COLORS.blaze};">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         <tr><td style="padding:0;">
-          <div class="hero-eyebrow" style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.85);">— ${heroEyebrow}</div>
-          <h1 class="hero-h1" style="margin:18px 0 0;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:44px;line-height:1.05;letter-spacing:-0.025em;color:#ffffff;">${heroTitle}</h1>
+          <div class="hero-eyebrow" style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.ridge};">— ${heroEyebrow}</div>
+          <h1 class="hero-h1" style="margin:18px 0 0;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:44px;line-height:1.05;letter-spacing:-0.025em;color:${COLORS.abyss};">${heroTitle}</h1>
           ${
             heroSubtitle
-              ? `<p style="margin:16px 0 0;max-width:460px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:500;font-size:17px;line-height:1.5;color:rgba(255,255,255,0.82);">${heroSubtitle}</p>`
+              ? `<p style="margin:16px 0 0;max-width:460px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:500;font-size:17px;line-height:1.5;color:rgba(26,29,46,0.72);">${heroSubtitle}</p>`
               : ""
           }
-          <div style="margin-top:48px;text-align:right;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:14px;letter-spacing:0.3em;color:rgba(253,196,54,0.55);">ADVENTOURIST</div>
+          <div style="margin-top:48px;text-align:right;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:14px;letter-spacing:0.3em;color:rgba(255,111,76,0.55);">ADVENTOURIST</div>
         </td></tr>
       </table>
     </td>
   </tr>
-</table>
-<!--[if mso]></div></v:textbox></v:rect><![endif]-->`;
+</table>`;
 
   const ctaBlock = showPrimary
     ? `
@@ -283,13 +277,13 @@ a { color:${COLORS.blaze}; }
     <table role="presentation" class="container" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 32px rgba(26,29,46,0.10);border-collapse:separate;">
       <tr><td style="padding:0;">${fourColorStripe()}</td></tr>
       <tr>
-        <td style="background:${COLORS.abyss};padding:22px 36px;">
+        <td style="background:${COLORS.drift};padding:22px 36px;border-bottom:1px solid rgba(26,29,46,0.08);">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td align="left" style="vertical-align:middle;">
-                <img src="${LOGO_URL}" width="140" alt="Adventourist" style="display:block;border:0;outline:none;text-decoration:none;height:auto;">
+              <td align="left" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:17px;letter-spacing:0.18em;color:${COLORS.abyss};">
+                ADVENTOURIST
               </td>
-              <td align="right" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.horizon};">
+              <td align="right" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.ridge};">
                 ${heroEyebrow}
               </td>
             </tr>
