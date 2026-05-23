@@ -44,6 +44,8 @@ const DEFAULT_HERO_SUBTITLE =
   "No fixed packages. No call-centre scripts. Just a crisp trip note from real humans who care about the route, the pace, and the tiny details.";
 const DEFAULT_BODY_NOTE =
   "We’ve pulled the next useful step into one tidy note — clear enough to act on, warm enough to not feel like it escaped from a CRM.";
+const LOGO_URL =
+  "https://ufjhiqdpshrubephgxrs.supabase.co/storage/v1/object/public/legacy-media/brand%2Fadventourist-email-logo.png";
 
 function escapeHtml(s: string): string {
   return s
@@ -305,7 +307,7 @@ a { color:${COLORS.blaze}; }
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td align="left" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;color:${COLORS.abyss};">
-                <span style="display:inline-block;width:10px;height:10px;background:${COLORS.blaze};border-radius:999px;margin-right:10px;vertical-align:1px;">&nbsp;</span><span style="font-weight:900;font-size:17px;letter-spacing:0.18em;">ADVENTOURIST</span>
+                <img src="${LOGO_URL}" width="132" alt="Adventourist" style="display:block;width:132px;max-width:132px;height:auto;border:0;outline:none;text-decoration:none;">
               </td>
               <td class="brand-kicker" align="right" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.ridge};">
                 Mumbai-born · made-to-measure
