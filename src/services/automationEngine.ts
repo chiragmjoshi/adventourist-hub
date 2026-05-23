@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { sendWhatsAppMessage } from "./aisensy";
 import { format, differenceInDays } from "date-fns";
+import { wrapInBrandShell } from "@/lib/emailShell";
 
 /* AUTOMATION ENGINE - flexible rule-driven dispatcher */
 
@@ -149,9 +150,26 @@ async function dispatchExecution(executionId: string, rule: any, ctx: VariableCo
       const body = resolveVariables(rule.email_body || "", ctx);
       const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist", ctx);
       messagePreview = body.replace(/<[^>]+>/g, "").slice(0, 200);
+      const heroTitle = rule.email_hero_title
+        ? resolveVariables(rule.email_hero_title, ctx)
+        : (rule.name || "From Adventourist");
+      const heroSubtitle = rule.email_hero_subtitle
+        ? resolveVariables(rule.email_hero_subtitle, ctx)
+        : undefined;
+      const ctaUrl = rule.email_cta_url || "https://wa.me/919930400694";
+      const ctaLabel = rule.email_cta_label || "Message us on WhatsApp →";
+      const brandedHtml = wrapInBrandShell({
+        heroTitle,
+        heroSubtitle,
+        bodyHtml: body,
+        agentName: ctx.agent?.name,
+        ctaUrl,
+        ctaLabel,
+        accentColor: "blaze",
+      });
       try {
         const { data, error } = await supabase.functions.invoke("send-email", {
-          body: { to: recipientContact, subject, html: body },
+          body: { to: recipientContact, subject, html: brandedHtml },
         });
         if (error) {
           success = false;
@@ -333,9 +351,26 @@ export async function sendTestMessage(rule: any, channel: "whatsapp" | "email", 
   }
   const html = resolveVariables(rule.email_body || "", dummyCtx);
   const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist (Test)", dummyCtx);
+  const heroTitle = rule.email_hero_title
+    ? resolveVariables(rule.email_hero_title, dummyCtx)
+    : (rule.name || "From Adventourist");
+  const heroSubtitle = rule.email_hero_subtitle
+    ? resolveVariables(rule.email_hero_subtitle, dummyCtx)
+    : undefined;
+  const ctaUrl = rule.email_cta_url || "https://wa.me/919930400694";
+  const ctaLabel = rule.email_cta_label || "Message us on WhatsApp →";
+  const brandedHtml = wrapInBrandShell({
+    heroTitle,
+    heroSubtitle,
+    bodyHtml: html,
+    agentName: dummyCtx.agent?.name,
+    ctaUrl,
+    ctaLabel,
+    accentColor: "blaze",
+  });
   try {
     const { data, error } = await supabase.functions.invoke("send-email", {
-      body: { to: contact, subject: `[TEST] ${subject}`, html },
+      body: { to: contact, subject: `[TEST] ${subject}`, html: brandedHtml },
     });
     if (error) return { success: false, response: { error: error.message || String(error) } };
     if (data && (data as any).success) return { success: true, response: data };
