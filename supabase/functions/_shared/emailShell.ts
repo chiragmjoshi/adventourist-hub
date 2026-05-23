@@ -292,11 +292,11 @@ a { color:${COLORS.blaze}; }
         <td style="background:${COLORS.drift};padding:22px 36px;border-bottom:1px solid rgba(26,29,46,0.08);">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td align="left" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:17px;letter-spacing:0.18em;color:${COLORS.abyss};">
-                ADVENTOURIST
+              <td align="left" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;color:${COLORS.abyss};">
+                <span style="display:inline-block;width:10px;height:10px;background:${COLORS.blaze};border-radius:999px;margin-right:10px;vertical-align:1px;">&nbsp;</span><span style="font-weight:900;font-size:17px;letter-spacing:0.18em;">ADVENTOURIST</span>
               </td>
-              <td align="right" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.ridge};">
-                ${heroEyebrow}
+              <td class="brand-kicker" align="right" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.ridge};">
+                Mumbai-born · made-to-measure
               </td>
             </tr>
           </table>
@@ -304,8 +304,11 @@ a { color:${COLORS.blaze}; }
       </tr>
       <tr><td style="padding:0;">${heroCell}</td></tr>
       <tr>
-        <td class="px-48" style="padding:44px 48px 16px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:16px;line-height:26px;color:${COLORS.abyss};">
-          ${bodyHtml}
+        <td class="px-48" style="padding:42px 48px 18px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:16px;line-height:27px;color:${COLORS.abyss};">
+          <div style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:${COLORS.blaze};margin-bottom:14px;">The useful bit</div>
+          <div style="font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:16px;line-height:27px;color:rgba(26,29,46,0.86);">
+            ${bodyHtml}
+          </div>
           ${ctaBlock}
           ${dividerBlock}
         </td>
@@ -314,9 +317,10 @@ a { color:${COLORS.blaze}; }
       ${featureBlock ? `<tr><td style="padding:0;">${featureBlock}</td></tr>` : ""}
       <tr>
         <td class="px-48" style="background:${COLORS.abyss};padding:36px 48px 32px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:13px;line-height:22px;color:rgba(255,255,255,0.7);">
-          <div style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:16px;letter-spacing:0.12em;color:${COLORS.horizon};">ADVENTOURIST</div>
+          <div style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:16px;letter-spacing:0.12em;color:${COLORS.horizon};">ADVENTOURIST</div>
           <div style="margin-top:6px;height:1px;width:32px;background:rgba(253,196,54,0.25);font-size:0;line-height:1px;">&nbsp;</div>
-          <div style="margin-top:18px;">1 Madhav Kunj, South Pond Road, Vile Parle, Mumbai 400056</div>
+          <div style="margin-top:18px;">Small team. Real recommendations. Trips planned around actual humans.</div>
+          <div style="margin-top:8px;">1 Madhav Kunj, South Pond Road, Vile Parle, Mumbai 400056</div>
           <div style="margin-top:8px;color:rgba(255,255,255,0.82);">
             <a href="tel:+919930400694" style="color:rgba(255,255,255,0.82);text-decoration:none;">📞 +91 99304 00694</a>
             <span style="color:${COLORS.horizon};"> · </span>
@@ -325,7 +329,7 @@ a { color:${COLORS.blaze}; }
             <a href="https://adventourist.in" style="color:rgba(255,255,255,0.82);text-decoration:none;">🌐 adventourist.in</a>
           </div>
           <div style="margin-top:22px;font-size:11px;color:rgba(255,255,255,0.4);">GST 27ABMFA3990N1ZQ · PAN ABMFA3990N</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);">© Adventourist 2026 · Travel Designed For You</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);">© Adventourist 2026</div>
         </td>
       </tr>
       <tr><td style="padding:0;">${fourColorStripe()}</td></tr>
