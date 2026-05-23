@@ -152,7 +152,7 @@ async function dispatchExecution(executionId: string, rule: any, ctx: VariableCo
       messagePreview = body.replace(/<[^>]+>/g, "").slice(0, 200);
       const heroTitle = rule.email_hero_title
         ? resolveVariables(rule.email_hero_title, ctx)
-        : (rule.name || "From Adventourist");
+        : "A note from <em>Adventourist</em>";
       const heroSubtitle = rule.email_hero_subtitle
         ? resolveVariables(rule.email_hero_subtitle, ctx)
         : undefined;
@@ -353,7 +353,7 @@ export async function sendTestMessage(rule: any, channel: "whatsapp" | "email", 
   const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist (Test)", dummyCtx);
   const heroTitle = rule.email_hero_title
     ? resolveVariables(rule.email_hero_title, dummyCtx)
-    : (rule.name || "From Adventourist");
+    : "A note from <em>Adventourist</em>";
   const heroSubtitle = rule.email_hero_subtitle
     ? resolveVariables(rule.email_hero_subtitle, dummyCtx)
     : undefined;

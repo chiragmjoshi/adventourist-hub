@@ -170,7 +170,7 @@ async function dispatchExecution(
     messagePreview = html.replace(/<[^>]+>/g, "").slice(0, 200);
     const heroTitle = rule.email_hero_title
       ? resolveVariables(rule.email_hero_title, ctx)
-      : (rule.name || "From Adventourist");
+      : "A note from <em>Adventourist</em>";
     const heroSubtitle = rule.email_hero_subtitle
       ? resolveVariables(rule.email_hero_subtitle, ctx)
       : undefined;
