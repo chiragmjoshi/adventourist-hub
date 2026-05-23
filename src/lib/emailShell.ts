@@ -39,18 +39,11 @@ const COLORS = {
   drift: "#EEE5D5",
 } as const;
 
-const LOGO_URL =
-  "https://ufjhiqdpshrubephgxrs.supabase.co/storage/v1/object/public/legacy-media/brand%2Femail-logo-white.png";
-
-const DEFAULT_HERO_IMAGE =
-  "https://cms2.adventourist.in/storage/brand/email-hero-default.jpg";
-
-const ACCENT_TOP: Record<AccentColor, string> = {
-  blaze: "rgba(255,111,76,0)",
-  horizon: "rgba(253,196,54,0)",
-  lagoon: "rgba(100,203,185,0)",
-  ridge: "rgba(5,97,71,0)",
-};
+const DEFAULT_HERO_TITLE = "Custom trips, <em>without the copy-paste</em>";
+const DEFAULT_HERO_SUBTITLE =
+  "No fixed packages. No call-centre scripts. Just a crisp trip note from real humans who care about the route, the pace, and the tiny details.";
+const DEFAULT_BODY_NOTE =
+  "We’ve pulled the next useful step into one tidy note — clear enough to act on, warm enough to not feel like it escaped from a CRM.";
 
 function escapeHtml(s: string): string {
   return s
@@ -63,6 +56,31 @@ function escapeHtml(s: string): string {
 
 function escapeAttr(s: string): string {
   return escapeHtml(s);
+}
+
+function stripHtml(s: string): string {
+  return (s || "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isGenericHeroTitle(raw: string): boolean {
+  const plain = stripHtml(raw).toLowerCase();
+  return !plain || /^(from\s+)?(a\s+note\s+from\s+)?(adventourist|edventurous)$/.test(plain);
+}
+
+function cleanBodyCopy(raw: string): string {
+  const body = raw || "";
+  const withoutSlogans = body
+    .replace(/<\s*(p|div)\b[^>]*>\s*(?:—\s*)?(?:travel\s+designed\s+for\s+you|adventourist|edventurous)\s*<\/\s*\1\s*>/gi, "")
+    .replace(/^\s*(?:—\s*)?(?:travel\s+designed\s+for\s+you|adventourist|edventurous)\s*$/gim, "")
+    .replace(/(?:\s*<br\s*\/?>\s*){3,}/gi, "<br><br>")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return withoutSlogans;
 }
 
 /**
@@ -123,14 +141,13 @@ export function wrapInBrandShell(opts: BrandShellOptions): string {
   // Legacy alias resolution
   const primaryCtaUrl = opts.primaryCtaUrl ?? opts.ctaUrl;
   const primaryCtaLabel = opts.primaryCtaLabel ?? opts.ctaLabel;
-  const accent: AccentColor = opts.heroAccent ?? opts.accentColor ?? "blaze";
-
-  const heroImage = opts.heroImage || DEFAULT_HERO_IMAGE;
-  const heroEyebrowRaw = (opts.heroEyebrow || "TRAVEL DESIGNED FOR YOU").trim();
+  const heroEyebrowRaw = (opts.heroEyebrow || "BUILT AROUND YOUR PEOPLE, PACE & PLANS").trim();
   const heroEyebrow = escapeHtml(heroEyebrowRaw);
-  const heroTitle = parseAccentHeading(opts.heroTitle || "");
-  const heroSubtitle = opts.heroSubtitle ? escapeHtml(opts.heroSubtitle) : "";
-  const bodyHtml = normalizeBody(opts.bodyHtml);
+  const resolvedHeroTitle = isGenericHeroTitle(opts.heroTitle) ? DEFAULT_HERO_TITLE : opts.heroTitle;
+  const heroTitle = parseAccentHeading(resolvedHeroTitle);
+  const heroSubtitle = escapeHtml(opts.heroSubtitle || DEFAULT_HERO_SUBTITLE);
+  const cleanedBody = cleanBodyCopy(opts.bodyHtml);
+  const bodyHtml = normalizeBody(stripHtml(cleanedBody).length ? cleanedBody : DEFAULT_BODY_NOTE);
 
   // CTAs
   const showPrimary = !!(primaryCtaUrl && primaryCtaLabel);
@@ -157,8 +174,6 @@ export function wrapInBrandShell(opts: BrandShellOptions): string {
   const featureTitle = showFeature ? parseAccentHeading(opts.featureCardTitle!) : "";
   const featureUrl = opts.featureCardUrl ? escapeAttr(opts.featureCardUrl) : "";
 
-  const gradientOverlay = `linear-gradient(180deg, ${ACCENT_TOP[accent]} 0%, rgba(26,29,46,0.85) 100%)`;
-
   const styles = `
 @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800;900&family=Jost:wght@400;500;600&display=swap');
 body { margin:0; padding:0; background:${COLORS.drift}; }
@@ -166,9 +181,11 @@ a { color:${COLORS.blaze}; }
 @media screen and (max-width:600px) {
   .container { width:100% !important; border-radius:16px !important; }
   .px-48 { padding-left:28px !important; padding-right:28px !important; }
+  .brand-kicker { display:none !important; }
   .hero-h1 { font-size:32px !important; line-height:1.08 !important; }
   .hero-eyebrow { font-size:10px !important; }
-  .hero-pad { padding:40px 28px !important; }
+  .hero-pad { padding:42px 28px 34px !important; }
+  .hero-stamp { text-align:left !important; margin-top:32px !important; }
   .stack { display:block !important; width:100% !important; margin-bottom:10px !important; }
   .feature-title { font-size:22px !important; }
 }
@@ -177,18 +194,25 @@ a { color:${COLORS.blaze}; }
   const heroCell = `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
   <tr>
-    <td class="hero-pad" bgcolor="${COLORS.drift}" valign="top"
-      style="background-color:${COLORS.drift};background-image:linear-gradient(160deg, #F6EFE2 0%, ${COLORS.drift} 55%, #E6DCC8 100%);padding:64px 48px;border-bottom:3px solid ${COLORS.blaze};">
+    <td class="hero-pad" bgcolor="#F6EFE2" valign="top"
+      style="background-color:#F6EFE2;background-image:linear-gradient(135deg, #F8F1E5 0%, ${COLORS.drift} 54%, #D8EEE8 100%);padding:60px 48px 46px;border-bottom:3px solid ${COLORS.blaze};">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         <tr><td style="padding:0;">
-          <div class="hero-eyebrow" style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.ridge};">— ${heroEyebrow}</div>
-          <h1 class="hero-h1" style="margin:18px 0 0;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:44px;line-height:1.05;letter-spacing:-0.025em;color:${COLORS.abyss};">${heroTitle}</h1>
+          <div class="hero-eyebrow" style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.ridge};">— ${heroEyebrow}</div>
+          <h1 class="hero-h1" style="margin:20px 0 0;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:46px;line-height:0.98;letter-spacing:0;color:${COLORS.abyss};">${heroTitle}</h1>
           ${
             heroSubtitle
-              ? `<p style="margin:16px 0 0;max-width:460px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:500;font-size:17px;line-height:1.5;color:rgba(26,29,46,0.72);">${heroSubtitle}</p>`
+              ? `<p style="margin:18px 0 0;max-width:500px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:500;font-size:17px;line-height:1.55;color:rgba(26,29,46,0.76);">${heroSubtitle}</p>`
               : ""
           }
-          <div style="margin-top:48px;text-align:right;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:14px;letter-spacing:0.3em;color:rgba(255,111,76,0.55);">ADVENTOURIST</div>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:34px;border-collapse:collapse;">
+            <tr>
+              <td style="background:rgba(255,111,76,0.12);border:1px solid rgba(255,111,76,0.35);border-radius:999px;padding:8px 12px;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${COLORS.blaze};">No copy-paste trips</td>
+              <td width="10" style="font-size:0;line-height:0;">&nbsp;</td>
+              <td style="background:rgba(5,97,71,0.10);border:1px solid rgba(5,97,71,0.24);border-radius:999px;padding:8px 12px;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${COLORS.ridge};">Real humans</td>
+            </tr>
+          </table>
+          <div class="hero-stamp" style="margin-top:42px;text-align:right;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:13px;letter-spacing:0.26em;color:rgba(255,111,76,0.52);">PLAN IT LIKE YOU MEAN IT</div>
         </td></tr>
       </table>
     </td>
@@ -280,11 +304,11 @@ a { color:${COLORS.blaze}; }
         <td style="background:${COLORS.drift};padding:22px 36px;border-bottom:1px solid rgba(26,29,46,0.08);">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td align="left" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:17px;letter-spacing:0.18em;color:${COLORS.abyss};">
-                ADVENTOURIST
+              <td align="left" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;color:${COLORS.abyss};">
+                <span style="display:inline-block;width:10px;height:10px;background:${COLORS.blaze};border-radius:999px;margin-right:10px;vertical-align:1px;">&nbsp;</span><span style="font-weight:900;font-size:17px;letter-spacing:0.18em;">ADVENTOURIST</span>
               </td>
-              <td align="right" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.ridge};">
-                ${heroEyebrow}
+              <td class="brand-kicker" align="right" style="vertical-align:middle;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.ridge};">
+                Mumbai-born · made-to-measure
               </td>
             </tr>
           </table>
@@ -292,8 +316,11 @@ a { color:${COLORS.blaze}; }
       </tr>
       <tr><td style="padding:0;">${heroCell}</td></tr>
       <tr>
-        <td class="px-48" style="padding:44px 48px 16px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:16px;line-height:26px;color:${COLORS.abyss};">
-          ${bodyHtml}
+        <td class="px-48" style="padding:42px 48px 18px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:16px;line-height:27px;color:${COLORS.abyss};">
+          <div style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:${COLORS.blaze};margin-bottom:14px;">The useful bit</div>
+          <div style="font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:16px;line-height:27px;color:rgba(26,29,46,0.86);">
+            ${bodyHtml}
+          </div>
           ${ctaBlock}
           ${dividerBlock}
         </td>
@@ -302,9 +329,10 @@ a { color:${COLORS.blaze}; }
       ${featureBlock ? `<tr><td style="padding:0;">${featureBlock}</td></tr>` : ""}
       <tr>
         <td class="px-48" style="background:${COLORS.abyss};padding:36px 48px 32px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:13px;line-height:22px;color:rgba(255,255,255,0.7);">
-          <div style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:16px;letter-spacing:0.12em;color:${COLORS.horizon};">ADVENTOURIST</div>
+          <div style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:16px;letter-spacing:0.12em;color:${COLORS.horizon};">ADVENTOURIST</div>
           <div style="margin-top:6px;height:1px;width:32px;background:rgba(253,196,54,0.25);font-size:0;line-height:1px;">&nbsp;</div>
-          <div style="margin-top:18px;">1 Madhav Kunj, South Pond Road, Vile Parle, Mumbai 400056</div>
+          <div style="margin-top:18px;">Small team. Real recommendations. Trips planned around actual humans.</div>
+          <div style="margin-top:8px;">1 Madhav Kunj, South Pond Road, Vile Parle, Mumbai 400056</div>
           <div style="margin-top:8px;color:rgba(255,255,255,0.82);">
             <a href="tel:+919930400694" style="color:rgba(255,255,255,0.82);text-decoration:none;">📞 +91 99304 00694</a>
             <span style="color:${COLORS.horizon};"> · </span>
@@ -313,7 +341,7 @@ a { color:${COLORS.blaze}; }
             <a href="https://adventourist.in" style="color:rgba(255,255,255,0.82);text-decoration:none;">🌐 adventourist.in</a>
           </div>
           <div style="margin-top:22px;font-size:11px;color:rgba(255,255,255,0.4);">GST 27ABMFA3990N1ZQ · PAN ABMFA3990N</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);">© Adventourist 2026 · Travel Designed For You</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);">© Adventourist 2026</div>
         </td>
       </tr>
       <tr><td style="padding:0;">${fourColorStripe()}</td></tr>
