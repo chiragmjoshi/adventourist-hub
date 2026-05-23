@@ -39,18 +39,11 @@ const COLORS = {
   drift: "#EEE5D5",
 } as const;
 
-const LOGO_URL =
-  "https://ufjhiqdpshrubephgxrs.supabase.co/storage/v1/object/public/legacy-media/brand%2Femail-logo-white.png";
-
-const DEFAULT_HERO_IMAGE =
-  "https://cms2.adventourist.in/storage/brand/email-hero-default.jpg";
-
-const ACCENT_TOP: Record<AccentColor, string> = {
-  blaze: "rgba(255,111,76,0)",
-  horizon: "rgba(253,196,54,0)",
-  lagoon: "rgba(100,203,185,0)",
-  ridge: "rgba(5,97,71,0)",
-};
+const DEFAULT_HERO_TITLE = "Custom trips, <em>without the copy-paste</em>";
+const DEFAULT_HERO_SUBTITLE =
+  "No fixed packages. No call-centre scripts. Just a crisp trip note from real humans who care about the route, the pace, and the tiny details.";
+const DEFAULT_BODY_NOTE =
+  "We’ve pulled the next useful step into one tidy note — clear enough to act on, warm enough to not feel like it escaped from a CRM.";
 
 function escapeHtml(s: string): string {
   return s
@@ -63,6 +56,20 @@ function escapeHtml(s: string): string {
 
 function escapeAttr(s: string): string {
   return escapeHtml(s);
+}
+
+function stripHtml(s: string): string {
+  return (s || "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isGenericHeroTitle(raw: string): boolean {
+  const plain = stripHtml(raw).toLowerCase();
+  return !plain || /^(from\s+)?(a\s+note\s+from\s+)?(adventourist|edventurous)$/.test(plain);
 }
 
 /**
