@@ -24,7 +24,7 @@ const COLORS = {
 } as const;
 
 const LOGO_URL =
-  "https://cms2.adventourist.in/storage/brand/logo-horizontal-white.png";
+  "https://www.adventourist.in/logo/logo-horizontal-white.svg";
 
 function escapeHtml(s: string): string {
   return s
