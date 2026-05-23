@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { wrapInBrandShell } from "../_shared/emailShell.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -167,7 +168,24 @@ async function dispatchExecution(
     const html = resolveVariables(rule.email_body || "", ctx);
     const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist", ctx);
     messagePreview = html.replace(/<[^>]+>/g, "").slice(0, 200);
-    const r = await sendEmail(supabaseUrl, serviceKey, recipientContact, subject, html);
+    const heroTitle = rule.email_hero_title
+      ? resolveVariables(rule.email_hero_title, ctx)
+      : (rule.name || "From Adventourist");
+    const heroSubtitle = rule.email_hero_subtitle
+      ? resolveVariables(rule.email_hero_subtitle, ctx)
+      : undefined;
+    const ctaUrl = rule.email_cta_url || "https://wa.me/919930400694";
+    const ctaLabel = rule.email_cta_label || "Message us on WhatsApp →";
+    const brandedHtml = wrapInBrandShell({
+      heroTitle,
+      heroSubtitle,
+      bodyHtml: html,
+      agentName: ctx.agent?.name,
+      ctaUrl,
+      ctaLabel,
+      accentColor: "blaze",
+    });
+    const r = await sendEmail(supabaseUrl, serviceKey, recipientContact, subject, brandedHtml);
     success = r.success;
     if (!success) errorMessage = (r.error || "Email send failed").slice(0, 500);
   } else {
