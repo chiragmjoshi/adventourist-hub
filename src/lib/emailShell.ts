@@ -72,6 +72,17 @@ function isGenericHeroTitle(raw: string): boolean {
   return !plain || /^(from\s+)?(a\s+note\s+from\s+)?(adventourist|edventurous)$/.test(plain);
 }
 
+function cleanBodyCopy(raw: string): string {
+  const body = raw || "";
+  const withoutSlogans = body
+    .replace(/<\s*(p|div)\b[^>]*>\s*(?:—\s*)?(?:travel\s+designed\s+for\s+you|adventourist|edventurous)\s*<\/\s*\1\s*>/gi, "")
+    .replace(/^\s*(?:—\s*)?(?:travel\s+designed\s+for\s+you|adventourist|edventurous)\s*$/gim, "")
+    .replace(/(?:\s*<br\s*\/?>\s*){3,}/gi, "<br><br>")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return withoutSlogans;
+}
+
 /**
  * Parse a heading string that may contain <em>...</em> markers and <br>.
  * <em> segments render as italic Blaze; everything else is escaped.
@@ -135,7 +146,8 @@ export function wrapInBrandShell(opts: BrandShellOptions): string {
   const resolvedHeroTitle = isGenericHeroTitle(opts.heroTitle) ? DEFAULT_HERO_TITLE : opts.heroTitle;
   const heroTitle = parseAccentHeading(resolvedHeroTitle);
   const heroSubtitle = escapeHtml(opts.heroSubtitle || DEFAULT_HERO_SUBTITLE);
-  const bodyHtml = normalizeBody(stripHtml(opts.bodyHtml).length ? opts.bodyHtml : DEFAULT_BODY_NOTE);
+  const cleanedBody = cleanBodyCopy(opts.bodyHtml);
+  const bodyHtml = normalizeBody(stripHtml(cleanedBody).length ? cleanedBody : DEFAULT_BODY_NOTE);
 
   // CTAs
   const showPrimary = !!(primaryCtaUrl && primaryCtaLabel);
