@@ -130,14 +130,12 @@ export function wrapInBrandShell(opts: BrandShellOptions): string {
   // Legacy alias resolution
   const primaryCtaUrl = opts.primaryCtaUrl ?? opts.ctaUrl;
   const primaryCtaLabel = opts.primaryCtaLabel ?? opts.ctaLabel;
-  const accent: AccentColor = opts.heroAccent ?? opts.accentColor ?? "blaze";
-
-  const heroImage = opts.heroImage || DEFAULT_HERO_IMAGE;
-  const heroEyebrowRaw = (opts.heroEyebrow || "TRAVEL DESIGNED FOR YOU").trim();
+  const heroEyebrowRaw = (opts.heroEyebrow || "BUILT AROUND YOUR PEOPLE, PACE & PLANS").trim();
   const heroEyebrow = escapeHtml(heroEyebrowRaw);
-  const heroTitle = parseAccentHeading(opts.heroTitle || "");
-  const heroSubtitle = opts.heroSubtitle ? escapeHtml(opts.heroSubtitle) : "";
-  const bodyHtml = normalizeBody(opts.bodyHtml);
+  const resolvedHeroTitle = isGenericHeroTitle(opts.heroTitle) ? DEFAULT_HERO_TITLE : opts.heroTitle;
+  const heroTitle = parseAccentHeading(resolvedHeroTitle);
+  const heroSubtitle = escapeHtml(opts.heroSubtitle || DEFAULT_HERO_SUBTITLE);
+  const bodyHtml = normalizeBody(stripHtml(opts.bodyHtml).length ? opts.bodyHtml : DEFAULT_BODY_NOTE);
 
   // CTAs
   const showPrimary = !!(primaryCtaUrl && primaryCtaLabel);
@@ -163,8 +161,6 @@ export function wrapInBrandShell(opts: BrandShellOptions): string {
   const featureEyebrow = showFeature ? escapeHtml(opts.featureCardEyebrow!) : "";
   const featureTitle = showFeature ? parseAccentHeading(opts.featureCardTitle!) : "";
   const featureUrl = opts.featureCardUrl ? escapeAttr(opts.featureCardUrl) : "";
-
-  const gradientOverlay = `linear-gradient(180deg, ${ACCENT_TOP[accent]} 0%, rgba(26,29,46,0.85) 100%)`;
 
   const styles = `
 @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800;900&family=Jost:wght@400;500;600&display=swap');
