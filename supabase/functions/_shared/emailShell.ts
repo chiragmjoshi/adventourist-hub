@@ -169,9 +169,11 @@ a { color:${COLORS.blaze}; }
 @media screen and (max-width:600px) {
   .container { width:100% !important; border-radius:16px !important; }
   .px-48 { padding-left:28px !important; padding-right:28px !important; }
+  .brand-kicker { display:none !important; }
   .hero-h1 { font-size:32px !important; line-height:1.08 !important; }
   .hero-eyebrow { font-size:10px !important; }
-  .hero-pad { padding:40px 28px !important; }
+  .hero-pad { padding:42px 28px 34px !important; }
+  .hero-stamp { text-align:left !important; margin-top:32px !important; }
   .stack { display:block !important; width:100% !important; margin-bottom:10px !important; }
   .feature-title { font-size:22px !important; }
 }
@@ -180,18 +182,25 @@ a { color:${COLORS.blaze}; }
   const heroCell = `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
   <tr>
-    <td class="hero-pad" bgcolor="${COLORS.drift}" valign="top"
-      style="background-color:${COLORS.drift};background-image:linear-gradient(160deg, #F6EFE2 0%, ${COLORS.drift} 55%, #E6DCC8 100%);padding:64px 48px;border-bottom:3px solid ${COLORS.blaze};">
+    <td class="hero-pad" bgcolor="#F6EFE2" valign="top"
+      style="background-color:#F6EFE2;background-image:linear-gradient(135deg, #F8F1E5 0%, ${COLORS.drift} 54%, #D8EEE8 100%);padding:60px 48px 46px;border-bottom:3px solid ${COLORS.blaze};">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         <tr><td style="padding:0;">
-          <div class="hero-eyebrow" style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.ridge};">— ${heroEyebrow}</div>
-          <h1 class="hero-h1" style="margin:18px 0 0;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:44px;line-height:1.05;letter-spacing:-0.025em;color:${COLORS.abyss};">${heroTitle}</h1>
+          <div class="hero-eyebrow" style="font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.ridge};">— ${heroEyebrow}</div>
+          <h1 class="hero-h1" style="margin:20px 0 0;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:46px;line-height:0.98;letter-spacing:0;color:${COLORS.abyss};">${heroTitle}</h1>
           ${
             heroSubtitle
-              ? `<p style="margin:16px 0 0;max-width:460px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:500;font-size:17px;line-height:1.5;color:rgba(26,29,46,0.72);">${heroSubtitle}</p>`
+              ? `<p style="margin:18px 0 0;max-width:500px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:500;font-size:17px;line-height:1.55;color:rgba(26,29,46,0.76);">${heroSubtitle}</p>`
               : ""
           }
-          <div style="margin-top:48px;text-align:right;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:14px;letter-spacing:0.3em;color:rgba(255,111,76,0.55);">ADVENTOURIST</div>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:34px;border-collapse:collapse;">
+            <tr>
+              <td style="background:rgba(255,111,76,0.12);border:1px solid rgba(255,111,76,0.35);border-radius:999px;padding:8px 12px;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${COLORS.blaze};">No copy-paste trips</td>
+              <td width="10" style="font-size:0;line-height:0;">&nbsp;</td>
+              <td style="background:rgba(5,97,71,0.10);border:1px solid rgba(5,97,71,0.24);border-radius:999px;padding:8px 12px;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:800;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${COLORS.ridge};">Real humans</td>
+            </tr>
+          </table>
+          <div class="hero-stamp" style="margin-top:42px;text-align:right;font-family:'Inter Tight','Segoe UI',Arial,sans-serif;font-weight:900;font-size:13px;letter-spacing:0.26em;color:rgba(255,111,76,0.52);">PLAN IT LIKE YOU MEAN IT</div>
         </td></tr>
       </table>
     </td>
