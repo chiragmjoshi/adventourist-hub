@@ -16,6 +16,8 @@ import { Save, Send, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import VariableChips from "./VariableChips";
 import { resolveVariables, sendTestMessage, DUMMY_PREVIEW_CTX } from "@/services/automationEngine";
+import { wrapInBrandShell } from "@/lib/emailShell";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const TRIGGER_OPTIONS = [
   { value: "lead_created", label: "Lead created" },
@@ -65,6 +67,10 @@ const emptyRule = {
   email_subject: "",
   email_body: "",
   email_format: "html",
+  email_hero_title: "",
+  email_hero_subtitle: "",
+  email_cta_url: "",
+  email_cta_label: "",
 };
 
 interface Props {
@@ -83,6 +89,8 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
   const waRef = useRef<HTMLTextAreaElement>(null);
   const subjRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLTextAreaElement>(null);
+  const heroTitleRef = useRef<HTMLInputElement>(null);
+  const heroSubtitleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (rule) {
@@ -94,8 +102,13 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
 
   const update = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const insertAt = (target: "wa_message_body" | "email_subject" | "email_body", token: string) => {
-    const ref = target === "wa_message_body" ? waRef.current : target === "email_subject" ? subjRef.current : emailRef.current;
+  const insertAt = (target: "wa_message_body" | "email_subject" | "email_body" | "email_hero_title" | "email_hero_subtitle", token: string) => {
+    const ref =
+      target === "wa_message_body" ? waRef.current
+      : target === "email_subject" ? subjRef.current
+      : target === "email_body" ? emailRef.current
+      : target === "email_hero_title" ? heroTitleRef.current
+      : heroSubtitleRef.current;
     const cur = form[target] || "";
     if (!ref) {
       update(target, cur + token);
@@ -135,6 +148,10 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
         email_subject: form.email_subject || null,
         email_body: form.email_body || null,
         email_format: form.email_format,
+        email_hero_title: form.email_hero_title || null,
+        email_hero_subtitle: form.email_hero_subtitle || null,
+        email_cta_url: form.email_cta_url || null,
+        email_cta_label: form.email_cta_label || null,
       };
       if (rule?.id) {
         const { error } = await supabase.from("automation_rules").update(payload).eq("id", rule.id);
@@ -174,6 +191,21 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
   const previewMessage = resolveVariables(form.wa_message_body || "", DUMMY_PREVIEW_CTX);
   const previewSubject = resolveVariables(form.email_subject || "", DUMMY_PREVIEW_CTX);
   const previewBody = resolveVariables(form.email_body || "", DUMMY_PREVIEW_CTX);
+  const previewHeroTitle = form.email_hero_title
+    ? resolveVariables(form.email_hero_title, DUMMY_PREVIEW_CTX)
+    : (form.name || "From Adventourist");
+  const previewHeroSubtitle = form.email_hero_subtitle
+    ? resolveVariables(form.email_hero_subtitle, DUMMY_PREVIEW_CTX)
+    : undefined;
+  const previewBrandedHtml = wrapInBrandShell({
+    heroTitle: previewHeroTitle,
+    heroSubtitle: previewHeroSubtitle,
+    bodyHtml: previewBody,
+    agentName: (DUMMY_PREVIEW_CTX.agent as any)?.name,
+    ctaUrl: form.email_cta_url || "https://wa.me/919930400694",
+    ctaLabel: form.email_cta_label || "Message us on WhatsApp →",
+    accentColor: "blaze",
+  });
 
   return (
     <>
@@ -317,6 +349,35 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
                   </div>
                   <Button type="button" variant="outline" size="sm" className="text-xs ml-auto" onClick={() => setEmailPreviewOpen(true)}>Preview</Button>
                 </div>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="shell" className="border rounded-md px-3">
+                    <AccordionTrigger className="text-xs py-2 hover:no-underline">Branded shell options (optional)</AccordionTrigger>
+                    <AccordionContent className="space-y-3 pt-1 pb-3">
+                      <p className="text-[10px] text-muted-foreground">
+                        All outgoing emails are wrapped in the Adventourist brand shell.
+                        Override these fields per rule if needed; otherwise sensible defaults are used.
+                      </p>
+                      <div>
+                        <Label className="text-xs">Hero title</Label>
+                        <Input ref={heroTitleRef} value={form.email_hero_title || ""} onChange={(e) => update("email_hero_title", e.target.value)} placeholder="Defaults to rule name" className="mt-1" />
+                        <VariableChips onInsert={(t) => insertAt("email_hero_title", t)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Hero subtitle</Label>
+                        <Input ref={heroSubtitleRef} value={form.email_hero_subtitle || ""} onChange={(e) => update("email_hero_subtitle", e.target.value)} placeholder="Optional" className="mt-1" />
+                        <VariableChips onInsert={(t) => insertAt("email_hero_subtitle", t)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">CTA URL</Label>
+                        <Input value={form.email_cta_url || ""} onChange={(e) => update("email_cta_url", e.target.value)} placeholder="https://wa.me/919930400694" className="mt-1" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">CTA label</Label>
+                        <Input value={form.email_cta_label || ""} onChange={(e) => update("email_cta_label", e.target.value)} placeholder="Message us on WhatsApp →" className="mt-1" />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </>
             )}
           </Section>
@@ -352,15 +413,21 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
 
     {/* Email preview modal */}
     <Dialog open={emailPreviewOpen} onOpenChange={setEmailPreviewOpen}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader><DialogTitle>Email preview (with sample data)</DialogTitle></DialogHeader>
-        <div className="border rounded-md p-4 bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-1">Subject:</p>
-          <p className="text-sm font-medium mb-3">{previewSubject || "(no subject)"}</p>
-          <div className="border-t pt-3">
-            {form.email_format === "html"
-              ? <div className="text-sm prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: previewBody }} />
-              : <pre className="text-sm whitespace-pre-wrap font-sans">{previewBody}</pre>}
+        <div className="space-y-3">
+          <div className="border rounded-md p-3 bg-muted/30">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Subject</p>
+            <p className="text-sm font-medium">{previewSubject || "(no subject)"}</p>
+          </div>
+          <div className="flex justify-center">
+            <iframe
+              title="Branded email preview"
+              srcDoc={previewBrandedHtml}
+              width={600}
+              height={720}
+              style={{ border: "1px solid #e5e5e5", borderRadius: 8, background: "#fff" }}
+            />
           </div>
         </div>
       </DialogContent>

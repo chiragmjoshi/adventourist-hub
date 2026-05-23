@@ -1,62 +1,58 @@
 ## Goal
+Wrap every outgoing automation email in an Adventourist-branded HTML shell, without touching any existing rule content, the WhatsApp path, or the SMTP transport. Plain-text bodies get auto-converted to paragraphs so all 23 existing rules render correctly with zero edits.
 
-All 203 imported legacy trip cashflows (`cashflow_code LIKE 'LTC%'`) currently have `destination_id = NULL`, so they show as "—" in the Trip Cashflow list. Each legacy row already has 1–4 vendors linked via `trip_cashflow_vendors`, and each vendor has a `serve_destinations` array of destination UUIDs. We'll infer the trip's destination from those vendors on a best-effort basis.
+## Step 1 — Branded shell helper
+Create `src/lib/emailShell.ts` exporting `wrapInBrandShell({ heroTitle, heroSubtitle?, bodyHtml, agentName?, ctaUrl?, ctaLabel?, accentColor? })` → full `<html>…</html>` string.
 
-## Coverage check (already verified)
+- Auto-detect: if `bodyHtml` has no `<p`, `<br`, `<div`, `<table`, escape HTML and convert `\n\n` → paragraphs / single `\n` → `<br>`.
+- Brand tokens inline (Blaze `#FF6F4C`, Horizon `#FDC436`, Abyss `#1A1D2E`, Lagoon `#64CBB9`, Ridge `#056147`, Drift `#EEE5D5`).
+- `<head>`: Google Fonts `@import` for Inter Tight + Jost, plus a `<style>` with `@media (max-width:600px)` mobile rules.
+- 600px table-based layout: Drift outer bg → white rounded card → Abyss header (logo left, "TRAVEL DESIGNED FOR YOU" right) → accent hero (title 36/28px, subtitle) → white body → optional CTA button → Drift divider → optional signature → Abyss footer (address, phone, email, site, GST/PAN, copyright).
+- Logo: `https://cms2.adventourist.in/storage/brand/logo-horizontal-white.png`.
 
-- 203 / 203 legacy trips have at least one vendor that serves at least one destination → 100% resolvable.
-- 104 are unambiguous (only one candidate destination across all linked vendors).
-- 99 have multiple candidates and will need a tie-breaker.
+## Step 2 — Wrap at the SMTP boundary (both send paths)
+Two real call sites both build `html` then invoke `send-email`:
 
-## Inference rule
+1. `src/services/automationEngine.ts` — runtime sends (line ~149) and `sendTestEmail` (line ~334).
+2. `supabase/functions/process-automations/index.ts` — cron-driven sends (line ~167).
 
-For each legacy trip cashflow:
-
-1. Gather every destination across all its linked vendors' `serve_destinations`.
-2. Count "votes" — a destination served by more of the trip's vendors wins.
-3. Tie-breaker: prefer the destination served by the **primary vendor** (lowest `trip_cashflow_vendors.sort_order`, i.e. vendor 1 from the import).
-4. Final tie-breaker: stable order by destination id.
-
-Only updates rows where `destination_id IS NULL` and `cashflow_code LIKE 'LTC%'`. Live trips (`TC26…`) are not touched.
-
-## Execution
-
-Single data update (via insert tool, since this is data not schema):
-
-```sql
-WITH exploded AS (
-  SELECT tc.id AS cf_id, d_id_text::uuid AS d_id, tcv.sort_order
-  FROM trip_cashflow tc
-  JOIN trip_cashflow_vendors tcv ON tcv.cashflow_id = tc.id
-  JOIN vendors v ON v.id = tcv.vendor_id
-  CROSS JOIN LATERAL unnest(coalesce(v.serve_destinations, ARRAY[]::text[])) AS d_id_text
-  WHERE tc.cashflow_code LIKE 'LTC%'
-    AND tc.destination_id IS NULL
-    AND d_id_text ~ '^[0-9a-f-]{36}$'
-),
-votes AS (
-  SELECT cf_id, d_id, count(*) AS votes, min(sort_order) AS best_sort
-  FROM exploded GROUP BY cf_id, d_id
-),
-picked AS (
-  SELECT DISTINCT ON (cf_id) cf_id, d_id
-  FROM votes
-  ORDER BY cf_id, votes DESC, best_sort ASC, d_id
-)
-UPDATE trip_cashflow tc
-SET destination_id = p.d_id, updated_at = now()
-FROM picked p
-WHERE tc.id = p.cf_id;
+Wrap at each site right before `supabase.functions.invoke("send-email", { body: { html: … } })`, using:
 ```
+const heroTitle = rule.email_hero_title ? resolveVariables(rule.email_hero_title, ctx) : (rule.name || "From Adventourist");
+const heroSubtitle = rule.email_hero_subtitle ? resolveVariables(rule.email_hero_subtitle, ctx) : undefined;
+const ctaUrl   = rule.email_cta_url   || "https://wa.me/919930400694";
+const ctaLabel = rule.email_cta_label || "Message us on WhatsApp →";
+const brandedHtml = wrapInBrandShell({ heroTitle, heroSubtitle, bodyHtml: html, agentName: ctx.agent?.name, ctaUrl, ctaLabel, accentColor: "blaze" });
+```
+Pass `brandedHtml` to `send-email` instead of the raw resolved body. `send-email` itself is **not** modified — it still receives `html` and hands it to nodemailer.
 
-## Verification
+Because the Edge Function `process-automations` cannot import from `src/`, port the helper to `supabase/functions/_shared/emailShell.ts` (identical TS, Deno-friendly imports — no external deps needed) and import from there inside the function. The browser code imports from `@/lib/emailShell`.
 
-After the update, confirm:
-- `SELECT count(*) FROM trip_cashflow WHERE cashflow_code LIKE 'LTC%' AND destination_id IS NULL` → 0
-- Spot-check 5 random legacy trips against their vendors.
+Variable resolution, recipient picking, scheduling, retries, dedupe, and logging are all untouched.
 
-## Scope notes
+## Step 3 — Optional per-rule columns
+Migration:
+```sql
+ALTER TABLE public.automation_rules
+  ADD COLUMN IF NOT EXISTS email_hero_title text,
+  ADD COLUMN IF NOT EXISTS email_hero_subtitle text,
+  ADD COLUMN IF NOT EXISTS email_cta_url text,
+  ADD COLUMN IF NOT EXISTS email_cta_label text;
+```
+No backfill, no row updates. `src/integrations/supabase/types.ts` regenerates automatically.
 
-- No schema change, no code change — this is a one-shot data backfill.
-- Itinerary stays NULL (no reliable signal from vendors for that).
-- If you later correct any wrongly-tagged trip in the UI, the change sticks — we won't re-run this automatically.
+## Step 4 — RuleEditor UI
+In `src/components/automations/RuleEditor.tsx`:
+
+- Inside the Email action section, under Body, add a collapsed **"Branded shell options (optional)"** accordion with 4 fields (Hero title, Hero subtitle, CTA URL, CTA label). Wire to form state + save payload. Add `VariableChips` to hero title and hero subtitle (placeholders signal the defaults).
+- Email preview Dialog: when `email_format` is `html` or `plain`, render the full `wrapInBrandShell(...)` output inside `<iframe srcDoc={fullHtml} width={600} height={720} style={{ border: "1px solid #e5e5e5", borderRadius: 8 }} />`. Plain-text rules visibly become branded paragraphs here.
+
+## Acceptance
+1. `/automations` still lists all 23 rules unchanged.
+2. Any existing email rule sends with: Abyss header + logo + tagline, Blaze hero with rule name, original body as styled paragraphs, Adventourist footer with address + GST.
+3. The plain-text "Pre-Trip — 3 Days Before" body renders inside the shell; DB row untouched.
+4. Preview shows the real branded email in an iframe.
+5. Filling the accordion (e.g. Hero title `3 days to {{destination}}`) and saving causes that rule's next send to use the custom hero.
+
+## Explicitly NOT doing
+No UPDATEs on `automation_rules`; no edits to `wa_message_body` / `email_body` / `email_subject`; no reseeding; no WhatsApp/AiSensy changes; no SMTP transport changes; no variable-resolver / scheduler / logger changes; no column removals or renames; no new "Send Test" button.
