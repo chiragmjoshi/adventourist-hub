@@ -213,6 +213,17 @@ export function legacyRedirectRoutes() {
       {/* Typo + sitemap */}
       <Route path="/travelstories" element={<RedirectStatic to="/travel-stories" />} />
       <Route path="/sitemaps" element={<ExternalRedirect to="/sitemap.xml" />} />
+
+      {/* Legacy team / about / contact slugs (WordPress era) */}
+      <Route path="/ourteam" element={<RedirectStatic to="/about-us#team" />} />
+      <Route path="/our-team" element={<RedirectStatic to="/about-us#team" />} />
+      <Route path="/our_team" element={<RedirectStatic to="/about-us#team" />} />
+      <Route path="/aboutus" element={<RedirectStatic to="/about-us" />} />
+      <Route path="/about" element={<RedirectStatic to="/about-us" />} />
+      <Route path="/contactus" element={<RedirectStatic to="/contact" />} />
+      <Route path="/contact-us" element={<RedirectStatic to="/contact" />} />
+      <Route path="/home" element={<RedirectStatic to="/" />} />
+      <Route path="/faq" element={<RedirectStatic to="/faqs" />} />
     </>
   );
 }
