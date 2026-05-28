@@ -944,6 +944,49 @@ function CmpRow({
 }
 
 /* ───────── expense editor popover ───────── */
+function CustomRangePicker({ active, from, to, onChange }: {
+  active: boolean;
+  from?: Date;
+  to?: Date;
+  onChange: (from: Date, to: Date) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState<{ from?: Date; to?: Date }>({ from, to });
+  const label = active && from && to
+    ? `${format(from, "d MMM")} – ${format(to, "d MMM yy")}`
+    : "Custom";
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={
+            "px-3 py-1.5 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 " +
+            (active ? "bg-abyss text-white" : "text-muted-foreground hover:text-abyss")
+          }
+        >
+          <CalendarIcon className="h-3.5 w-3.5" />
+          {label}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="end">
+        <Calendar
+          mode="range"
+          selected={{ from: range.from, to: range.to }}
+          onSelect={(r: any) => {
+            setRange({ from: r?.from, to: r?.to });
+            if (r?.from && r?.to) {
+              onChange(r.from, r.to);
+              setOpen(false);
+            }
+          }}
+          numberOfMonths={2}
+          className="p-3 pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function ExpenseEditor({ month, onSaved }: { month: MonthlyRow; onSaved: () => void }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(String(month.expenses || ""));
