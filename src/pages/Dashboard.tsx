@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, ComposedChart, Line, Area, AreaChart,
 } from "recharts";
-import { TrendingUp, TrendingDown, Pencil, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Pencil, Minus, CalendarIcon } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import { toast } from "sonner";
 
 /* ───────── brand colors ───────── */
@@ -27,7 +29,16 @@ const DRIFT = "#EEE5D5";
 const REFETCH_MS = 60_000;
 
 /* ───────── types ───────── */
-type PeriodKey = "this_month" | "last_3m" | "last_6m" | "ytd" | "last_12m";
+type PeriodKey =
+  | "this_month"
+  | "last_3m"
+  | "last_6m"
+  | "last_12m"
+  | "ytd"
+  | "this_fy"
+  | "last_fy"
+  | "all_time"
+  | "custom";
 
 interface MonthlyRow {
   monthLabel: string;
@@ -88,37 +99,70 @@ const deltaPct = (curr: number, prev: number): number => {
   return ((curr - prev) / prev) * 100;
 };
 
-/* Period window calc */
-function getPeriodWindow(p: PeriodKey): { start: Date; end: Date; priorStart: Date; priorEnd: Date } {
-  const now = new Date();
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1); // exclusive
-  let start: Date;
-  if (p === "this_month") start = new Date(now.getFullYear(), now.getMonth(), 1);
-  else if (p === "last_3m") start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  else if (p === "last_6m") start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  else if (p === "ytd") start = new Date(now.getFullYear(), 0, 1);
-  else start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+/* Indian financial year: Apr 1 → Mar 31 */
+function fyStart(year: number) { return new Date(year, 3, 1); } // Apr 1
+function currentFyStartYear(now: Date) {
+  return now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+}
 
-  // prior = same length window immediately before
-  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  const priorEnd = new Date(start);
-  const priorStart = new Date(start.getFullYear(), start.getMonth() - months, 1);
-  return { start, end, priorStart, priorEnd };
+/* Resolve a preset to {from, to} where `to` is INCLUSIVE end-of-day date.
+   Custom is resolved by the caller. */
+function resolvePreset(p: PeriodKey, customFrom?: Date, customTo?: Date):
+  { from: Date; to: Date } {
+  const now = new Date();
+  const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  if (p === "this_month")
+    return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: endOfThisMonth };
+  if (p === "last_3m")
+    return { from: new Date(now.getFullYear(), now.getMonth() - 2, 1), to: endOfThisMonth };
+  if (p === "last_6m")
+    return { from: new Date(now.getFullYear(), now.getMonth() - 5, 1), to: endOfThisMonth };
+  if (p === "last_12m")
+    return { from: new Date(now.getFullYear(), now.getMonth() - 11, 1), to: endOfThisMonth };
+  if (p === "ytd")
+    return { from: new Date(now.getFullYear(), 0, 1), to: endOfThisMonth };
+  if (p === "this_fy") {
+    const y = currentFyStartYear(now);
+    return { from: fyStart(y), to: endOfThisMonth };
+  }
+  if (p === "last_fy") {
+    const y = currentFyStartYear(now) - 1;
+    return { from: fyStart(y), to: new Date(y + 1, 2, 31) }; // Mar 31 next yr
+  }
+  if (p === "all_time")
+    return { from: new Date(2018, 0, 1), to: endOfThisMonth };
+  // custom
+  return {
+    from: customFrom ?? new Date(now.getFullYear(), now.getMonth(), 1),
+    to: customTo ?? endOfThisMonth,
+  };
+}
+
+/* Inclusive→exclusive month window aligned to month boundaries */
+function toMonthWindow(from: Date, to: Date) {
+  const start = new Date(from.getFullYear(), from.getMonth(), 1);
+  const end = new Date(to.getFullYear(), to.getMonth() + 1, 1);
+  return { start, end };
+}
+
+/* Effective date a cashflow row is "booked" on, for revenue rollups.
+   Legacy imports often have only travel_start_date; new rows have booking_date.
+   created_at is the import timestamp and must NOT be used for legacy data. */
+function cashflowEffectiveDate(c: { booking_date?: string | null; travel_start_date?: string | null; created_at?: string | null; }): Date | null {
+  const s = c.booking_date ?? c.travel_start_date ?? c.created_at ?? null;
+  return s ? new Date(s) : null;
 }
 
 /* ───────── main fetch ───────── */
 async function fetchDashboardData(): Promise<DashboardData> {
   const now = new Date();
-  const thirteenStart = new Date(now.getFullYear(), now.getMonth() - 12, 1);
 
   const [leadsRes, cashflowRes, expensesRes, destinationsRes] = await Promise.all([
     supabase.from("leads")
       .select("id, created_at, sales_status, destination_id, platform")
-      .gte("created_at", thirteenStart.toISOString())
       .limit(50000),
     supabase.from("trip_cashflow")
-      .select("id, lead_id, pax_count, margin_percent, created_at, destination_id, trip_stage")
-      .gte("created_at", thirteenStart.toISOString())
+      .select("id, lead_id, pax_count, margin_percent, created_at, booking_date, travel_start_date, destination_id, trip_stage")
       .limit(50000),
     supabase.from("monthly_expenses").select("*").limit(1000),
     supabase.from("destinations").select("id, name").limit(1000),
@@ -141,16 +185,17 @@ async function fetchDashboardData(): Promise<DashboardData> {
     );
   }
 
-  // per-cashflow derived numbers (within 13 months)
+  // per-cashflow derived numbers, dated by booking → travel → created
   const cashflowDerived = cashflows.map((c: any) => {
     const vendorCostPerPax = vendorCostByCashflow.get(c.id) ?? 0;
     const pax = Number(c.pax_count ?? 1) || 1;
     const totalVendorCost = vendorCostPerPax * pax;
     const m = Number(c.margin_percent ?? 0);
     const sellingPrice = m < 100 ? totalVendorCost / (1 - m / 100) : totalVendorCost;
+    const effective = cashflowEffectiveDate(c);
     return {
       id: c.id,
-      created_at: c.created_at,
+      effective_at: effective,
       destination_id: c.destination_id,
       sellingPrice,
       totalVendorCost,
@@ -163,9 +208,29 @@ async function fetchDashboardData(): Promise<DashboardData> {
     expensesByMonth.set(e.month_year, Number(e.amount ?? 0));
   }
 
-  // build 13 month rows
+  // Determine the earliest month we need to roll up. Use the earliest
+  // signal across leads + dated cashflows; cap to 6 years back to keep
+  // the array bounded. Always include current month.
+  let earliest = new Date(now.getFullYear(), now.getMonth(), 1);
+  for (const l of leadsRes.data ?? []) {
+    const d = new Date((l as any).created_at);
+    if (d < earliest) earliest = new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+  for (const c of cashflowDerived) {
+    if (!c.effective_at) continue;
+    if (c.effective_at < earliest)
+      earliest = new Date(c.effective_at.getFullYear(), c.effective_at.getMonth(), 1);
+  }
+  const sixYearsAgo = new Date(now.getFullYear() - 6, now.getMonth(), 1);
+  if (earliest < sixYearsAgo) earliest = sixYearsAgo;
+
+  const monthsBetween =
+    (now.getFullYear() - earliest.getFullYear()) * 12 +
+    (now.getMonth() - earliest.getMonth());
+
+  // build month rows from earliest → current
   const months: MonthlyRow[] = [];
-  for (let i = 12; i >= 0; i--) {
+  for (let i = monthsBetween; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const start = d;
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
@@ -178,8 +243,8 @@ async function fetchDashboardData(): Promise<DashboardData> {
     const filesClosed = monthLeads.filter((l: any) => l.sales_status === "file_closed").length;
 
     const monthCash = cashflowDerived.filter((c) => {
-      const ts = new Date(c.created_at);
-      return ts >= start && ts < end;
+      if (!c.effective_at) return false;
+      return c.effective_at >= start && c.effective_at < end;
     });
     const revenue = monthCash.reduce((s, c) => s + c.sellingPrice, 0);
     const vendorCost = monthCash.reduce((s, c) => s + c.totalVendorCost, 0);
@@ -279,8 +344,8 @@ async function fetchDashboardData(): Promise<DashboardData> {
 
   const destRev = new Map<string, number>();
   for (const c of cashflowDerived) {
-    const ts = new Date(c.created_at);
-    if (ts < thisMonth.monthStart || ts >= thisMonth.monthEnd) continue;
+    if (!c.effective_at) continue;
+    if (c.effective_at < thisMonth.monthStart || c.effective_at >= thisMonth.monthEnd) continue;
     if (!c.destination_id) continue;
     const name = destMap.get(c.destination_id);
     if (!name) continue;
@@ -340,6 +405,8 @@ async function fetchDashboardData(): Promise<DashboardData> {
 /* ───────── component ───────── */
 const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodKey>("this_month");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
   const { profile } = useAuth();
   const canEditExpenses = profile?.role === "super_admin" || profile?.role === "admin";
   const qc = useQueryClient();
@@ -360,7 +427,16 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Dashboard">
-      <DashboardBody data={data} period={period} setPeriod={setPeriod} canEditExpenses={canEditExpenses} onExpenseSaved={() => qc.invalidateQueries({ queryKey: ["dashboard-bi"] })} />
+      <DashboardBody
+        data={data}
+        period={period}
+        setPeriod={setPeriod}
+        customFrom={customFrom}
+        customTo={customTo}
+        setCustom={(f, t) => { setCustomFrom(f); setCustomTo(t); setPeriod("custom"); }}
+        canEditExpenses={canEditExpenses}
+        onExpenseSaved={() => qc.invalidateQueries({ queryKey: ["dashboard-bi"] })}
+      />
     </AppLayout>
   );
 };
@@ -372,26 +448,37 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
   { key: "this_month", label: "This Month" },
   { key: "last_3m", label: "Last 3M" },
   { key: "last_6m", label: "Last 6M" },
-  { key: "ytd", label: "YTD" },
   { key: "last_12m", label: "Last 12M" },
+  { key: "ytd", label: "YTD" },
+  { key: "this_fy", label: "This FY" },
+  { key: "last_fy", label: "Last FY" },
+  { key: "all_time", label: "All Time" },
 ];
 
 function DashboardBody({
-  data, period, setPeriod, canEditExpenses, onExpenseSaved,
+  data, period, setPeriod, customFrom, customTo, setCustom, canEditExpenses, onExpenseSaved,
 }: {
   data: DashboardData;
   period: PeriodKey;
   setPeriod: (p: PeriodKey) => void;
+  customFrom?: Date;
+  customTo?: Date;
+  setCustom: (from: Date, to: Date) => void;
   canEditExpenses: boolean;
   onExpenseSaved: () => void;
 }) {
-  const window = useMemo(() => getPeriodWindow(period), [period]);
-
-  const inWindow = (key: string, start: Date, end: Date) => {
-    const m = data.monthly.find((x) => x.monthKey === key);
-    if (!m) return false;
-    return m.monthStart >= start && m.monthStart < end;
-  };
+  const window = useMemo(() => {
+    const r = resolvePreset(period, customFrom, customTo);
+    const w = toMonthWindow(r.from, r.to);
+    const monthsLen = Math.max(
+      1,
+      (w.end.getFullYear() - w.start.getFullYear()) * 12 +
+        (w.end.getMonth() - w.start.getMonth()),
+    );
+    const priorEnd = new Date(w.start);
+    const priorStart = new Date(w.start.getFullYear(), w.start.getMonth() - monthsLen, 1);
+    return { ...w, priorStart, priorEnd, from: r.from, to: r.to };
+  }, [period, customFrom, customTo]);
 
   const periodMonths = data.monthly.filter((m) => m.monthStart >= window.start && m.monthStart < window.end);
   const priorMonths = data.monthly.filter((m) => m.monthStart >= window.priorStart && m.monthStart < window.priorEnd);
@@ -416,6 +503,8 @@ function DashboardBody({
 
   // sparkline data — last 6 months
   const last6 = data.monthly.slice(-6);
+  // 12-month performance chart — always last 12 months
+  const last12 = data.monthly.slice(-12);
 
   // this-vs-last comparison (always current vs prior calendar month)
   const tm = data.monthly[data.monthly.length - 1];
@@ -425,7 +514,10 @@ function DashboardBody({
     <div className="space-y-6">
       {/* SECTION A — Period selector */}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="inline-flex rounded-lg border border-border bg-white p-1 shadow-sm">
+        <span className="text-xs text-muted-foreground hidden md:inline">
+          {format(window.from, "d MMM yyyy")} – {format(window.to, "d MMM yyyy")}
+        </span>
+        <div className="inline-flex flex-wrap rounded-lg border border-border bg-white p-1 shadow-sm">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.key}
@@ -440,6 +532,12 @@ function DashboardBody({
               {opt.label}
             </button>
           ))}
+          <CustomRangePicker
+            active={period === "custom"}
+            from={customFrom}
+            to={customTo}
+            onChange={setCustom}
+          />
         </div>
       </div>
 
@@ -497,7 +595,7 @@ function DashboardBody({
       <SectionTitle>12-Month Business Performance</SectionTitle>
       <div className="bg-white border border-border rounded-xl shadow-sm p-5">
         <ResponsiveContainer width="100%" height={320}>
-          <ComposedChart data={data.monthly} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+          <ComposedChart data={last12} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
             <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
             <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
@@ -543,7 +641,7 @@ function DashboardBody({
           <div className="bg-white border border-border rounded-xl shadow-sm p-5">
             <SectionTitle className="mb-3">Revenue · Margin · Expenses — Monthly Breakdown</SectionTitle>
             <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={data.monthly} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+              <ComposedChart data={periodMonths.length > 0 ? periodMonths : last12} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
                 <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
                 <YAxis
@@ -846,6 +944,49 @@ function CmpRow({
 }
 
 /* ───────── expense editor popover ───────── */
+function CustomRangePicker({ active, from, to, onChange }: {
+  active: boolean;
+  from?: Date;
+  to?: Date;
+  onChange: (from: Date, to: Date) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState<{ from?: Date; to?: Date }>({ from, to });
+  const label = active && from && to
+    ? `${format(from, "d MMM")} – ${format(to, "d MMM yy")}`
+    : "Custom";
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={
+            "px-3 py-1.5 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 " +
+            (active ? "bg-abyss text-white" : "text-muted-foreground hover:text-abyss")
+          }
+        >
+          <CalendarIcon className="h-3.5 w-3.5" />
+          {label}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="end">
+        <Calendar
+          mode="range"
+          selected={{ from: range.from, to: range.to }}
+          onSelect={(r: any) => {
+            setRange({ from: r?.from, to: r?.to });
+            if (r?.from && r?.to) {
+              onChange(r.from, r.to);
+              setOpen(false);
+            }
+          }}
+          numberOfMonths={2}
+          className="p-3 pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function ExpenseEditor({ month, onSaved }: { month: MonthlyRow; onSaved: () => void }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(String(month.expenses || ""));
