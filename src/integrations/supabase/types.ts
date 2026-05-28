@@ -1426,6 +1426,36 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          month_year: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month_year: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month_year?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null

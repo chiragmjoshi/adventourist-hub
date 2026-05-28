@@ -1,559 +1,946 @@
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Flame, Clock, Sparkles, Users, CheckCircle, DollarSign, Percent, ArrowRight, MapPin, Calendar } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend,
+  PieChart, Pie, Legend, ComposedChart, Line, Area, AreaChart,
 } from "recharts";
+import { TrendingUp, TrendingDown, Pencil, Minus } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import { useAuth } from "@/contexts/AuthContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+/* ───────── brand colors ───────── */
+const BLAZE = "#FF6F4C";
+const HORIZON = "#FDC436";
+const ABYSS = "#1A1D2E";
+const LAGOON = "#64CBB9";
+const RIDGE = "#056147";
+const DRIFT = "#EEE5D5";
 
 const REFETCH_MS = 60_000;
 
-/* ─────────── helpers ─────────── */
-const startOfMonth = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
-const startOfPrevMonth = () => {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() - 1, 1).toISOString();
-};
-const endOfPrevMonth = () => new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-const last24h = () => new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-const today = () => new Date().toISOString().split("T")[0];
-const plusDays = (n: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
+/* ───────── types ───────── */
+type PeriodKey = "this_month" | "last_3m" | "last_6m" | "ytd" | "last_12m";
+
+interface MonthlyRow {
+  monthLabel: string;
+  monthKey: string;        // YYYY-MM
+  monthStart: Date;
+  monthEnd: Date;          // exclusive
+  leads: number;
+  filesClosed: number;
+  conversionRate: number;
+  revenue: number;
+  vendorCost: number;
+  grossMargin: number;
+  marginPct: number;
+  expenses: number;
+  netMargin: number;
+  netMarginPct: number;
+}
+
+interface LifetimeStats {
+  totalLeads: number;
+  totalClosed: number;
+  avgMonthlyLeads: number;
+  avgMonthlyClosed: number;
+  avgTicket: number;
+  conversionRate: number;
+}
+
+interface DashboardData {
+  monthly: MonthlyRow[];
+  lifetime: LifetimeStats;
+  topDestThisMonth: { name: string; count: number }[];
+  topDestRevenueThisMonth: { name: string; revenue: number }[];
+  funnelThisMonth: { stage: string; count: number; pct: number; fill: string }[];
+  sourceMixThisMonth: { name: string; value: number; pct: number; fill: string }[];
+  totalLeadsThisMonth: number;
+}
+
+/* ───────── helpers ───────── */
+const monthKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const monthLabel = (d: Date) =>
+  d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+
+const fmtCompactINR = (n: number) => {
+  if (!isFinite(n) || n === 0) return "₹0";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1e7) return `${sign}₹${(abs / 1e7).toFixed(2)} Cr`;
+  if (abs >= 1e5) return `${sign}₹${(abs / 1e5).toFixed(1)} L`;
+  if (abs >= 1e3) return `${sign}₹${(abs / 1e3).toFixed(1)}K`;
+  return `${sign}₹${abs.toFixed(0)}`;
 };
 
-const timeAgo = (iso: string) => {
-  const sec = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (sec < 60) return "just now";
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
-  return `${Math.floor(sec / 86400)}d ago`;
+const pct = (n: number) => `${n.toFixed(1)}%`;
+
+const deltaPct = (curr: number, prev: number): number => {
+  if (prev === 0) return curr === 0 ? 0 : 100;
+  return ((curr - prev) / prev) * 100;
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  new_lead: "bg-blue-100 text-blue-700",
-  contacted: "bg-yellow-100 text-yellow-800",
-  qualified: "bg-green-100 text-green-700",
-  proposal_sent: "bg-purple-100 text-purple-700",
-  confirmed: "bg-ridge/15 text-ridge",
-  dropped: "bg-gray-100 text-gray-500",
-};
+/* Period window calc */
+function getPeriodWindow(p: PeriodKey): { start: Date; end: Date; priorStart: Date; priorEnd: Date } {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1); // exclusive
+  let start: Date;
+  if (p === "this_month") start = new Date(now.getFullYear(), now.getMonth(), 1);
+  else if (p === "last_3m") start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+  else if (p === "last_6m") start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  else if (p === "ytd") start = new Date(now.getFullYear(), 0, 1);
+  else start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-const PLATFORM_COLOR: Record<string, string> = {
-  Paid: "hsl(var(--blaze))",
-  Referral: "hsl(var(--horizon))",
-  Organic: "hsl(var(--lagoon))",
-  Content: "hsl(var(--ridge))",
-};
-const PLATFORM_GROUPS = ["Paid", "Referral", "Organic", "Content"] as const;
+  // prior = same length window immediately before
+  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  const priorEnd = new Date(start);
+  const priorStart = new Date(start.getFullYear(), start.getMonth() - months, 1);
+  return { start, end, priorStart, priorEnd };
+}
 
-/* ─────────── component ─────────── */
+/* ───────── main fetch ───────── */
+async function fetchDashboardData(): Promise<DashboardData> {
+  const now = new Date();
+  const thirteenStart = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+
+  const [leadsRes, cashflowRes, expensesRes, destinationsRes] = await Promise.all([
+    supabase.from("leads")
+      .select("id, created_at, sales_status, destination_id, platform")
+      .gte("created_at", thirteenStart.toISOString())
+      .limit(50000),
+    supabase.from("trip_cashflow")
+      .select("id, lead_id, pax_count, margin_percent, created_at, destination_id, trip_stage")
+      .gte("created_at", thirteenStart.toISOString())
+      .limit(50000),
+    supabase.from("monthly_expenses").select("*").limit(1000),
+    supabase.from("destinations").select("id, name").limit(1000),
+  ]);
+
+  const cashflows = cashflowRes.data ?? [];
+  const vendorRes = cashflows.length
+    ? await supabase.from("trip_cashflow_vendors")
+        .select("cashflow_id, cost_per_pax_incl_gst")
+        .in("cashflow_id", cashflows.map((c) => c.id))
+        .limit(50000)
+    : { data: [] as any[] };
+
+  // vendor cost per cashflow (sum of cost_per_pax_incl_gst rows)
+  const vendorCostByCashflow = new Map<string, number>();
+  for (const v of (vendorRes.data ?? []) as any[]) {
+    vendorCostByCashflow.set(
+      v.cashflow_id,
+      (vendorCostByCashflow.get(v.cashflow_id) ?? 0) + Number(v.cost_per_pax_incl_gst ?? 0),
+    );
+  }
+
+  // per-cashflow derived numbers (within 13 months)
+  const cashflowDerived = cashflows.map((c: any) => {
+    const vendorCostPerPax = vendorCostByCashflow.get(c.id) ?? 0;
+    const pax = Number(c.pax_count ?? 1) || 1;
+    const totalVendorCost = vendorCostPerPax * pax;
+    const m = Number(c.margin_percent ?? 0);
+    const sellingPrice = m < 100 ? totalVendorCost / (1 - m / 100) : totalVendorCost;
+    return {
+      id: c.id,
+      created_at: c.created_at,
+      destination_id: c.destination_id,
+      sellingPrice,
+      totalVendorCost,
+      grossMargin: sellingPrice - totalVendorCost,
+    };
+  });
+
+  const expensesByMonth = new Map<string, number>();
+  for (const e of expensesRes.data ?? []) {
+    expensesByMonth.set(e.month_year, Number(e.amount ?? 0));
+  }
+
+  // build 13 month rows
+  const months: MonthlyRow[] = [];
+  for (let i = 12; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const start = d;
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const key = monthKey(d);
+
+    const monthLeads = (leadsRes.data ?? []).filter((l: any) => {
+      const ts = new Date(l.created_at);
+      return ts >= start && ts < end;
+    });
+    const filesClosed = monthLeads.filter((l: any) => l.sales_status === "file_closed").length;
+
+    const monthCash = cashflowDerived.filter((c) => {
+      const ts = new Date(c.created_at);
+      return ts >= start && ts < end;
+    });
+    const revenue = monthCash.reduce((s, c) => s + c.sellingPrice, 0);
+    const vendorCost = monthCash.reduce((s, c) => s + c.totalVendorCost, 0);
+    const grossMargin = revenue - vendorCost;
+    const expenses = expensesByMonth.get(key) ?? 0;
+    const netMargin = grossMargin - expenses;
+
+    months.push({
+      monthLabel: monthLabel(d),
+      monthKey: key,
+      monthStart: start,
+      monthEnd: end,
+      leads: monthLeads.length,
+      filesClosed,
+      conversionRate: monthLeads.length > 0 ? (filesClosed / monthLeads.length) * 100 : 0,
+      revenue,
+      vendorCost,
+      grossMargin,
+      marginPct: revenue > 0 ? (grossMargin / revenue) * 100 : 0,
+      expenses,
+      netMargin,
+      netMarginPct: revenue > 0 ? (netMargin / revenue) * 100 : 0,
+    });
+  }
+
+  /* lifetime — all-time, no filter */
+  const [allLeadsCount, allClosedCount, allCashflowsRes, firstLeadRes] = await Promise.all([
+    supabase.from("leads").select("*", { count: "exact", head: true }),
+    supabase.from("leads").select("*", { count: "exact", head: true }).eq("sales_status", "file_closed"),
+    supabase.from("trip_cashflow").select("id, pax_count, margin_percent").limit(50000),
+    supabase.from("leads").select("created_at").order("created_at", { ascending: true }).limit(1),
+  ]);
+  const allCashIds = (allCashflowsRes.data ?? []).map((c: any) => c.id);
+  let allCashVendors: any[] = [];
+  if (allCashIds.length) {
+    const r = await supabase.from("trip_cashflow_vendors")
+      .select("cashflow_id, cost_per_pax_incl_gst")
+      .in("cashflow_id", allCashIds)
+      .limit(100000);
+    allCashVendors = r.data ?? [];
+  }
+  const allVendorByCash = new Map<string, number>();
+  for (const v of allCashVendors) {
+    allVendorByCash.set(v.cashflow_id, (allVendorByCash.get(v.cashflow_id) ?? 0) + Number(v.cost_per_pax_incl_gst ?? 0));
+  }
+  let allRevenue = 0;
+  for (const c of (allCashflowsRes.data ?? []) as any[]) {
+    const vp = allVendorByCash.get(c.id) ?? 0;
+    const pax = Number(c.pax_count ?? 1) || 1;
+    const tvc = vp * pax;
+    const m = Number(c.margin_percent ?? 0);
+    const sp = m < 100 ? tvc / (1 - m / 100) : tvc;
+    allRevenue += sp;
+  }
+  const totalLeads = allLeadsCount.count ?? 0;
+  const totalClosed = allClosedCount.count ?? 0;
+  const firstLeadAt = firstLeadRes.data?.[0]?.created_at;
+  let monthsActive = 1;
+  if (firstLeadAt) {
+    const f = new Date(firstLeadAt);
+    monthsActive = Math.max(
+      1,
+      (now.getFullYear() - f.getFullYear()) * 12 + (now.getMonth() - f.getMonth()) + 1,
+    );
+  }
+
+  const lifetime: LifetimeStats = {
+    totalLeads,
+    totalClosed,
+    avgMonthlyLeads: totalLeads / monthsActive,
+    avgMonthlyClosed: totalClosed / monthsActive,
+    avgTicket: totalClosed > 0 ? allRevenue / totalClosed : 0,
+    conversionRate: totalLeads > 0 ? (totalClosed / totalLeads) * 100 : 0,
+  };
+
+  /* This-month destinations + funnel + source mix */
+  const thisMonth = months[months.length - 1];
+  const destMap = new Map<string, string>();
+  for (const d of destinationsRes.data ?? []) destMap.set(d.id, d.name);
+
+  const thisMonthLeads = (leadsRes.data ?? []).filter((l: any) => {
+    const ts = new Date(l.created_at);
+    return ts >= thisMonth.monthStart && ts < thisMonth.monthEnd;
+  });
+
+  const destCount = new Map<string, number>();
+  for (const l of thisMonthLeads) {
+    if (!l.destination_id) continue;
+    const name = destMap.get(l.destination_id);
+    if (!name) continue;
+    destCount.set(name, (destCount.get(name) ?? 0) + 1);
+  }
+  const topDestThisMonth = [...destCount.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  const destRev = new Map<string, number>();
+  for (const c of cashflowDerived) {
+    const ts = new Date(c.created_at);
+    if (ts < thisMonth.monthStart || ts >= thisMonth.monthEnd) continue;
+    if (!c.destination_id) continue;
+    const name = destMap.get(c.destination_id);
+    if (!name) continue;
+    destRev.set(name, (destRev.get(name) ?? 0) + c.sellingPrice);
+  }
+  const topDestRevenueThisMonth = [...destRev.entries()]
+    .map(([name, revenue]) => ({ name, revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 3);
+
+  const funnelStages: { key: string; label: string; fill: string }[] = [
+    { key: "new_lead", label: "New", fill: LAGOON },
+    { key: "contacted", label: "Contacted", fill: HORIZON },
+    { key: "quote_sent", label: "Quote Sent", fill: BLAZE },
+    { key: "file_closed", label: "File Closed", fill: RIDGE },
+  ];
+  const stageCounts: Record<string, number> = {};
+  for (const l of thisMonthLeads) {
+    const s = (l as any).sales_status ?? "new_lead";
+    stageCounts[s] = (stageCounts[s] ?? 0) + 1;
+  }
+  const funnelTotal = thisMonthLeads.length || 1;
+  const funnelThisMonth = funnelStages.map((s) => ({
+    stage: s.label,
+    count: stageCounts[s.key] ?? 0,
+    pct: ((stageCounts[s.key] ?? 0) / funnelTotal) * 100,
+    fill: s.fill,
+  }));
+
+  const sourceCounts = new Map<string, number>();
+  for (const l of thisMonthLeads) {
+    const p = ((l as any).platform ?? "Unknown") || "Unknown";
+    sourceCounts.set(p, (sourceCounts.get(p) ?? 0) + 1);
+  }
+  const sourcePalette = [BLAZE, HORIZON, LAGOON, RIDGE, ABYSS];
+  const sourceTotal = thisMonthLeads.length || 1;
+  const sourceMixThisMonth = [...sourceCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value], i) => ({
+      name,
+      value,
+      pct: (value / sourceTotal) * 100,
+      fill: sourcePalette[i % sourcePalette.length],
+    }));
+
+  return {
+    monthly: months,
+    lifetime,
+    topDestThisMonth,
+    topDestRevenueThisMonth,
+    funnelThisMonth,
+    sourceMixThisMonth,
+    totalLeadsThisMonth: thisMonthLeads.length,
+  };
+}
+
+/* ───────── component ───────── */
 const Dashboard = () => {
-  const navigate = useNavigate();
+  const [period, setPeriod] = useState<PeriodKey>("this_month");
+  const { profile } = useAuth();
+  const canEditExpenses = profile?.role === "super_admin" || profile?.role === "admin";
+  const qc = useQueryClient();
 
-  /* ── Action strip counts ── */
-  const { data: actionCounts, isLoading: loadingAction } = useQuery({
-    queryKey: ["dash-action-strip"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard-bi"],
+    queryFn: fetchDashboardData,
     refetchInterval: REFETCH_MS,
-    queryFn: async () => {
-      const [hot, followup, fresh] = await Promise.all([
-        supabase.from("leads").select("*", { count: "exact", head: true })
-          .eq("is_hot", true)
-          .not("sales_status", "in", "(confirmed,dropped)"),
-        supabase.from("leads").select("*", { count: "exact", head: true })
-          .lte("follow_up_date", today())
-          .not("sales_status", "in", "(confirmed,dropped)"),
-        supabase.from("leads").select("*", { count: "exact", head: true })
-          .gte("created_at", last24h()),
-      ]);
-      return { hot: hot.count ?? 0, followup: followup.count ?? 0, fresh: fresh.count ?? 0 };
-    },
   });
 
-  /* ── KPI row ── */
-  const { data: kpis, isLoading: loadingKpis } = useQuery({
-    queryKey: ["dash-kpis"],
-    refetchInterval: REFETCH_MS,
-    queryFn: async () => {
-      const monthStart = startOfMonth();
-      const prevStart = startOfPrevMonth();
-      const prevEnd = endOfPrevMonth();
-
-      const [thisMonthLeads, prevMonthLeads, closedFiles, cashflows] = await Promise.all([
-        supabase.from("leads").select("*", { count: "exact", head: true }).gte("created_at", monthStart),
-        supabase.from("leads").select("*", { count: "exact", head: true })
-          .gte("created_at", prevStart).lt("created_at", prevEnd),
-        supabase.from("trip_cashflow").select("*", { count: "exact", head: true })
-          .eq("trip_stage", "trip_sold").gte("created_at", monthStart),
-        supabase.from("trip_cashflow")
-          .select("pax_count, margin_percent, trip_cashflow_vendors(cost_per_pax_incl_gst)")
-          .gte("created_at", monthStart),
-      ]);
-
-      // Revenue + avg margin
-      let revenue = 0;
-      let marginSum = 0;
-      let marginCount = 0;
-      for (const tc of (cashflows.data ?? []) as any[]) {
-        const pax = tc.pax_count ?? 1;
-        const baseCost = (tc.trip_cashflow_vendors ?? []).reduce(
-          (s: number, v: any) => s + Number(v.cost_per_pax_incl_gst ?? 0), 0,
-        );
-        const sellPerPax = baseCost * (1 + Number(tc.margin_percent ?? 0) / 100);
-        revenue += sellPerPax * pax;
-        if (tc.margin_percent != null) {
-          marginSum += Number(tc.margin_percent);
-          marginCount++;
-        }
-      }
-
-      const tm = thisMonthLeads.count ?? 0;
-      const pm = prevMonthLeads.count ?? 0;
-      const change = pm > 0 ? ((tm - pm) / pm) * 100 : tm > 0 ? 100 : 0;
-
-      return {
-        leadsThisMonth: tm,
-        leadsChangePct: change,
-        filesClosed: closedFiles.count ?? 0,
-        revenueLakhs: revenue / 100000,
-        avgMargin: marginCount ? marginSum / marginCount : 0,
-      };
-    },
-  });
-
-  /* ── Lead funnel ── */
-  const { data: funnelData, isLoading: loadingFunnel } = useQuery({
-    queryKey: ["dash-funnel"],
-    refetchInterval: REFETCH_MS,
-    queryFn: async () => {
-      const { data } = await supabase.from("leads").select("sales_status");
-      const counts: Record<string, number> = {};
-      for (const r of data ?? []) {
-        const k = r.sales_status ?? "new_lead";
-        counts[k] = (counts[k] ?? 0) + 1;
-      }
-      const order = ["new_lead", "contacted", "qualified", "proposal_sent", "confirmed"];
-      const labels: Record<string, string> = {
-        new_lead: "New", contacted: "Contacted", qualified: "Qualified",
-        proposal_sent: "Proposal", confirmed: "Closed",
-      };
-      const fills = ["hsl(var(--blaze))", "hsl(var(--horizon))", "hsl(var(--lagoon))", "hsl(var(--ridge))", "hsl(var(--abyss))"];
-      return order.map((k, i) => ({ stage: labels[k], count: counts[k] ?? 0, fill: fills[i] }));
-    },
-  });
-
-  /* ── Source breakdown (this month) ── */
-  const { data: sourceData, isLoading: loadingSource } = useQuery({
-    queryKey: ["dash-source"],
-    refetchInterval: REFETCH_MS,
-    queryFn: async () => {
-      const { data } = await supabase.from("leads").select("platform").gte("created_at", startOfMonth());
-      const counts: Record<string, number> = {};
-      for (const r of data ?? []) {
-        const p = (r.platform ?? "Organic").toString();
-        const key = PLATFORM_GROUPS.includes(p as any) ? p : "Organic";
-        counts[key] = (counts[key] ?? 0) + 1;
-      }
-      const total = Object.values(counts).reduce((s, n) => s + n, 0);
-      return PLATFORM_GROUPS.map(p => ({
-        name: p,
-        value: counts[p] ?? 0,
-        pct: total > 0 ? Math.round(((counts[p] ?? 0) / total) * 100) : 0,
-        fill: PLATFORM_COLOR[p],
-      }));
-    },
-  });
-
-  /* ── Trips this week ── */
-  const { data: weekTrips, isLoading: loadingTrips } = useQuery({
-    queryKey: ["dash-week-trips"],
-    refetchInterval: REFETCH_MS,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("trip_cashflow")
-        .select("id, traveller_name, travel_start_date, trip_stage, destinations:destination_id(name)")
-        .gte("travel_start_date", today())
-        .lte("travel_start_date", plusDays(7))
-        .order("travel_start_date", { ascending: true })
-        .limit(8);
-      return (data ?? []) as any[];
-    },
-  });
-
-  /* ── Top destinations this month ── */
-  const { data: topDest, isLoading: loadingDest } = useQuery({
-    queryKey: ["dash-top-dest"],
-    refetchInterval: REFETCH_MS,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leads")
-        .select("destinations:destination_id(name)")
-        .gte("created_at", startOfMonth());
-      const counts: Record<string, number> = {};
-      for (const r of (data ?? []) as any[]) {
-        const n = r.destinations?.name;
-        if (!n) continue;
-        counts[n] = (counts[n] ?? 0) + 1;
-      }
-      return Object.entries(counts)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 6);
-    },
-  });
-
-  /* ── Recent leads ── */
-  const { data: recentLeads, isLoading: loadingRecent } = useQuery({
-    queryKey: ["dash-recent-leads"],
-    refetchInterval: REFETCH_MS,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leads")
-        .select("id, name, sales_status, platform, channel, is_hot, created_at, destinations:destination_id(name)")
-        .order("created_at", { ascending: false })
-        .limit(8);
-      return (data ?? []) as any[];
-    },
-  });
-
-  /* ─────────── render ─────────── */
-  const marginColor = (m: number) =>
-    m > 20 ? "text-ridge" : m >= 15 ? "text-horizon" : "text-destructive";
+  if (isLoading || !data) {
+    return (
+      <AppLayout title="Dashboard">
+        <DashboardSkeleton />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title="Dashboard">
-      {/* ── ACTION STRIP ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <ActionCard
-          loading={loadingAction}
-          onClick={() => navigate("/admin/leads?filter=hot")}
-          label="Hot Leads"
-          icon={<Flame className="h-5 w-5" />}
-          count={actionCounts?.hot ?? 0}
-          bg="bg-blaze"
-          fg="text-white"
-          sub="Need attention now"
+      <DashboardBody data={data} period={period} setPeriod={setPeriod} canEditExpenses={canEditExpenses} onExpenseSaved={() => qc.invalidateQueries({ queryKey: ["dashboard-bi"] })} />
+    </AppLayout>
+  );
+};
+
+export default Dashboard;
+
+/* ───────── body ───────── */
+const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
+  { key: "this_month", label: "This Month" },
+  { key: "last_3m", label: "Last 3M" },
+  { key: "last_6m", label: "Last 6M" },
+  { key: "ytd", label: "YTD" },
+  { key: "last_12m", label: "Last 12M" },
+];
+
+function DashboardBody({
+  data, period, setPeriod, canEditExpenses, onExpenseSaved,
+}: {
+  data: DashboardData;
+  period: PeriodKey;
+  setPeriod: (p: PeriodKey) => void;
+  canEditExpenses: boolean;
+  onExpenseSaved: () => void;
+}) {
+  const window = useMemo(() => getPeriodWindow(period), [period]);
+
+  const inWindow = (key: string, start: Date, end: Date) => {
+    const m = data.monthly.find((x) => x.monthKey === key);
+    if (!m) return false;
+    return m.monthStart >= start && m.monthStart < end;
+  };
+
+  const periodMonths = data.monthly.filter((m) => m.monthStart >= window.start && m.monthStart < window.end);
+  const priorMonths = data.monthly.filter((m) => m.monthStart >= window.priorStart && m.monthStart < window.priorEnd);
+
+  const agg = (rows: MonthlyRow[]) => {
+    const leads = rows.reduce((s, r) => s + r.leads, 0);
+    const closed = rows.reduce((s, r) => s + r.filesClosed, 0);
+    const revenue = rows.reduce((s, r) => s + r.revenue, 0);
+    const vendorCost = rows.reduce((s, r) => s + r.vendorCost, 0);
+    const grossMargin = revenue - vendorCost;
+    const expenses = rows.reduce((s, r) => s + r.expenses, 0);
+    const netMargin = grossMargin - expenses;
+    return {
+      leads, closed, revenue, vendorCost, grossMargin, expenses, netMargin,
+      conv: leads > 0 ? (closed / leads) * 100 : 0,
+      grossPct: revenue > 0 ? (grossMargin / revenue) * 100 : 0,
+      netPct: revenue > 0 ? (netMargin / revenue) * 100 : 0,
+    };
+  };
+  const curr = agg(periodMonths);
+  const prev = agg(priorMonths);
+
+  // sparkline data — last 6 months
+  const last6 = data.monthly.slice(-6);
+
+  // this-vs-last comparison (always current vs prior calendar month)
+  const tm = data.monthly[data.monthly.length - 1];
+  const lm = data.monthly[data.monthly.length - 2];
+
+  return (
+    <div className="space-y-6">
+      {/* SECTION A — Period selector */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="inline-flex rounded-lg border border-border bg-white p-1 shadow-sm">
+          {PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setPeriod(opt.key)}
+              className={
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors " +
+                (period === opt.key
+                  ? "bg-abyss text-white"
+                  : "text-muted-foreground hover:text-abyss")
+              }
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION B — KPI strip */}
+      <SectionTitle>Performance Snapshot</SectionTitle>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <KpiCard
+          accent={LAGOON} title="Total Leads"
+          value={curr.leads.toLocaleString("en-IN")}
+          delta={deltaPct(curr.leads, prev.leads)}
+          spark={last6.map((m) => ({ x: m.monthLabel, y: m.leads }))}
+          sparkColor={LAGOON}
         />
-        <ActionCard
-          loading={loadingAction}
-          onClick={() => navigate("/admin/leads?filter=followup")}
-          label="Follow-ups Due Today"
-          icon={<Clock className="h-5 w-5" />}
-          count={actionCounts?.followup ?? 0}
-          bg="bg-horizon"
-          fg="text-abyss"
-          sub="Scheduled for today"
+        <KpiCard
+          accent={LAGOON} title="Files Closed"
+          value={curr.closed.toLocaleString("en-IN")}
+          delta={deltaPct(curr.closed, prev.closed)}
+          spark={last6.map((m) => ({ x: m.monthLabel, y: m.filesClosed }))}
+          sparkColor={LAGOON}
         />
-        <ActionCard
-          loading={loadingAction}
-          onClick={() => navigate("/admin/leads?filter=new")}
-          label="New Leads (24h)"
-          icon={<Sparkles className="h-5 w-5" />}
-          count={actionCounts?.fresh ?? 0}
-          bg="bg-lagoon"
-          fg="text-white"
-          sub="Came in last 24 hours"
+        <KpiCard
+          accent={LAGOON} title="Conversion Rate"
+          value={pct(curr.conv)}
+          delta={curr.conv - prev.conv}
+          deltaSuffix="pp" isPP
+          spark={last6.map((m) => ({ x: m.monthLabel, y: m.conversionRate }))}
+          sparkColor={LAGOON}
+        />
+        <KpiCard
+          accent={BLAZE} title="Revenue"
+          value={fmtCompactINR(curr.revenue)}
+          delta={deltaPct(curr.revenue, prev.revenue)}
+          spark={last6.map((m) => ({ x: m.monthLabel, y: m.revenue }))}
+          sparkColor={BLAZE}
+        />
+        <KpiCard
+          accent={BLAZE} title="Gross Margin %"
+          value={pct(curr.grossPct)}
+          delta={curr.grossPct - prev.grossPct}
+          deltaSuffix="pp" isPP
+          spark={last6.map((m) => ({ x: m.monthLabel, y: m.marginPct }))}
+          sparkColor={BLAZE}
+        />
+        <KpiCard
+          accent={BLAZE} title="Net Margin %"
+          value={pct(curr.netPct)}
+          delta={curr.netPct - prev.netPct}
+          deltaSuffix="pp" isPP
+          spark={last6.map((m) => ({ x: m.monthLabel, y: m.netMarginPct }))}
+          sparkColor={BLAZE}
         />
       </div>
 
-      {/* ── KPI ROW ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard
-          loading={loadingKpis}
-          icon={Users}
-          title="Total Leads This Month"
-          value={kpis ? kpis.leadsThisMonth.toLocaleString("en-IN") : "0"}
-          changePct={kpis?.leadsChangePct}
-        />
-        <KpiCard
-          loading={loadingKpis}
-          icon={CheckCircle}
-          title="Files Closed This Month"
-          value={kpis ? kpis.filesClosed.toString() : "0"}
-        />
-        <KpiCard
-          loading={loadingKpis}
-          icon={DollarSign}
-          title="Revenue This Month"
-          value={kpis ? `₹${kpis.revenueLakhs.toFixed(1)}L` : "₹0"}
-        />
-        <KpiCard
-          loading={loadingKpis}
-          icon={Percent}
-          title="Avg Margin %"
-          value={kpis ? `${kpis.avgMargin.toFixed(1)}%` : "0%"}
-          valueClass={kpis ? marginColor(kpis.avgMargin) : ""}
-        />
+      {/* SECTION C — Combo chart */}
+      <SectionTitle>12-Month Business Performance</SectionTitle>
+      <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+        <ResponsiveContainer width="100%" height={320}>
+          <ComposedChart data={data.monthly} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
+            <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
+            <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+            <Tooltip
+              contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }}
+              formatter={(value: any, name: string) => {
+                if (name === "Revenue (₹L)") return [`₹${Number(value).toFixed(1)}L`, name];
+                if (name === "Gross Margin %") return [`${Number(value).toFixed(1)}%`, name];
+                return [Number(value).toLocaleString("en-IN"), name];
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar yAxisId="left" dataKey="leads" name="Leads" fill={LAGOON} radius={[4, 4, 0, 0]} />
+            <Bar yAxisId="left" dataKey="filesClosed" name="Files Closed" fill={RIDGE} radius={[4, 4, 0, 0]} />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey={(d: MonthlyRow) => d.revenue / 1e5}
+              name="Revenue (₹L)"
+              stroke={BLAZE}
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="marginPct"
+              name="Gross Margin %"
+              stroke={HORIZON}
+              strokeWidth={2}
+              strokeDasharray="5 4"
+              dot={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* ── TWO COLUMN ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+      {/* SECTION D — two col */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* LEFT 60% */}
         <div className="lg:col-span-3 space-y-4">
-          {/* Funnel */}
-          <Card className="border shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-abyss">Lead Funnel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingFunnel ? (
-                <Skeleton className="h-[260px] w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={funnelData} layout="vertical" margin={{ left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis dataKey="stage" type="category" tick={{ fontSize: 12 }} width={80} />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                      {(funnelData ?? []).map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+          <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+            <SectionTitle className="mb-3">Revenue · Margin · Expenses — Monthly Breakdown</SectionTitle>
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={data.monthly} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
+                <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
+                <YAxis
+                  yAxisId="left"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(v) => `₹${(v / 1e5).toFixed(0)}L`}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(v) => `${v.toFixed(0)}%`}
+                />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }}
+                  formatter={(value: any, name: string) => {
+                    if (name === "Net Margin %") return [`${Number(value).toFixed(1)}%`, name];
+                    return [fmtCompactINR(Number(value)), name];
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar yAxisId="left" dataKey="vendorCost" stackId="a" name="Vendor Cost" fill={DRIFT} stroke={ABYSS} />
+                <Bar yAxisId="left" dataKey="grossMargin" stackId="a" name="Gross Margin" fill={BLAZE} />
+                <Bar yAxisId="left" dataKey="expenses" name="Expenses" fill={HORIZON} />
+                <Line yAxisId="right" type="monotone" dataKey="netMarginPct" name="Net Margin %" stroke={RIDGE} strokeWidth={2.5} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
 
-          {/* Source breakdown */}
-          <Card className="border shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-abyss">Lead Source Breakdown (this month)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingSource ? (
-                <Skeleton className="h-[240px] w-full" />
-              ) : (sourceData ?? []).every(s => s.value === 0) ? (
-                <p className="text-sm text-muted-foreground text-center py-12">No leads this month yet.</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie data={sourceData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={85} paddingAngle={2}>
-                        {(sourceData ?? []).map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="space-y-2">
-                    {(sourceData ?? []).map(s => (
-                      <div key={s.name} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-sm" style={{ background: s.fill }} />
-                          <span className="text-abyss font-medium">{s.name}</span>
-                        </div>
-                        <div className="text-muted-foreground">
-                          <span className="text-abyss font-semibold">{s.value}</span> · {s.pct}%
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* RIGHT 40% */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Trips this week */}
-          <Card className="border shadow-sm">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-semibold text-abyss">Trips This Week</CardTitle>
-              <button onClick={() => navigate("/admin/trips-kanban")} className="text-xs text-blaze hover:underline">All</button>
-            </CardHeader>
-            <CardContent>
-              {loadingTrips ? (
-                <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
-              ) : (weekTrips ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No upcoming trips this week.</p>
-              ) : (
-                <div className="space-y-1">
-                  {(weekTrips ?? []).map(t => (
-                    <button
-                      key={t.id}
-                      onClick={() => navigate(`/admin/trip-cashflow/${t.id}`)}
-                      className="w-full flex items-center justify-between gap-2 p-2 rounded-md hover:bg-[#FFF5F2] transition-colors text-left"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-abyss truncate">{t.traveller_name}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />{t.destinations?.name ?? "—"}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-medium text-blaze flex items-center gap-1 justify-end">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(t.travel_start_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Top destinations */}
-          <Card className="border shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-abyss">Top Destinations (this month)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingDest ? (
-                <div className="space-y-2">{[1,2,3,4].map(i => <Skeleton key={i} className="h-6 w-full" />)}</div>
-              ) : (topDest ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No destination data yet.</p>
-              ) : (
-                <div className="space-y-2.5">
-                  {(() => {
-                    const max = Math.max(...(topDest ?? []).map(d => d.count), 1);
-                    return (topDest ?? []).map(d => (
-                      <div key={d.name}>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="font-medium text-abyss">{d.name}</span>
-                          <span className="text-muted-foreground">{d.count}</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-[#F3F0EA] overflow-hidden">
-                          <div className="h-full bg-blaze rounded-full" style={{ width: `${(d.count / max) * 100}%` }} />
-                        </div>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* ── RECENT LEADS ── */}
-      <Card className="border shadow-sm">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-base font-semibold text-abyss">Recent Leads</CardTitle>
-          <button onClick={() => navigate("/admin/leads")} className="text-xs text-blaze hover:underline flex items-center gap-1">
-            View all <ArrowRight className="h-3 w-3" />
-          </button>
-        </CardHeader>
-        <CardContent>
-          {loadingRecent ? (
-            <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>
-          ) : (recentLeads ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No leads yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
+            {/* Compact table — last 6 months */}
+            <div className="mt-4 overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-left text-xs text-[#9CA3AF] uppercase tracking-wider border-b border-[#F0EDE8]">
-                    <th className="py-2 pr-4 font-medium">Name</th>
-                    <th className="py-2 pr-4 font-medium">Destination</th>
-                    <th className="py-2 pr-4 font-medium">Platform</th>
-                    <th className="py-2 pr-4 font-medium">Channel</th>
-                    <th className="py-2 pr-4 font-medium">Status</th>
-                    <th className="py-2 font-medium text-right">Time</th>
+                  <tr className="text-left text-muted-foreground border-b border-border">
+                    <th className="py-2 font-medium">Month</th>
+                    <th className="py-2 font-medium text-right">Revenue</th>
+                    <th className="py-2 font-medium text-right">Gross Margin</th>
+                    <th className="py-2 font-medium text-right">Expenses</th>
+                    <th className="py-2 font-medium text-right">Net Margin</th>
+                    <th className="py-2 font-medium text-right">Conv %</th>
+                    {canEditExpenses && <th className="py-2 w-8" />}
                   </tr>
                 </thead>
                 <tbody>
-                  {(recentLeads ?? []).map(l => (
-                    <tr
-                      key={l.id}
-                      onClick={() => navigate(`/admin/leads/${l.id}`)}
-                      className="border-b border-[#F5F3EE] last:border-0 hover:bg-[#FFF5F2] cursor-pointer transition-colors"
-                    >
-                      <td className="py-2.5 pr-4 font-medium text-abyss">
-                        <div className="flex items-center gap-1.5">
-                          {l.is_hot && <span title="Hot">🔥</span>}
-                          {l.name}
-                        </div>
+                  {data.monthly.slice(-6).map((m) => (
+                    <tr key={m.monthKey} className="border-b border-border/50 last:border-0">
+                      <td className="py-2 text-abyss font-medium">{m.monthLabel}</td>
+                      <td className="py-2 text-right">{fmtCompactINR(m.revenue)}</td>
+                      <td className="py-2 text-right">{fmtCompactINR(m.grossMargin)}</td>
+                      <td className="py-2 text-right">{fmtCompactINR(m.expenses)}</td>
+                      <td className={"py-2 text-right font-medium " + (m.netMargin >= 0 ? "text-ridge" : "text-destructive")}>
+                        {fmtCompactINR(m.netMargin)}
                       </td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">{l.destinations?.name ?? "—"}</td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">{l.platform ?? "—"}</td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">{l.channel ?? "—"}</td>
-                      <td className="py-2.5 pr-4">
-                        <Badge className={`${STATUS_COLORS[l.sales_status] ?? "bg-gray-100 text-gray-600"} font-medium`}>
-                          {(l.sales_status ?? "new_lead").replace(/_/g, " ")}
-                        </Badge>
-                      </td>
-                      <td className="py-2.5 text-right text-muted-foreground whitespace-nowrap">{timeAgo(l.created_at)}</td>
+                      <td className="py-2 text-right">{pct(m.conversionRate)}</td>
+                      {canEditExpenses && (
+                        <td className="py-2 text-right">
+                          <ExpenseEditor month={m} onSaved={onExpenseSaved} />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </AppLayout>
-  );
-};
+          </div>
+        </div>
 
-/* ─────────── small components ─────────── */
-function ActionCard({
-  loading, onClick, label, icon, count, bg, fg, sub,
-}: {
-  loading: boolean; onClick: () => void; label: string; icon: React.ReactNode;
-  count: number; bg: string; fg: string; sub: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`${bg} ${fg} rounded-xl p-5 text-left shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold uppercase tracking-wider opacity-90 flex items-center gap-1.5">
-          {icon}{label}
-        </span>
-        <ArrowRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+        {/* RIGHT 40% */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Lifetime */}
+          <div className="bg-drift/40 border border-border rounded-xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-abyss mb-3">Lifetime Business Snapshot</h3>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <Stat label="Total Leads" value={data.lifetime.totalLeads.toLocaleString("en-IN")} />
+              <Stat label="Total Trips Closed" value={data.lifetime.totalClosed.toLocaleString("en-IN")} />
+              <Stat label="Avg Monthly Leads" value={data.lifetime.avgMonthlyLeads.toFixed(0)} />
+              <Stat label="Avg Monthly Closures" value={data.lifetime.avgMonthlyClosed.toFixed(1)} />
+              <Stat label="Avg Ticket Size" value={fmtCompactINR(data.lifetime.avgTicket)} />
+              <Stat label="Conversion Rate" value={pct(data.lifetime.conversionRate)} />
+            </div>
+          </div>
+
+          {/* This Month vs Last Month */}
+          <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">This Month vs Last Month</h3>
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b border-border">
+                  <th className="py-2 font-medium">Metric</th>
+                  <th className="py-2 font-medium text-right">This</th>
+                  <th className="py-2 font-medium text-right">Last</th>
+                  <th className="py-2 font-medium text-right">Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <CmpRow label="Leads" curr={tm.leads} prev={lm.leads} />
+                <CmpRow label="Closed" curr={tm.filesClosed} prev={lm.filesClosed} />
+                <CmpRow label="Revenue" curr={tm.revenue} prev={lm.revenue} formatter={fmtCompactINR} />
+                <CmpRow label="Gross Margin %" curr={tm.marginPct} prev={lm.marginPct} isPP />
+                <CmpRow label="Expenses" curr={tm.expenses} prev={lm.expenses} formatter={fmtCompactINR} />
+                <CmpRow label="Net Margin %" curr={tm.netMarginPct} prev={lm.netMarginPct} isPP />
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      {loading ? (
-        <Skeleton className="h-9 w-16 bg-white/30" />
-      ) : (
-        <p className="text-3xl font-bold leading-none">{count}</p>
-      )}
-      <p className="text-xs opacity-75 mt-1.5">{sub}</p>
-    </button>
+
+      {/* SECTION E — bottom row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Top Destinations */}
+        <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+          <SectionTitle className="mb-3">Top Destinations (This Month)</SectionTitle>
+          {data.topDestThisMonth.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No destination data this month.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={data.topDestThisMonth} layout="vertical" margin={{ left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#EEE" />
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={90} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }} />
+                <Bar dataKey="count" fill={BLAZE} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          {data.topDestRevenueThisMonth.length > 0 && (
+            <div className="mt-3 border-t border-border pt-3">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">By revenue this month</p>
+              <div className="flex flex-wrap gap-1.5">
+                {data.topDestRevenueThisMonth.map((d) => (
+                  <span key={d.name} className="text-xs px-2 py-1 rounded-full bg-blaze/10 text-blaze font-medium">
+                    {d.name} · {fmtCompactINR(d.revenue)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Funnel */}
+        <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+          <SectionTitle className="mb-3">Conversion Funnel (This Month)</SectionTitle>
+          {data.totalLeadsThisMonth === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No leads this month.</p>
+          ) : (
+            <div className="space-y-2">
+              {data.funnelThisMonth.map((f) => (
+                <div key={f.stage}>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-medium text-abyss">{f.stage}</span>
+                    <span className="text-muted-foreground">
+                      <span className="text-abyss font-semibold">{f.count}</span> · {f.pct.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-6 rounded-md bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-md transition-all"
+                      style={{ width: `${Math.max(f.pct, 1.5)}%`, background: f.fill }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Source mix */}
+        <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+          <SectionTitle className="mb-3">Lead Source Mix (This Month)</SectionTitle>
+          {data.sourceMixThisMonth.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No source data this month.</p>
+          ) : (
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={data.sourceMixThisMonth}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={2}
+                  >
+                    {data.sourceMixThisMonth.map((s, i) => (<Cell key={i} fill={s.fill} />))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ height: 200 }}>
+                <div className="text-xl font-semibold text-abyss leading-none">{data.totalLeadsThisMonth}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Leads</div>
+              </div>
+              <div className="mt-3 space-y-1.5">
+                {data.sourceMixThisMonth.map((s) => (
+                  <div key={s.name} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: s.fill }} />
+                      <span className="text-abyss font-medium truncate">{s.name}</span>
+                    </div>
+                    <div className="text-muted-foreground shrink-0 ml-2">
+                      <span className="text-abyss font-semibold">{s.value}</span> · {s.pct.toFixed(0)}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────── tiny components ───────── */
+function SectionTitle({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <h2 className={"text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 " + className}>
+      {children}
+    </h2>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-lg font-semibold text-abyss mt-0.5">{value}</div>
+    </div>
   );
 }
 
 function KpiCard({
-  loading, icon: Icon, title, value, changePct, valueClass = "",
+  accent, title, value, delta, deltaSuffix = "%", isPP = false, spark, sparkColor,
 }: {
-  loading: boolean; icon: any; title: string; value: string;
-  changePct?: number; valueClass?: string;
+  accent: string;
+  title: string;
+  value: string;
+  delta: number;
+  deltaSuffix?: string;
+  isPP?: boolean;
+  spark: { x: string; y: number }[];
+  sparkColor: string;
 }) {
+  const positive = delta > 0.05;
+  const negative = delta < -0.05;
+  const Icon = positive ? TrendingUp : negative ? TrendingDown : Minus;
+  const deltaColor = positive ? "text-ridge" : negative ? "text-destructive" : "text-muted-foreground";
   return (
-    <Card className="border shadow-sm">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-xs text-[#9CA3AF] uppercase tracking-wide font-medium">{title}</p>
-            {loading ? (
-              <Skeleton className="h-7 w-20 mt-2" />
-            ) : (
-              <p className={`text-2xl font-bold mt-1 ${valueClass || "text-abyss"}`}>{value}</p>
-            )}
-            {!loading && changePct != null && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className={`text-xs font-medium ${changePct >= 0 ? "text-ridge" : "text-destructive"}`}>
-                  {changePct >= 0 ? "+" : ""}{changePct.toFixed(1)}%
-                </span>
-                <span className="text-xs text-muted-foreground">vs last month</span>
-              </div>
-            )}
-          </div>
-          <div className="h-10 w-10 rounded-lg bg-blaze/10 flex items-center justify-center shrink-0">
-            <Icon className="h-5 w-5 text-blaze" />
+    <div className="relative bg-white border border-border rounded-xl shadow-sm p-5 overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: accent }} />
+      <div className="pl-2 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{title}</div>
+          <div className="text-2xl font-semibold text-abyss mt-1 tabular-nums">{value}</div>
+          <div className={"flex items-center gap-1 text-xs font-medium mt-2 " + deltaColor}>
+            <Icon className="h-3.5 w-3.5" />
+            {Math.abs(delta).toFixed(1)}{isPP ? "pp" : deltaSuffix}
+            <span className="text-muted-foreground font-normal ml-1">vs prior</span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="w-24 h-12 shrink-0">
+          <ResponsiveContainer width="100%" height={48}>
+            <AreaChart data={spark} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+              <Area type="monotone" dataKey="y" stroke={sparkColor} fill={sparkColor} fillOpacity={0.15} strokeWidth={1.5} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
   );
 }
 
-export default Dashboard;
+function CmpRow({
+  label, curr, prev, formatter, isPP,
+}: {
+  label: string;
+  curr: number;
+  prev: number;
+  formatter?: (n: number) => string;
+  isPP?: boolean;
+}) {
+  const fmt = formatter ?? ((n: number) => (isPP ? pct(n) : n.toLocaleString("en-IN")));
+  const delta = isPP ? curr - prev : deltaPct(curr, prev);
+  const positive = delta > 0.05;
+  const negative = delta < -0.05;
+  const Icon = positive ? TrendingUp : negative ? TrendingDown : Minus;
+  const deltaColor = positive ? "text-ridge" : negative ? "text-destructive" : "text-muted-foreground";
+  return (
+    <tr className="border-b border-border/50 last:border-0">
+      <td className="py-2 text-abyss font-medium">{label}</td>
+      <td className="py-2 text-right tabular-nums">{fmt(curr)}</td>
+      <td className="py-2 text-right tabular-nums text-muted-foreground">{fmt(prev)}</td>
+      <td className={"py-2 text-right tabular-nums font-medium " + deltaColor}>
+        <span className="inline-flex items-center gap-0.5 justify-end">
+          <Icon className="h-3 w-3" />
+          {Math.abs(delta).toFixed(1)}{isPP ? "pp" : "%"}
+        </span>
+      </td>
+    </tr>
+  );
+}
+
+/* ───────── expense editor popover ───────── */
+function ExpenseEditor({ month, onSaved }: { month: MonthlyRow; onSaved: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(String(month.expenses || ""));
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("monthly_expenses")
+      .upsert(
+        {
+          month_year: month.monthKey,
+          amount: Number(amount) || 0,
+          notes: notes || null,
+          created_by: user?.id ?? null,
+        },
+        { onConflict: "month_year" },
+      );
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Expenses for ${month.monthLabel} saved`);
+    setOpen(false);
+    onSaved();
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-abyss" title="Edit expenses">
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72" align="end">
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-sm font-semibold text-abyss">Expenses for {month.monthLabel}</h4>
+            <p className="text-xs text-muted-foreground">Operating expenses for net margin</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`amt-${month.monthKey}`} className="text-xs">Amount (₹)</Label>
+            <Input
+              id={`amt-${month.monthKey}`}
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`note-${month.monthKey}`} className="text-xs">Notes (optional)</Label>
+            <Textarea
+              id={`note-${month.monthKey}`}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
+            <Button size="sm" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/* ───────── skeleton ───────── */
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-end"><div className="h-9 w-64 bg-muted rounded-lg animate-pulse" /></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="bg-white border border-border rounded-xl shadow-sm p-5 h-28 animate-pulse" />
+        ))}
+      </div>
+      <div className="bg-white border border-border rounded-xl shadow-sm p-5 h-[340px] animate-pulse" />
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="lg:col-span-3 bg-white border border-border rounded-xl shadow-sm p-5 h-[480px] animate-pulse" />
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white border border-border rounded-xl shadow-sm p-5 h-56 animate-pulse" />
+          <div className="bg-white border border-border rounded-xl shadow-sm p-5 h-56 animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-white border border-border rounded-xl shadow-sm p-5 h-72 animate-pulse" />
+        ))}
+      </div>
+    </div>
+  );
+}
