@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, ComposedChart, Line, Area, AreaChart,
 } from "recharts";
-import { TrendingUp, TrendingDown, Pencil, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Pencil, Minus, CalendarIcon } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import { toast } from "sonner";
 
 /* ───────── brand colors ───────── */
@@ -27,7 +29,16 @@ const DRIFT = "#EEE5D5";
 const REFETCH_MS = 60_000;
 
 /* ───────── types ───────── */
-type PeriodKey = "this_month" | "last_3m" | "last_6m" | "ytd" | "last_12m";
+type PeriodKey =
+  | "this_month"
+  | "last_3m"
+  | "last_6m"
+  | "last_12m"
+  | "ytd"
+  | "this_fy"
+  | "last_fy"
+  | "all_time"
+  | "custom";
 
 interface MonthlyRow {
   monthLabel: string;
@@ -88,37 +99,70 @@ const deltaPct = (curr: number, prev: number): number => {
   return ((curr - prev) / prev) * 100;
 };
 
-/* Period window calc */
-function getPeriodWindow(p: PeriodKey): { start: Date; end: Date; priorStart: Date; priorEnd: Date } {
-  const now = new Date();
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1); // exclusive
-  let start: Date;
-  if (p === "this_month") start = new Date(now.getFullYear(), now.getMonth(), 1);
-  else if (p === "last_3m") start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  else if (p === "last_6m") start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  else if (p === "ytd") start = new Date(now.getFullYear(), 0, 1);
-  else start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+/* Indian financial year: Apr 1 → Mar 31 */
+function fyStart(year: number) { return new Date(year, 3, 1); } // Apr 1
+function currentFyStartYear(now: Date) {
+  return now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+}
 
-  // prior = same length window immediately before
-  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  const priorEnd = new Date(start);
-  const priorStart = new Date(start.getFullYear(), start.getMonth() - months, 1);
-  return { start, end, priorStart, priorEnd };
+/* Resolve a preset to {from, to} where `to` is INCLUSIVE end-of-day date.
+   Custom is resolved by the caller. */
+function resolvePreset(p: PeriodKey, customFrom?: Date, customTo?: Date):
+  { from: Date; to: Date } {
+  const now = new Date();
+  const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  if (p === "this_month")
+    return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: endOfThisMonth };
+  if (p === "last_3m")
+    return { from: new Date(now.getFullYear(), now.getMonth() - 2, 1), to: endOfThisMonth };
+  if (p === "last_6m")
+    return { from: new Date(now.getFullYear(), now.getMonth() - 5, 1), to: endOfThisMonth };
+  if (p === "last_12m")
+    return { from: new Date(now.getFullYear(), now.getMonth() - 11, 1), to: endOfThisMonth };
+  if (p === "ytd")
+    return { from: new Date(now.getFullYear(), 0, 1), to: endOfThisMonth };
+  if (p === "this_fy") {
+    const y = currentFyStartYear(now);
+    return { from: fyStart(y), to: endOfThisMonth };
+  }
+  if (p === "last_fy") {
+    const y = currentFyStartYear(now) - 1;
+    return { from: fyStart(y), to: new Date(y + 1, 2, 31) }; // Mar 31 next yr
+  }
+  if (p === "all_time")
+    return { from: new Date(2018, 0, 1), to: endOfThisMonth };
+  // custom
+  return {
+    from: customFrom ?? new Date(now.getFullYear(), now.getMonth(), 1),
+    to: customTo ?? endOfThisMonth,
+  };
+}
+
+/* Inclusive→exclusive month window aligned to month boundaries */
+function toMonthWindow(from: Date, to: Date) {
+  const start = new Date(from.getFullYear(), from.getMonth(), 1);
+  const end = new Date(to.getFullYear(), to.getMonth() + 1, 1);
+  return { start, end };
+}
+
+/* Effective date a cashflow row is "booked" on, for revenue rollups.
+   Legacy imports often have only travel_start_date; new rows have booking_date.
+   created_at is the import timestamp and must NOT be used for legacy data. */
+function cashflowEffectiveDate(c: { booking_date?: string | null; travel_start_date?: string | null; created_at?: string | null; }): Date | null {
+  const s = c.booking_date ?? c.travel_start_date ?? c.created_at ?? null;
+  return s ? new Date(s) : null;
 }
 
 /* ───────── main fetch ───────── */
 async function fetchDashboardData(): Promise<DashboardData> {
   const now = new Date();
-  const thirteenStart = new Date(now.getFullYear(), now.getMonth() - 12, 1);
 
   const [leadsRes, cashflowRes, expensesRes, destinationsRes] = await Promise.all([
     supabase.from("leads")
       .select("id, created_at, sales_status, destination_id, platform")
-      .gte("created_at", thirteenStart.toISOString())
       .limit(50000),
     supabase.from("trip_cashflow")
-      .select("id, lead_id, pax_count, margin_percent, created_at, destination_id, trip_stage")
-      .gte("created_at", thirteenStart.toISOString())
+      .select("id, lead_id, pax_count, margin_percent, created_at, booking_date, travel_start_date, destination_id, trip_stage")
       .limit(50000),
     supabase.from("monthly_expenses").select("*").limit(1000),
     supabase.from("destinations").select("id, name").limit(1000),
@@ -141,16 +185,17 @@ async function fetchDashboardData(): Promise<DashboardData> {
     );
   }
 
-  // per-cashflow derived numbers (within 13 months)
+  // per-cashflow derived numbers, dated by booking → travel → created
   const cashflowDerived = cashflows.map((c: any) => {
     const vendorCostPerPax = vendorCostByCashflow.get(c.id) ?? 0;
     const pax = Number(c.pax_count ?? 1) || 1;
     const totalVendorCost = vendorCostPerPax * pax;
     const m = Number(c.margin_percent ?? 0);
     const sellingPrice = m < 100 ? totalVendorCost / (1 - m / 100) : totalVendorCost;
+    const effective = cashflowEffectiveDate(c);
     return {
       id: c.id,
-      created_at: c.created_at,
+      effective_at: effective,
       destination_id: c.destination_id,
       sellingPrice,
       totalVendorCost,
@@ -163,9 +208,29 @@ async function fetchDashboardData(): Promise<DashboardData> {
     expensesByMonth.set(e.month_year, Number(e.amount ?? 0));
   }
 
-  // build 13 month rows
+  // Determine the earliest month we need to roll up. Use the earliest
+  // signal across leads + dated cashflows; cap to 6 years back to keep
+  // the array bounded. Always include current month.
+  let earliest = new Date(now.getFullYear(), now.getMonth(), 1);
+  for (const l of leadsRes.data ?? []) {
+    const d = new Date((l as any).created_at);
+    if (d < earliest) earliest = new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+  for (const c of cashflowDerived) {
+    if (!c.effective_at) continue;
+    if (c.effective_at < earliest)
+      earliest = new Date(c.effective_at.getFullYear(), c.effective_at.getMonth(), 1);
+  }
+  const sixYearsAgo = new Date(now.getFullYear() - 6, now.getMonth(), 1);
+  if (earliest < sixYearsAgo) earliest = sixYearsAgo;
+
+  const monthsBetween =
+    (now.getFullYear() - earliest.getFullYear()) * 12 +
+    (now.getMonth() - earliest.getMonth());
+
+  // build month rows from earliest → current
   const months: MonthlyRow[] = [];
-  for (let i = 12; i >= 0; i--) {
+  for (let i = monthsBetween; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const start = d;
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
@@ -178,8 +243,8 @@ async function fetchDashboardData(): Promise<DashboardData> {
     const filesClosed = monthLeads.filter((l: any) => l.sales_status === "file_closed").length;
 
     const monthCash = cashflowDerived.filter((c) => {
-      const ts = new Date(c.created_at);
-      return ts >= start && ts < end;
+      if (!c.effective_at) return false;
+      return c.effective_at >= start && c.effective_at < end;
     });
     const revenue = monthCash.reduce((s, c) => s + c.sellingPrice, 0);
     const vendorCost = monthCash.reduce((s, c) => s + c.totalVendorCost, 0);
@@ -279,8 +344,8 @@ async function fetchDashboardData(): Promise<DashboardData> {
 
   const destRev = new Map<string, number>();
   for (const c of cashflowDerived) {
-    const ts = new Date(c.created_at);
-    if (ts < thisMonth.monthStart || ts >= thisMonth.monthEnd) continue;
+    if (!c.effective_at) continue;
+    if (c.effective_at < thisMonth.monthStart || c.effective_at >= thisMonth.monthEnd) continue;
     if (!c.destination_id) continue;
     const name = destMap.get(c.destination_id);
     if (!name) continue;
