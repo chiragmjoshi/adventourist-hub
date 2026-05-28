@@ -405,6 +405,8 @@ async function fetchDashboardData(): Promise<DashboardData> {
 /* ───────── component ───────── */
 const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodKey>("this_month");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
   const { profile } = useAuth();
   const canEditExpenses = profile?.role === "super_admin" || profile?.role === "admin";
   const qc = useQueryClient();
@@ -425,7 +427,16 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Dashboard">
-      <DashboardBody data={data} period={period} setPeriod={setPeriod} canEditExpenses={canEditExpenses} onExpenseSaved={() => qc.invalidateQueries({ queryKey: ["dashboard-bi"] })} />
+      <DashboardBody
+        data={data}
+        period={period}
+        setPeriod={setPeriod}
+        customFrom={customFrom}
+        customTo={customTo}
+        setCustom={(f, t) => { setCustomFrom(f); setCustomTo(t); setPeriod("custom"); }}
+        canEditExpenses={canEditExpenses}
+        onExpenseSaved={() => qc.invalidateQueries({ queryKey: ["dashboard-bi"] })}
+      />
     </AppLayout>
   );
 };
@@ -437,26 +448,37 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
   { key: "this_month", label: "This Month" },
   { key: "last_3m", label: "Last 3M" },
   { key: "last_6m", label: "Last 6M" },
-  { key: "ytd", label: "YTD" },
   { key: "last_12m", label: "Last 12M" },
+  { key: "ytd", label: "YTD" },
+  { key: "this_fy", label: "This FY" },
+  { key: "last_fy", label: "Last FY" },
+  { key: "all_time", label: "All Time" },
 ];
 
 function DashboardBody({
-  data, period, setPeriod, canEditExpenses, onExpenseSaved,
+  data, period, setPeriod, customFrom, customTo, setCustom, canEditExpenses, onExpenseSaved,
 }: {
   data: DashboardData;
   period: PeriodKey;
   setPeriod: (p: PeriodKey) => void;
+  customFrom?: Date;
+  customTo?: Date;
+  setCustom: (from: Date, to: Date) => void;
   canEditExpenses: boolean;
   onExpenseSaved: () => void;
 }) {
-  const window = useMemo(() => getPeriodWindow(period), [period]);
-
-  const inWindow = (key: string, start: Date, end: Date) => {
-    const m = data.monthly.find((x) => x.monthKey === key);
-    if (!m) return false;
-    return m.monthStart >= start && m.monthStart < end;
-  };
+  const window = useMemo(() => {
+    const r = resolvePreset(period, customFrom, customTo);
+    const w = toMonthWindow(r.from, r.to);
+    const monthsLen = Math.max(
+      1,
+      (w.end.getFullYear() - w.start.getFullYear()) * 12 +
+        (w.end.getMonth() - w.start.getMonth()),
+    );
+    const priorEnd = new Date(w.start);
+    const priorStart = new Date(w.start.getFullYear(), w.start.getMonth() - monthsLen, 1);
+    return { ...w, priorStart, priorEnd, from: r.from, to: r.to };
+  }, [period, customFrom, customTo]);
 
   const periodMonths = data.monthly.filter((m) => m.monthStart >= window.start && m.monthStart < window.end);
   const priorMonths = data.monthly.filter((m) => m.monthStart >= window.priorStart && m.monthStart < window.priorEnd);
@@ -481,6 +503,8 @@ function DashboardBody({
 
   // sparkline data — last 6 months
   const last6 = data.monthly.slice(-6);
+  // 12-month performance chart — always last 12 months
+  const last12 = data.monthly.slice(-12);
 
   // this-vs-last comparison (always current vs prior calendar month)
   const tm = data.monthly[data.monthly.length - 1];
@@ -490,7 +514,10 @@ function DashboardBody({
     <div className="space-y-6">
       {/* SECTION A — Period selector */}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="inline-flex rounded-lg border border-border bg-white p-1 shadow-sm">
+        <span className="text-xs text-muted-foreground hidden md:inline">
+          {format(window.from, "d MMM yyyy")} – {format(window.to, "d MMM yyyy")}
+        </span>
+        <div className="inline-flex flex-wrap rounded-lg border border-border bg-white p-1 shadow-sm">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.key}
@@ -505,6 +532,12 @@ function DashboardBody({
               {opt.label}
             </button>
           ))}
+          <CustomRangePicker
+            active={period === "custom"}
+            from={customFrom}
+            to={customTo}
+            onChange={setCustom}
+          />
         </div>
       </div>
 
@@ -562,7 +595,7 @@ function DashboardBody({
       <SectionTitle>12-Month Business Performance</SectionTitle>
       <div className="bg-white border border-border rounded-xl shadow-sm p-5">
         <ResponsiveContainer width="100%" height={320}>
-          <ComposedChart data={data.monthly} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+          <ComposedChart data={last12} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
             <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
             <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
@@ -608,7 +641,7 @@ function DashboardBody({
           <div className="bg-white border border-border rounded-xl shadow-sm p-5">
             <SectionTitle className="mb-3">Revenue · Margin · Expenses — Monthly Breakdown</SectionTitle>
             <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={data.monthly} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+              <ComposedChart data={periodMonths.length > 0 ? periodMonths : last12} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
                 <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
                 <YAxis
