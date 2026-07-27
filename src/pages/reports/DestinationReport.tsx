@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
 import { Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 
 const DestinationReport = () => {
-  const [from, setFrom] = useState(startOfMonth(new Date()));
-  const [to, setTo] = useState(endOfMonth(new Date()));
+  const [from, setFrom] = useState(new Date(2020, 0, 1));
+  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
   const [leads, setLeads] = useState<any[]>([]);
-  const [cashflows, setCashflows] = useState<any[]>([]);
+  const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [cfVendors, setCfVendors] = useState<any[]>([]);
   const [destinations, setDestinations] = useState<any[]>([]);
   const [toggle, setToggle] = useState<"leads" | "revenue" | "margin">("leads");
@@ -26,11 +25,11 @@ const DestinationReport = () => {
       const [{ data: l }, { data: d }, { data: cf }] = await Promise.all([
         supabase.from("leads").select("*, destination:destinations(name)").gte("created_at", from.toISOString()).lte("created_at", to.toISOString()),
         supabase.from("destinations").select("id, name"),
-        supabase.from("trip_cashflow").select("*, destination:destinations(name)").gte("created_at", from.toISOString()).lte("created_at", to.toISOString()),
+        supabase.from("trip_cashflow").select("*, destination:destinations(name)"),
       ]);
       setLeads(l || []);
       setDestinations(d || []);
-      setCashflows(cf || []);
+      setAllCashflows(cf || []);
       const cfIds = (cf || []).map((c: any) => c.id);
       if (cfIds.length > 0) {
         const { data: v } = await supabase.from("trip_cashflow_vendors").select("*").in("cashflow_id", cfIds);
@@ -40,6 +39,15 @@ const DestinationReport = () => {
     };
     fetch();
   }, [from, to]);
+
+  const cashflows = useMemo(
+    () => allCashflows.filter((cf) => {
+      const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
+      const d = raw ? new Date(raw) : null;
+      return d && d >= from && d <= to;
+    }),
+    [allCashflows, from, to]
+  );
 
   const getVendorCost = (cfId: string) => cfVendors.filter((v) => v.cashflow_id === cfId).reduce((s, v) => s + Number(v.cost_per_pax_incl_gst || 0), 0);
 

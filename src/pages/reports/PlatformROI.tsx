@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
 import { Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,10 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 
 const PlatformROI = () => {
-  const [from, setFrom] = useState(startOfMonth(new Date()));
-  const [to, setTo] = useState(endOfMonth(new Date()));
+  const [from, setFrom] = useState(new Date(new Date().getFullYear() - 1, 0, 1));
+  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
   const [leads, setLeads] = useState<any[]>([]);
-  const [cashflows, setCashflows] = useState<any[]>([]);
+  const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [cfVendors, setCfVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,10 +21,10 @@ const PlatformROI = () => {
       setLoading(true);
       const [{ data: l }, { data: cf }] = await Promise.all([
         supabase.from("leads").select("*").gte("created_at", from.toISOString()).lte("created_at", to.toISOString()),
-        supabase.from("trip_cashflow").select("*").gte("created_at", from.toISOString()).lte("created_at", to.toISOString()),
+        supabase.from("trip_cashflow").select("*"),
       ]);
       setLeads(l || []);
-      setCashflows(cf || []);
+      setAllCashflows(cf || []);
       if ((cf || []).length > 0) {
         const { data: v } = await supabase.from("trip_cashflow_vendors").select("*").in("cashflow_id", (cf || []).map((c: any) => c.id));
         setCfVendors(v || []);
@@ -34,6 +33,15 @@ const PlatformROI = () => {
     };
     fetch();
   }, [from, to]);
+
+  const cashflows = useMemo(
+    () => allCashflows.filter((cf) => {
+      const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
+      const d = raw ? new Date(raw) : null;
+      return d && d >= from && d <= to;
+    }),
+    [allCashflows, from, to]
+  );
 
   const buildTable = (field: string) => {
     const map: Record<string, { key: string; leads: number; closed: number; revenue: number }> = {};
