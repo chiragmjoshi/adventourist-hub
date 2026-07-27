@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
+import { subMonths, format } from "date-fns";
 import { Download, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 
 const RevenueReport = () => {
-  const [from, setFrom] = useState(startOfMonth(new Date()));
-  const [to, setTo] = useState(endOfMonth(new Date()));
-  const [cashflows, setCashflows] = useState<any[]>([]);
+  const [from, setFrom] = useState(new Date(2020, 0, 1));
+  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
+  const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [destinations, setDestinations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +23,8 @@ const RevenueReport = () => {
       const { data: cf } = await supabase
         .from("trip_cashflow")
         .select("*, destination:destinations(name)")
-        .gte("travel_start_date", from.toISOString().split("T")[0])
-        .lte("travel_start_date", to.toISOString().split("T")[0]);
-      setCashflows(cf || []);
+        .order("created_at", { ascending: false });
+      setAllCashflows(cf || []);
       const cfIds = (cf || []).map((c: any) => c.id);
       if (cfIds.length > 0) {
         const { data: v } = await supabase.from("trip_cashflow_vendors").select("*").in("cashflow_id", cfIds);
@@ -38,7 +37,20 @@ const RevenueReport = () => {
       setLoading(false);
     };
     fetch();
-  }, [from, to]);
+  }, []);
+
+  const effectiveDate = (cf: any): Date => {
+    const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
+    return raw ? new Date(raw) : new Date(0);
+  };
+
+  const cashflows = useMemo(
+    () => allCashflows.filter((cf) => {
+      const d = effectiveDate(cf);
+      return d >= from && d <= to;
+    }),
+    [allCashflows, from, to]
+  );
 
   const getVendorCost = (cfId: string) => vendors.filter((v) => v.cashflow_id === cfId).reduce((sum, v) => sum + Number(v.cost_per_pax_incl_gst || 0), 0);
 
@@ -79,13 +91,11 @@ const RevenueReport = () => {
   }, {});
   const destData = Object.values(byDest).sort((a: any, b: any) => b.revenue - a.revenue).slice(0, 10);
 
-  // Monthly trend (last 12 months) — grouped by travel_start_date
+  // Monthly trend (last 12 months) — grouped by effective date
   const trendData = Array.from({ length: 12 }, (_, i) => {
     const month = subMonths(new Date(), 11 - i);
     const mStr = format(month, "yyyy-MM");
-    const mCf = cashflows.filter(
-      (cf) => cf.travel_start_date && format(new Date(cf.travel_start_date), "yyyy-MM") === mStr
-    );
+    const mCf = allCashflows.filter((cf) => format(effectiveDate(cf), "yyyy-MM") === mStr);
     const rev = mCf.reduce((s, cf) => s + calcTrip(cf).sellingExGst, 0);
     const mar = mCf.reduce((s, cf) => s + calcTrip(cf).marginAmount, 0);
     return { month: format(month, "MMM yy"), revenue: Math.round(rev), margin: Math.round(mar) };

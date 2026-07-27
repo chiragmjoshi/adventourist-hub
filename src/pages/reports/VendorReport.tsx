@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { startOfMonth, endOfMonth } from "date-fns";
 import { Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,9 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 
 const VendorReport = () => {
-  const [from, setFrom] = useState(startOfMonth(new Date()));
-  const [to, setTo] = useState(endOfMonth(new Date()));
-  const [cashflows, setCashflows] = useState<any[]>([]);
+  const [from, setFrom] = useState(new Date(2020, 0, 1));
+  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
+  const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [cfVendors, setCfVendors] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,10 +23,8 @@ const VendorReport = () => {
       setLoading(true);
       const { data: cf } = await supabase
         .from("trip_cashflow")
-        .select("id, status, travel_start_date, pax_count, destination_id")
-        .gte("travel_start_date", from.toISOString().split("T")[0])
-        .lte("travel_start_date", to.toISOString().split("T")[0]);
-      setCashflows(cf || []);
+        .select("id, status, travel_start_date, booking_date, created_at, pax_count, destination_id");
+      setAllCashflows(cf || []);
 
       const cfIds = (cf || []).map((c: any) => c.id);
       let cv: any[] = [];
@@ -47,7 +44,16 @@ const VendorReport = () => {
       setLoading(false);
     };
     fetch();
-  }, [from, to]);
+  }, []);
+
+  const cashflows = useMemo(
+    () => allCashflows.filter((cf) => {
+      const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
+      const d = raw ? new Date(raw) : null;
+      return d && d >= from && d <= to;
+    }),
+    [allCashflows, from, to]
+  );
 
   const cfById = useMemo(() => {
     const map: Record<string, any> = {};
