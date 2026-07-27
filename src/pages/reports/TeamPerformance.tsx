@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { subMonths } from "date-fns";
 import { Download, Trophy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 
 const TeamPerformance = () => {
-  const [from, setFrom] = useState(startOfMonth(new Date()));
-  const [to, setTo] = useState(endOfMonth(new Date()));
+  const [from, setFrom] = useState(subMonths(new Date(), 12));
+  const [to, setTo] = useState(new Date());
   const [leads, setLeads] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

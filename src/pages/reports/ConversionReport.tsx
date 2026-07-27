@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { startOfMonth, endOfMonth, differenceInDays } from "date-fns";
+import { subMonths } from "date-fns";
 import { Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,8 @@ import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
 
 const ConversionReport = () => {
-  const [from, setFrom] = useState(startOfMonth(new Date()));
-  const [to, setTo] = useState(endOfMonth(new Date()));
+  const [from, setFrom] = useState(subMonths(new Date(), 12));
+  const [to, setTo] = useState(new Date());
   const [leads, setLeads] = useState<any[]>([]);
   const [destinations, setDestinations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

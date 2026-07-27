@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { subMonths, format } from "date-fns";
 import { Download, TrendingUp, TrendingDown, ArrowLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,8 @@ const STATUS_LABELS: Record<string, string> = {
 const FUNNEL_COLORS = ["hsl(var(--blaze))", "hsl(var(--horizon))", "hsl(var(--lagoon))", "hsl(var(--ridge))"];
 
 const SalesReport = () => {
-  const [from, setFrom] = useState(startOfMonth(new Date()));
-  const [to, setTo] = useState(endOfMonth(new Date()));
+  const [from, setFrom] = useState(subMonths(new Date(), 12));
+  const [to, setTo] = useState(new Date());
   const [leads, setLeads] = useState<any[]>([]);
   const [prevLeads, setPrevLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
