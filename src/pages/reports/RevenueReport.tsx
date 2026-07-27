@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { subMonths, format } from "date-fns";
-import { Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -9,37 +9,100 @@ import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 
+type CashflowRow = {
+  id: string;
+  booking_date: string | null;
+  travel_start_date: string | null;
+  created_at: string | null;
+  destination_id: string | null;
+  pax_count: number | null;
+  margin_percent: number | null;
+  gst_billing: boolean | null;
+};
+
+type VendorLine = {
+  cashflow_id: string;
+  cost_per_pax_incl_gst: number | string | null;
+};
+
+type DestinationRow = {
+  id: string;
+  name: string;
+};
+
+const chunk = <T,>(items: T[], size: number) => {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+};
+
+const endOfSelectedDay = (date: Date) => {
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
 const RevenueReport = () => {
   const [from, setFrom] = useState(new Date(2020, 0, 1));
   const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
-  const [allCashflows, setAllCashflows] = useState<any[]>([]);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [destinations, setDestinations] = useState<any[]>([]);
+  const [allCashflows, setAllCashflows] = useState<CashflowRow[]>([]);
+  const [vendors, setVendors] = useState<VendorLine[]>([]);
+  const [destinations, setDestinations] = useState<DestinationRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const { data: cf } = await supabase
+      const [{ data: cf, error: cashflowError }, { data: d, error: destinationsError }] = await Promise.all([
+        supabase
         .from("trip_cashflow")
-        .select("*, destination:destinations(name)")
-        .order("created_at", { ascending: false });
+          .select("id, booking_date, travel_start_date, created_at, destination_id, pax_count, margin_percent, gst_billing")
+          .order("created_at", { ascending: false }),
+        supabase.from("destinations").select("id, name"),
+      ]);
+
+      if (cashflowError) console.error("Revenue report cashflow fetch failed", cashflowError);
+      if (destinationsError) console.error("Revenue report destination fetch failed", destinationsError);
+
       setAllCashflows(cf || []);
-      const cfIds = (cf || []).map((c: any) => c.id);
+      setDestinations(d || []);
+
+      const cfIds = (cf || []).map((c) => c.id);
       if (cfIds.length > 0) {
-        const { data: v } = await supabase.from("trip_cashflow_vendors").select("*").in("cashflow_id", cfIds);
-        setVendors(v || []);
+        const results = await Promise.all(
+          chunk(cfIds, 75).map((ids) =>
+            supabase
+              .from("trip_cashflow_vendors")
+              .select("cashflow_id, cost_per_pax_incl_gst")
+              .in("cashflow_id", ids)
+          )
+        );
+
+        const vendorLines = results.flatMap((result) => {
+          if (result.error) {
+            console.error("Revenue report vendor fetch failed", result.error);
+            return [];
+          }
+          return result.data || [];
+        });
+        setVendors(vendorLines);
       } else {
         setVendors([]);
       }
-      const { data: d } = await supabase.from("destinations").select("id, name");
-      setDestinations(d || []);
       setLoading(false);
     };
     fetch();
   }, []);
 
-  const effectiveDate = (cf: any): Date => {
+  const destinationById = useMemo(() => {
+    const map = new Map<string, string>();
+    destinations.forEach((destination) => map.set(destination.id, destination.name));
+    return map;
+  }, [destinations]);
+
+  const effectiveDate = (cf: CashflowRow): Date => {
     const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
     return raw ? new Date(raw) : new Date(0);
   };
@@ -47,14 +110,14 @@ const RevenueReport = () => {
   const cashflows = useMemo(
     () => allCashflows.filter((cf) => {
       const d = effectiveDate(cf);
-      return d >= from && d <= to;
+      return d >= from && d <= endOfSelectedDay(to);
     }),
     [allCashflows, from, to]
   );
 
   const getVendorCost = (cfId: string) => vendors.filter((v) => v.cashflow_id === cfId).reduce((sum, v) => sum + Number(v.cost_per_pax_incl_gst || 0), 0);
 
-  const calcTrip = (cf: any) => {
+  const calcTrip = (cf: CashflowRow) => {
     const vendorCostPerPax = getVendorCost(cf.id);
     const pax = cf.pax_count || 1;
     const totalVendor = vendorCostPerPax * pax;
@@ -83,7 +146,7 @@ const RevenueReport = () => {
 
   // Revenue by destination
   const byDest = cashflows.reduce((acc: Record<string, { revenue: number; trips: number; name: string }>, cf) => {
-    const destName = cf.destination?.name || "Unknown";
+    const destName = cf.destination_id ? destinationById.get(cf.destination_id) || "Unknown" : "Unknown";
     if (!acc[destName]) acc[destName] = { revenue: 0, trips: 0, name: destName };
     acc[destName].revenue += calcTrip(cf).sellingExGst;
     acc[destName].trips += 1;
