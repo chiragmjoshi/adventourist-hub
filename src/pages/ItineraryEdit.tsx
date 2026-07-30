@@ -79,7 +79,7 @@ const ItineraryEdit = () => {
   const [form, setForm] = useState<Record<string, any>>({
     headline: "", slug: "", about: "", destination_id: "", days: null, nights: null,
     price_per_person: null, best_months: [] as string[], themes: [] as string[],
-    suitable_for: [] as string[], destination_type: "", status: "draft",
+    suitable_for: [] as string[], destination_type: [] as string[], status: "draft",
     flights_included: false, stay_included: false, transfers_included: false,
     meals_included: false, breakfast_included: false, sightseeing_included: false,
     support_247: false, hero_image: "", gallery: [] as string[],
@@ -146,7 +146,9 @@ const ItineraryEdit = () => {
         best_months: monthsToNames(existing.best_months),
         themes: existing.themes || [],
         suitable_for: existing.suitable_for || [],
-        destination_type: existing.destination_type || "",
+        destination_type: Array.isArray(existing.destination_type)
+          ? existing.destination_type
+          : (existing.destination_type ? [existing.destination_type] : []),
         status: existing.status || "draft",
         flights_included: existing.flights_included || false,
         stay_included: existing.stay_included || false,
@@ -205,7 +207,9 @@ const ItineraryEdit = () => {
         best_months: monthsToNums(form.best_months),
         themes: form.themes,
         suitable_for: form.suitable_for,
-        destination_type: form.destination_type || null,
+        destination_type: Array.isArray(form.destination_type)
+          ? form.destination_type
+          : (form.destination_type ? [form.destination_type] : []),
         status: publish ? "published" : form.status,
         flights_included: form.flights_included,
         stay_included: form.stay_included,
