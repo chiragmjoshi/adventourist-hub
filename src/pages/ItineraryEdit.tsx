@@ -79,7 +79,7 @@ const ItineraryEdit = () => {
   const [form, setForm] = useState<Record<string, any>>({
     headline: "", slug: "", about: "", destination_id: "", days: null, nights: null,
     price_per_person: null, best_months: [] as string[], themes: [] as string[],
-    suitable_for: [] as string[], destination_type: "", status: "draft",
+    suitable_for: [] as string[], destination_type: [] as string[], status: "draft",
     flights_included: false, stay_included: false, transfers_included: false,
     meals_included: false, breakfast_included: false, sightseeing_included: false,
     support_247: false, hero_image: "", gallery: [] as string[],
