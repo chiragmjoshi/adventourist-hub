@@ -61,14 +61,14 @@
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/trips/enchanting-himachal-5-nights-6-days</loc>
-    <lastmod>2026-05-17</lastmod>
+    <loc>https://www.adventourist.in/trips/winter-wonderland-scandinavia-7-nights-8-days</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/trips/scenic-srilanka-5-nights-6-days</loc>
-    <lastmod>2026-05-17</lastmod>
+    <loc>https://www.adventourist.in/trips/colors-of-rajasthan-in-9-nights-10-days</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -175,12 +175,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/trips/colors-of-rajasthan-in-9-nights-10-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.adventourist.in/trips/unmatched-uttarakhand-trip-6-nights-7-days</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>weekly</changefreq>
@@ -272,12 +266,6 @@
   </url>
   <url>
     <loc>https://www.adventourist.in/trips/wonderful-washington-dc-in-5-nights-6-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/winter-wonderland-scandinavia-7-nights-8-days</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -487,7 +475,19 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.adventourist.in/trips/enchanting-himachal-5-nights-6-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.adventourist.in/trips/kailash-mansarovar-yatra-by-helicopter-8-nights-9-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/scenic-srilanka-5-nights-6-days</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
