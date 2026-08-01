@@ -9,10 +9,19 @@ import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import {
+  DEFAULT_REPORT_FROM,
+  DEFAULT_REPORT_TO,
+  effectiveDate,
+  fetchAll,
+  fetchCashflowVendors,
+  fetchCashflows,
+  inRange,
+} from "@/lib/reporting";
 
 const VendorReport = () => {
-  const [from, setFrom] = useState(new Date(2020, 0, 1));
-  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
+  const [from, setFrom] = useState(DEFAULT_REPORT_FROM);
+  const [to, setTo] = useState(DEFAULT_REPORT_TO);
   const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [cfVendors, setCfVendors] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
@@ -21,37 +30,19 @@ const VendorReport = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const { data: cf } = await supabase
-        .from("trip_cashflow")
-        .select("id, status, travel_start_date, booking_date, created_at, pax_count, destination_id");
-      setAllCashflows(cf || []);
-
-      const cfIds = (cf || []).map((c: any) => c.id);
-      let cv: any[] = [];
-      if (cfIds.length > 0) {
-        const { data } = await supabase
-          .from("trip_cashflow_vendors")
-          .select("*")
-          .in("cashflow_id", cfIds);
-        cv = data || [];
-      }
-      setCfVendors(cv);
-
-      const { data: v } = await supabase
-        .from("vendors")
-        .select("id, name, nick_name, services, is_active");
-      setVendors(v || []);
+      const cf = await fetchCashflows(
+        "id, status, travel_start_date, booking_date, created_at, pax_count, margin_percent, gst_billing, destination_id"
+      );
+      setAllCashflows(cf);
+      setCfVendors(await fetchCashflowVendors(cf.map((c: any) => c.id)));
+      setVendors(await fetchAll(() => supabase.from("vendors").select("id, name, nick_name, services, is_active")));
       setLoading(false);
     };
     fetch();
   }, []);
 
   const cashflows = useMemo(
-    () => allCashflows.filter((cf) => {
-      const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
-      const d = raw ? new Date(raw) : null;
-      return d && d >= from && d <= to;
-    }),
+    () => allCashflows.filter((cf) => inRange(effectiveDate(cf), from, to)),
     [allCashflows, from, to]
   );
 
