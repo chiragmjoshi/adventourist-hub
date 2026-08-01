@@ -1,39 +1,21 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
-import { getDestinationImage } from "@/site/lib/destinationImages";
-import heroImg from "@/assets/about-hero.jpg";
-
-const HERO_BG = heroImg;
-
-const destinations = [
-  { name: "Bali",       tagline: "Island of the Gods",       region: "Indonesia", image: getDestinationImage("bali") },
-  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",    region: "India",     image: getDestinationImage("leh ladakh") },
-  { name: "Singapore",  tagline: "Lion City",                region: "Southeast Asia", image: getDestinationImage("singapore") },
-  { name: "Dubai",      tagline: "City of Gold",             region: "UAE",       image: getDestinationImage("dubai") },
-];
 
 export default function HeroSection() {
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setCurrent((c) => (c + 1) % destinations.length), 6000);
-    return () => clearInterval(t);
-  }, []);
-
-  const dest = destinations[current];
-
   return (
     <section className="relative w-full min-h-[92vh] bg-abyss overflow-hidden -mt-16 lg:-mt-20">
       {/* Full-bleed background image (LCP candidate — eager, high priority) */}
       <img
-        src={HERO_BG}
+        src="/site-images/hero-home-1600.webp"
+        srcSet="/site-images/hero-home-800.webp 800w, /site-images/hero-home-1600.webp 1600w"
+        sizes="100vw"
+        width={1600}
+        height={906}
         alt=""
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover"
         loading="eager"
-        decoding="async"
+        decoding="sync"
         // @ts-expect-error fetchpriority is a valid HTML attribute, React types lag
         fetchpriority="high"
       />
