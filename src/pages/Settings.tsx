@@ -613,6 +613,30 @@ const Settings = () => {
           </Card>
 
           {/* Zoho */}
+          {/* Resend */}
+          <Card className="border-border/50 shadow-none">
+            <CardContent className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-blaze/10 flex items-center justify-center text-lg">✉️</div>
+                  <div>
+                    <p className="text-sm font-medium">Email (Resend API)</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isResendEnabled ? "Active for automation emails" : "Connected — available as a backup sender"}
+                    </p>
+                  </div>
+                </div>
+                <Badge className={isResendEnabled ? "bg-ridge/20 text-ridge text-[10px]" : "bg-muted text-muted-foreground text-[10px]"}>
+                  {isResendEnabled ? "Active ✅" : "Standby"}
+                </Badge>
+              </div>
+              <div className="flex justify-end mt-3 pt-3 border-t">
+                <Link to="/admin/settings?tab=automations"><Button variant="outline" size="sm" className="text-xs">Configure →</Button></Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Zoho */}
           <Card className="border-border/50 shadow-none">
             <CardContent className="px-5 py-4">
               <div className="flex items-center gap-3">
