@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Route, Navigate, useParams, useLocation } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
+import { getTravelStoryBySlug } from "@/site/lib/api";
 
 /**
  * Legacy URL redirects for old WordPress / pre-rebuild paths.
@@ -8,12 +9,6 @@ import NotFound from "@/pages/NotFound";
  * these rules in Cloudflare Bulk Redirects. Cross-host rules
  * (apex→www, blog.* subdomain) MUST live in Cloudflare.
  */
-
-function RedirectParam({ to }: { to: string }) {
-  const params = useParams();
-  const target = to.replace(/:(\w+)/g, (_, k) => (params as Record<string, string>)[k] ?? "");
-  return <Navigate to={target} replace />;
-}
 
 function RedirectStatic({ to }: { to: string }) {
   return <Navigate to={to} replace />;
@@ -135,15 +130,24 @@ function RootSlugRedirect() {
   return <Navigate to={`/trips/${mapped}`} replace />;
 }
 
-// Old /story/ slug map
+/**
+ * Legacy blog / story slug aliases → the slug that actually exists in
+ * `travel_stories`. Verified against the live table (Aug 2026).
+ */
 const STORY_MAP: Record<string, string> = {
-  "camping-tips": "27-camping-tips",
+  "camping-tips": "camping-tips",
+  "27-camping-tips": "camping-tips",
   "we-bet-you-didn-t-know-about-these-intriguing-facts-about-ladakh": "interesting-facts-about-ladakh",
+  "interesting-facts-about-leh-ladakh": "interesting-facts-about-ladakh",
+  "things-to-do-in-jodhpur-rajasthan": "places-to-visit-in-jodhpur",
+  "6-reasons-to-visit-himachal-pradesh": "must-visit-places-in-himachal-pradesh",
+  "vacations-in-the-valleys-of-bhutan": "visit-thimphu-in-bhutan",
+  "things-to-do-in-udaipur": "best-things-to-do-in-udaipur",
 };
 
 function StoryRedirect() {
   const { slug = "" } = useParams();
-  const mapped = STORY_MAP[slug];
+  const mapped = STORY_MAP[normaliseSlug(slug)];
   return <Navigate to={mapped ? `/travel-stories/${mapped}` : "/travel-stories"} replace />;
 }
 
@@ -169,17 +173,39 @@ function StorySlugRedirect() {
   return <Navigate to={`/travel-stories/${clean}`} replace />;
 }
 
-// Catches /travel-blog/:slug/1000, /travel-blog/:slug//1000, /travel-blog/:slug/feed, etc.
+/**
+ * Catches every legacy /travel-blog/:slug shape (incl. /1000, //1000, /feed).
+ * Resolves the slug against the live `travel_stories` table before forwarding,
+ * so an unmapped legacy slug lands on the stories listing instead of creating
+ * a fresh soft-404 at /travel-stories/<dead-slug>.
+ */
 function BlogPostRedirect() {
   const { slug = "" } = useParams();
   const location = useLocation();
-  // Strip trailing /1000, //1000, /feed, /feed/
-  let cleanSlug = slug.replace(/\/+$/g, "");
-  // If slug itself is empty or junk, fall back to listing
-  if (!cleanSlug || cleanSlug === "1000" || cleanSlug === "feed") {
-    return <Navigate to="/travel-stories" replace />;
-  }
-  return <Navigate to={`/travel-stories/${cleanSlug}`} replace state={{ from: location.pathname }} />;
+  const raw = normaliseSlug(slug.replace(/\/+$/g, ""));
+  const candidate = STORY_MAP[raw] ?? raw;
+  const [target, setTarget] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!candidate || candidate === "1000" || candidate === "feed" || candidate === "amp") {
+      setTarget("/travel-stories");
+      return;
+    }
+    getTravelStoryBySlug(candidate)
+      .then((story) => {
+        if (!cancelled) setTarget(story ? `/travel-stories/${candidate}` : "/travel-stories");
+      })
+      .catch(() => {
+        if (!cancelled) setTarget("/travel-stories");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [candidate]);
+
+  if (!target) return null;
+  return <Navigate to={target} replace state={{ from: location.pathname }} />;
 }
 
 /**
@@ -238,8 +264,8 @@ export function legacyRedirectRoutes() {
       <Route path="/travel-blog/:slug/feed/" element={<BlogPostRedirect />} />
 
       {/* Standard post slug rename — must come last among /travel-blog/ rules */}
-      <Route path="/travel-blog/:slug" element={<RedirectParam to="/travel-stories/:slug" />} />
-      <Route path="/travel-blog/:slug/*" element={<RedirectParam to="/travel-stories/:slug" />} />
+      <Route path="/travel-blog/:slug" element={<BlogPostRedirect />} />
+      <Route path="/travel-blog/:slug/*" element={<BlogPostRedirect />} />
 
       {/* Itineraries */}
       <Route path="/itinerary" element={<RedirectStatic to="/trips" />} />

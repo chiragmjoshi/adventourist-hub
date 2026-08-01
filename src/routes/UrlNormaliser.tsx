@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 /**
  * Strips legacy WordPress junk from incoming URLs before the router
@@ -56,12 +56,22 @@ export function cleanUrl(pathname: string, search: string): string | null {
 
 export default function UrlNormaliser() {
   const { pathname, search } = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const next = cleanUrl(pathname, search);
-    if (next) window.history.replaceState(window.history.state, "", next + window.location.hash);
-  }, [pathname, search]);
+    if (!next) return;
+    const nextPath = next.split("?")[0];
+    if (nextPath !== pathname) {
+      // The path itself changed (duplicate slashes, /feed, /1000, trailing
+      // slash). replaceState alone would leave the router matching the old,
+      // unroutable path — navigate so the redirect routes get a clean match.
+      navigate(next + window.location.hash, { replace: true });
+      return;
+    }
+    window.history.replaceState(window.history.state, "", next + window.location.hash);
+  }, [pathname, search, navigate]);
 
   return null;
 }
