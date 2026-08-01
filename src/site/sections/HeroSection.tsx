@@ -81,58 +81,9 @@ export default function HeroSection() {
           </a>
         </div>
 
-        {/* Destination strip — 200px image carousel */}
-        <div className="relative h-[200px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={`img-${current}`}
-              src={dest.image}
-              alt={`${dest.name} — ${dest.tagline}`}
-              initial={{ opacity: 0, scale: 1.06 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.7 }}
-              className="absolute inset-0 w-full h-full object-cover"
-              loading={current === 0 ? "eager" : "lazy"}
-              decoding="async"
-              fetchPriority={current === 0 ? "high" : "low"}
-              width={800}
-              height={400}
-            />
-          </AnimatePresence>
-          <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/40 to-abyss/10" />
-
-          <div className="relative z-10 h-full flex items-end justify-between gap-4 p-5 lg:p-6">
-            <div>
-              <p className="font-body text-white/70 text-[11px] uppercase tracking-[0.2em] mb-1">
-                Now showing · {dest.region}
-              </p>
-              <p className="font-display font-bold text-white text-2xl sm:text-3xl">
-                {dest.name}{" "}
-                <span className="text-white/70 font-normal italic text-base sm:text-lg">
-                  — {dest.tagline}
-                </span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 pb-1">
-              {destinations.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrent(i)}
-                  aria-label={`Show ${destinations[i].name}`}
-                  className="p-2 -m-2"
-                >
-                  <span
-                    className={`block h-1.5 rounded-full transition-all duration-300 ${
-                      i === current ? "w-10 bg-blaze" : "w-1.5 bg-white/40 hover:bg-white/70"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <p className="font-body text-white/60 text-xs sm:text-sm tracking-[0.2em] uppercase">
+          Bali · Leh Ladakh · Singapore · Dubai · Thailand · Kerala
+        </p>
       </div>
     </section>
   );
