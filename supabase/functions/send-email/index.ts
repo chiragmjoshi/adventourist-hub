@@ -1,5 +1,5 @@
-import nodemailer from "npm:nodemailer@6.9.14";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { loadEmailCfg, sendEmailWithFallback } from "../_shared/emailSender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,63 +62,26 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
-    const { data: rows, error: settingsErr } = await admin
-      .from("automation_settings")
-      .select("key,value")
-      .in("key", [
-        "smtp_host",
-        "smtp_port",
-        "smtp_username",
-        "smtp_password",
-        "email_from_name",
-        "email_from_address",
-      ]);
-    if (settingsErr) throw settingsErr;
+    const cfg = await loadEmailCfg(admin);
 
-    const cfg: Record<string, string> = {};
-    for (const r of rows ?? []) cfg[r.key] = r.value ?? "";
+    const outcome = await sendEmailWithFallback(cfg, { to, subject, html, text });
 
-    const host = cfg.smtp_host?.trim();
-    const port = parseInt(cfg.smtp_port || "587", 10);
-    const user = cfg.smtp_username?.trim();
-    const pass = cfg.smtp_password?.trim();
-    const fromName = cfg.email_from_name?.trim() || "Adventourist";
-    const fromAddress = cfg.email_from_address?.trim() || user;
-
-    if (!host || !user || !pass) {
+    if (!outcome.success) {
       return new Response(
-        JSON.stringify({
-          error:
-            "SMTP not configured. Please set SMTP host, username and password in Settings → Email.",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        JSON.stringify({ success: false, error: outcome.error, attempts: outcome.attempts }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-
-    const info = await transporter.sendMail({
-      from: `"${fromName}" <${fromAddress}>`,
-      to,
-      subject,
-      html: html || undefined,
-      text: text || (html ? html.replace(/<[^>]+>/g, " ") : undefined),
-    });
-
     return new Response(
-      JSON.stringify({ success: true, messageId: info.messageId, to }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({
+        success: true,
+        provider: outcome.provider,
+        messageId: outcome.messageId,
+        attempts: outcome.attempts,
+        to,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
     console.error("send-email error:", err);
