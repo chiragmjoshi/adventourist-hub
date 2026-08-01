@@ -129,9 +129,13 @@ const App = () => {
 
     // Only run automation worker on admin/preview hosts — never on the public site.
     if (kind === "public" && !isAdminPath(window.location.pathname)) return;
-    processAutomationQueue();
-    const interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    // Dynamic import keeps the automation engine out of the initial bundle.
+    import("./services/automationEngine").then(({ processAutomationQueue }) => {
+      processAutomationQueue();
+      interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
+    });
+    return () => { if (interval) clearInterval(interval); };
   }, []);
 
   return (
