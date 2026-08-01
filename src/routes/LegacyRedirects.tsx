@@ -270,8 +270,8 @@ export function legacyRedirectRoutes() {
       <Route path="/travel-blog/:slug/feed/" element={<BlogPostRedirect />} />
 
       {/* Standard post slug rename — must come last among /travel-blog/ rules */}
-      <Route path="/travel-blog/:slug" element={<RedirectParam to="/travel-stories/:slug" />} />
-      <Route path="/travel-blog/:slug/*" element={<RedirectParam to="/travel-stories/:slug" />} />
+      <Route path="/travel-blog/:slug" element={<BlogPostRedirect />} />
+      <Route path="/travel-blog/:slug/*" element={<BlogPostRedirect />} />
 
       {/* Itineraries */}
       <Route path="/itinerary" element={<RedirectStatic to="/trips" />} />
