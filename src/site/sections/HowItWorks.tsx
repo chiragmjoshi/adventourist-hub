@@ -39,7 +39,7 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function HowItWorks() {
   return (
-    <section className="bg-lagoon topo-texture py-20 lg:py-28 overflow-hidden">
+    <section className="bg-horizon topo-texture py-20 lg:py-28 overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <motion.div
@@ -49,7 +49,7 @@ export default function HowItWorks() {
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, ease }}
         >
-          <p className="font-body text-xs font-semibold uppercase tracking-widest text-abyss/50 mb-3">How It Works</p>
+          <p className="font-body text-xs font-semibold uppercase tracking-widest text-abyss/60 mb-3">How It Works</p>
           <h2 className="font-display font-black text-4xl lg:text-5xl text-abyss">
             Your vacation, <span className="text-blaze italic">planned by a real expert.</span>
           </h2>
@@ -58,7 +58,7 @@ export default function HowItWorks() {
         <div className="relative grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-6">
           {/* Connector line — sits behind, runs from middle of step 1 circle to middle of step 3 circle */}
           <div
-            className="hidden lg:block absolute top-8 left-[16.66%] right-[16.66%] border-t-2 border-dashed border-abyss/25 pointer-events-none"
+            className="hidden lg:block absolute top-8 left-[16.66%] right-[16.66%] border-t-2 border-dashed border-abyss/30 pointer-events-none"
             aria-hidden="true"
           />
 
@@ -71,12 +71,12 @@ export default function HowItWorks() {
               transition={{ duration: 0.55, delay: i * 0.12, ease }}
               className="relative z-10 flex flex-col items-center text-center"
             >
-              <div className="w-16 h-16 rounded-full bg-abyss flex items-center justify-center mb-6 shadow-lg shadow-black/20 ring-4 ring-lagoon">
+              <div className="w-16 h-16 rounded-full bg-abyss flex items-center justify-center mb-6 shadow-lg shadow-black/20 ring-4 ring-horizon">
                 <span className="font-display font-black text-white text-xl">{s.number}</span>
               </div>
-              <div className="text-abyss/60 mb-4">{s.icon}</div>
+              <div className="text-abyss/70 mb-4">{s.icon}</div>
               <h3 className="font-display font-bold text-abyss text-xl mb-3">{s.title}</h3>
-              <p className="font-body text-abyss/70 text-sm leading-relaxed max-w-xs">{s.desc}</p>
+              <p className="font-body text-abyss/75 text-sm leading-relaxed max-w-xs">{s.desc}</p>
             </motion.div>
           ))}
         </div>
