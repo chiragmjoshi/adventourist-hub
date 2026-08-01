@@ -6,6 +6,7 @@ import TripImage from "@/site/ui/TripImage";
 import {
   getDestinationBySlug,
   getItinerariesByDestinationId,
+  getPublicDestinations,
   getCMSImageUrl,
   formatINRPrice,
   type CMSDestinationFull,
@@ -21,7 +22,18 @@ export default function DestinationDetail() {
   const { slug = "" } = useParams();
   const [dest, setDest] = useState<CMSDestinationFull | null>(null);
   const [trips, setTrips] = useState<CMSItinerary[]>([]);
+  const [others, setOthers] = useState<CMSDestinationFull[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    getPublicDestinations().then((all) => {
+      if (alive) setOthers(all);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
