@@ -775,13 +775,13 @@
     <priority>0.75</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/travel-stories/hemis-festival</loc>
+    <loc>https://www.adventourist.in/travel-stories/local-festivals-of-udaipur</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/travel-stories/20-best-places-to-visit-in-rajasthan</loc>
+    <loc>https://www.adventourist.in/travel-stories/famous-festivals-of-rajasthan</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -800,6 +800,42 @@
   </url>
   <url>
     <loc>https://www.adventourist.in/travel-stories/ladakh-the-next-union-territory</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/things-to-do-in-srilanka</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/places-to-visit-in-paro</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/shanti-stupa-leh-ladakh</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/maldives-package</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/things-to-do-in-kasol</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/20-best-places-to-visit-in-rajasthan</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -859,7 +895,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/travel-stories/things-to-do-in-kasol</loc>
+    <loc>https://www.adventourist.in/travel-stories/luxury-wellness-retreats-bali-from-india</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -949,31 +985,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/travel-stories/things-to-do-in-srilanka</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/places-to-visit-in-paro</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/shanti-stupa-leh-ladakh</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/maldives-package</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/luxury-wellness-retreats-bali-from-india</loc>
+    <loc>https://www.adventourist.in/travel-stories/hemis-festival</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -1009,42 +1021,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/travel-stories/treks-in-leh-ladakh</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/things-to-do-tallinn</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/11-offbeat-places-in-himachal</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/places-to-visit-in-kashmir</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/leh-ladakh-road-trip</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/travel-stories/all-about-magnetic-hill-in-leh</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.adventourist.in/travel-stories/5-awesome-things-to-do-in-punakha</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>monthly</changefreq>
@@ -1076,6 +1052,18 @@
   </url>
   <url>
     <loc>https://www.adventourist.in/travel-stories/history-culture-and-festivals-of-leh</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/things-to-do-tallinn</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/treks-in-leh-ladakh</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -1148,6 +1136,30 @@
   </url>
   <url>
     <loc>https://www.adventourist.in/travel-stories/camping-tips</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/11-offbeat-places-in-himachal</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/places-to-visit-in-kashmir</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/leh-ladakh-road-trip</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/travel-stories/all-about-magnetic-hill-in-leh</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
