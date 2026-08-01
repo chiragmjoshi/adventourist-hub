@@ -1,34 +1,50 @@
-# Search Console Property Cleanup
+## Goal
 
-Goal: one authoritative Search Console property (`adventourist.in` domain property), with all site signals consistently pointing at `https://www.adventourist.in`.
+Clean up the Google Search Console account for adventourist.in. All three actions are account-level changes made through the Search Console connector — no code changes to the app.
 
-## Current state (verified in the codebase)
+## Actions
 
-All canonical signals already agree on `https://www.adventourist.in`:
-- `src/components/SEO.tsx` — `SITE_URL` and OG image use `www`
-- `index.html` — Organization/WebSite JSON-LD, OG and Twitter images use `www`
-- `scripts/generate-sitemap.ts` — `BASE_URL` is `https://www.adventourist.in`
-- `public/robots.txt` — `Sitemap:` and `Host:` both point to `https://www.adventourist.in`
+### 1. Remove 3 stale WordPress sitemaps
 
-So no canonical-domain code change is required. The cleanup is mostly on the Search Console side, plus two small hygiene items.
+Delete these entries from the `adventourist.in` domain property (all currently "Couldn't fetch"):
 
-## Steps you take in Search Console (I can't do these)
+```text
+https://blog.adventourist.in/sitemap_index.xml            (21 Mar 2026)
+https://www.adventourist.in/travel-blog/post-sitemap.xml  (31 Mar 2022)
+https://adventourist.in/travel-blog/sitemap_index.xml     (27 Oct 2020)
+```
 
-1. Keep `adventourist.in` (domain property) as the primary. It covers http/https, www/non-www, and all subdomains.
-2. In the domain property, submit `https://www.adventourist.in/sitemap.xml` and confirm it's the only sitemap listed. Remove any stale sitemaps (old WordPress `sitemap_index.xml`, `post-sitemap.xml`, etc.).
-3. Leave the URL-prefix property `https://www.adventourist.in/` in place for ~30 days as a read-only cross-check, then remove it (Settings → Remove property). Removing it deletes nothing on the site and does not affect indexing.
-4. Do not verify or add properties for `blog.`, `uat.`, `cms.`, or `staging.` — those hostnames should be removed from public DNS instead (still outstanding from the earlier 404 work).
-5. If Google Analytics / Looker Studio is linked to the URL-prefix property, relink it to the domain property before removing it, or historical reporting connections break.
+The live sitemap `https://www.adventourist.in/sitemap.xml` (194 URLs, status Success) stays untouched and remains the only submitted sitemap. No resubmission needed.
 
-## Work I do in the app
+### 2. Re-associate GA4
 
-1. **Sitemap sanity pass** — regenerate `public/sitemap.xml` and confirm every URL is `https://www.adventourist.in/...`, no `http`, no bare-apex, no subdomain entries, no malformed slugs.
-2. **Self-referencing canonical audit** — spot-check the main route families (home, `/destinations/:slug`, `/trips/:slug`, `/travel-stories/:slug`) in the running preview and confirm each emits exactly one `<link rel="canonical">` on the `www` host, matching the sitemap URL exactly (trailing-slash form included).
-3. **Verification tag safety** — confirm the existing `google-site-verification` meta tag in `index.html` (if present) is retained, so removing the URL-prefix property doesn't accidentally unverify the domain property. Domain properties verify by DNS TXT, so I'll also flag if the DNS TXT record is the only proof of ownership.
-4. **Report** — a short list of any URL where the canonical, sitemap entry, and live host disagree, with the fix applied.
+Remove the existing Google Analytics association (stream "www.adventourist.in - GA4", currently labelled with the stale `https://adventourist.in/travel-blog/` URL) and create a fresh association pointing at the canonical property.
+
+Important: re-association sends an authorization request that **you must accept from the Google Analytics side**. Until you accept, Search Console data will not flow into GA4. I'll tell you exactly when to go accept it.
+
+No Looker Studio action — Looker connects through its own OAuth flow, so there is nothing linked here to repair.
+
+### 3. Delete the URL-prefix property
+
+Permanently delete `https://www.adventourist.in/` (URL-prefix). The `adventourist.in` domain property remains and already covers every protocol, subdomain, and path.
+
+Consequences to be aware of:
+- Historical performance data held only in the prefix property is lost permanently.
+- Any Looker Studio report or third-party tool pointing at the prefix property will break and must be repointed at the domain property.
+- The `google-site-verification` meta tag in `index.html` backed only the prefix property, so it becomes inert. The `_google` DNS TXT record at Cloudflare backs the domain property and **must not be removed**.
+
+## Order of operations
+
+1. Remove the 3 stale sitemaps.
+2. Re-associate GA4, then hand off the authorization step to you.
+3. Delete the URL-prefix property last, so nothing else depends on it mid-flight.
+4. Re-read the domain property afterwards and report the final state: submitted sitemaps, associations, verification method.
 
 ## Technical notes
 
-- Domain-property verification is DNS TXT based; the meta tag only backs the URL-prefix property. Removing the prefix property is safe as long as the DNS TXT record stays.
-- Data does not merge across properties. The domain property's history starts from its own verification date, so expect the graph to look shorter than the prefix property's — this is normal, not a loss of rankings.
-- Any remaining apex → www consolidation must happen as a real 301 at Cloudflare; the app can only emit canonicals, not status codes.
+Every step runs through the Search Console connector against the verified `sc-domain:adventourist.in` property, resolved from a live property listing at execution time rather than a hardcoded identifier. Sitemap removal uses `DELETE /webmasters/v3/sites/{site}/sitemaps/{sitemapUrl}`; property deletion uses `DELETE /webmasters/v3/sites/{site}`. If the connector's granted scopes are read-only, the write calls will return 403 — in that case I'll stop and ask you to reconnect with write scope rather than retrying.
+
+## Out of scope
+
+- No app code, sitemap generator, robots.txt, or canonical changes — the app side was already verified clean.
+- DNS changes for `uat.`, `cms.`, and `blog.` subdomains and the Cloudflare bulk-redirect CSV upload remain your manual tasks.
