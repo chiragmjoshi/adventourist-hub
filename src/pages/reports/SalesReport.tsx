@@ -33,7 +33,7 @@ const SalesReport = () => {
   const [prevLeads, setPrevLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLeads = async () => {
+  const loadLeads = async () => {
     setLoading(true);
     setLeads(await fetchLeads(from, to));
 
@@ -44,7 +44,7 @@ const SalesReport = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchLeads(); }, [from, to]);
+  useEffect(() => { loadLeads(); }, [from, to]);
 
   const kpis = [
     { label: "Total Leads", value: leads.length, prev: prevLeads.length },
