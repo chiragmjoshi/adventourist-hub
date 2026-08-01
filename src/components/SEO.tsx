@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 
 interface SEOProps {
@@ -32,6 +33,27 @@ const SEO = ({
     : `${SITE_URL}${canonical}`;
   const image = ogImage || DEFAULT_OG_IMAGE;
   const schemas = Array.isArray(schema) ? schema : schema ? [schema] : [];
+
+  // The static index.html <head> ships sitewide fallbacks for non-JS social
+  // crawlers. Once Helmet takes over, drop the unmanaged duplicates so the page
+  // exposes exactly one description / og:* / robots tag to JS-executing crawlers.
+  useEffect(() => {
+    const selectors = [
+      'meta[name="description"]',
+      'meta[property="og:title"]',
+      'meta[property="og:description"]',
+      'meta[property="og:url"]',
+      'meta[property="og:image"]',
+      'meta[name="twitter:title"]',
+      'meta[name="twitter:description"]',
+      'meta[name="twitter:image"]',
+    ].join(",");
+    document.head
+      .querySelectorAll<HTMLMetaElement>(selectors)
+      .forEach((el) => {
+        if (!el.hasAttribute("data-rh") && !el.id) el.remove();
+      });
+  }, []);
 
   return (
     <Helmet>
