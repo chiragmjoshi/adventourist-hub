@@ -131,9 +131,14 @@ export default function StoryDetail() {
   if (story === null) return <NotFound />;
 
   const cover = travelStoryImage(story);
-  const coverAbs = cover.startsWith("http")
-    ? cover
-    : `https://www.adventourist.in${cover}`;
+  // Social crawlers are most reliable with JPEG; local story covers ship as
+  // both .webp (page render) and .jpg (share preview).
+  const coverShare = cover.startsWith("/site-images/stories/")
+    ? cover.replace(/\.webp$/, ".jpg")
+    : cover;
+  const coverAbs = coverShare.startsWith("http")
+    ? coverShare
+    : `https://www.adventourist.in${coverShare}`;
   const coverAlt = travelStoryAlt(story);
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareText = `${story.title} — Adventourist`;
