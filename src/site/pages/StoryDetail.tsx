@@ -177,7 +177,7 @@ export default function StoryDetail() {
     <SiteLayout
       title={story.seo_title ?? `${story.title} | Adventourist`}
       description={story.seo_description ?? story.excerpt ?? undefined}
-      ogImage={cover}
+      ogImage={coverAbs}
       ogType="article"
       jsonLd={jsonLd}
     >
@@ -185,7 +185,7 @@ export default function StoryDetail() {
         title={story.seo_title ?? `${story.title} — Adventourist`}
         description={story.seo_description ?? story.excerpt ?? `${story.title} — a travel story from Adventourist.`}
         canonical={`/travel-stories/${story.slug}`}
-        ogImage={cover}
+        ogImage={coverAbs}
         ogType="article"
         schema={jsonLd as any}
       />
