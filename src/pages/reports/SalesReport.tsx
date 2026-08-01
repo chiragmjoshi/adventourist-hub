@@ -1,17 +1,23 @@
 import { useState, useEffect } from "react";
-import { subMonths, format } from "date-fns";
 import { Download, TrendingUp, TrendingDown, ArrowLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
-import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 
 import { formatLabel } from "@/lib/formatLabel";
+import {
+  DEFAULT_REPORT_FROM,
+  DEFAULT_REPORT_TO,
+  fetchLeads,
+  FUNNEL_STATUSES,
+  isClosed,
+  statusIs,
+} from "@/lib/reporting";
 
-const STATUSES = ["New Lead", "Contacted", "Quote Sent", "File Closed"] as const;
+const STATUSES = FUNNEL_STATUSES;
 const STATUS_LABELS: Record<string, string> = {
   "New Lead": "New Leads",
   "Contacted": "Contacted",
@@ -21,44 +27,42 @@ const STATUS_LABELS: Record<string, string> = {
 const FUNNEL_COLORS = ["hsl(var(--blaze))", "hsl(var(--horizon))", "hsl(var(--lagoon))", "hsl(var(--ridge))"];
 
 const SalesReport = () => {
-  const [from, setFrom] = useState(subMonths(new Date(), 12));
-  const [to, setTo] = useState(new Date());
+  const [from, setFrom] = useState(DEFAULT_REPORT_FROM);
+  const [to, setTo] = useState(DEFAULT_REPORT_TO);
   const [leads, setLeads] = useState<any[]>([]);
   const [prevLeads, setPrevLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLeads = async () => {
+  const loadLeads = async () => {
     setLoading(true);
-    const { data } = await supabase.from("leads").select("*").gte("created_at", from.toISOString()).lte("created_at", to.toISOString());
-    setLeads(data || []);
+    setLeads(await fetchLeads(from, to));
 
     const diff = to.getTime() - from.getTime();
     const prevFrom = new Date(from.getTime() - diff);
     const prevTo = new Date(to.getTime() - diff);
-    const { data: prev } = await supabase.from("leads").select("*").gte("created_at", prevFrom.toISOString()).lte("created_at", prevTo.toISOString());
-    setPrevLeads(prev || []);
+    setPrevLeads(await fetchLeads(prevFrom, prevTo));
     setLoading(false);
   };
 
-  useEffect(() => { fetchLeads(); }, [from, to]);
+  useEffect(() => { loadLeads(); }, [from, to]);
 
   const kpis = [
     { label: "Total Leads", value: leads.length, prev: prevLeads.length },
     ...STATUSES.map((s) => ({
       label: STATUS_LABELS[s],
-      value: leads.filter((l) => l.sales_status === s).length,
-      prev: prevLeads.filter((l) => l.sales_status === s).length,
+      value: leads.filter((l) => statusIs(l, s)).length,
+      prev: prevLeads.filter((l) => statusIs(l, s)).length,
     })),
     {
       label: "Converted (incl. Query Closed)",
-      value: leads.filter((l) => l.sales_status === "File Closed" || l.disposition === "Query Closed").length,
-      prev: prevLeads.filter((l) => l.sales_status === "File Closed" || l.disposition === "Query Closed").length,
+      value: leads.filter(isClosed).length,
+      prev: prevLeads.filter(isClosed).length,
     },
   ];
 
   const funnelData = STATUSES.map((s, i) => ({
     stage: STATUS_LABELS[s],
-    count: leads.filter((l) => l.sales_status === s).length,
+    count: leads.filter((l) => statusIs(l, s)).length,
     fill: FUNNEL_COLORS[i],
   }));
 

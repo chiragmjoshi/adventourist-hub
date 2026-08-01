@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import { calcTrip, fetchAll, fetchCashflowVendors, vendorCostMap } from "@/lib/reporting";
 
 const TripOperationsReport = () => {
   const [cashflows, setCashflows] = useState<any[]>([]);
@@ -20,24 +21,22 @@ const TripOperationsReport = () => {
     const fetch = async () => {
       setLoading(true);
       const today = new Date().toISOString().split("T")[0];
-      const { data: cf } = await supabase
-        .from("trip_cashflow")
-        .select("*, destination:destinations(name), lead:leads(name, mobile)")
-        .gte("travel_start_date", today)
-        .order("travel_start_date", { ascending: true });
-      setCashflows(cf || []);
-
-      const cfIds = (cf || []).map((c: any) => c.id);
-      if (cfIds.length > 0) {
-        const { data: v } = await supabase
-          .from("trip_cashflow_vendors")
-          .select("cashflow_id, cost_per_pax_incl_gst")
-          .in("cashflow_id", cfIds);
-        setCfVendors(v || []);
-      }
-
-      const { data: u } = await supabase.from("users").select("id, name");
-      setUsers(u || []);
+      // trip_cashflow has no FK to destinations/leads, so names are joined client-side.
+      const [cf, dests, u] = await Promise.all([
+        fetchAll(() =>
+          supabase
+            .from("trip_cashflow")
+            .select("*")
+            .gte("travel_start_date", today)
+            .order("travel_start_date", { ascending: true })
+        ),
+        fetchAll(() => supabase.from("destinations").select("id, name")),
+        fetchAll(() => supabase.from("users").select("id, name")),
+      ]);
+      const destName = new Map<string, string>(dests.map((d: any) => [d.id, d.name]));
+      setCashflows(cf.map((c: any) => ({ ...c, destination_name: destName.get(c.destination_id) || null })));
+      setCfVendors(await fetchCashflowVendors(cf.map((c: any) => c.id), "cashflow_id, cost_per_pax_incl_gst"));
+      setUsers(u);
       setLoading(false);
     };
     fetch();
@@ -49,19 +48,9 @@ const TripOperationsReport = () => {
     return map;
   }, [users]);
 
-  const vendorCostByCf = useMemo(() => {
-    const map: Record<string, number> = {};
-    cfVendors.forEach((v) => {
-      map[v.cashflow_id] = (map[v.cashflow_id] || 0) + Number(v.cost_per_pax_incl_gst || 0);
-    });
-    return map;
-  }, [cfVendors]);
+  const vendorCostByCf = useMemo(() => vendorCostMap(cfVendors), [cfVendors]);
 
-  const calcSelling = (cf: any) => {
-    const vc = (vendorCostByCf[cf.id] || 0) * (cf.pax_count || 1);
-    const mp = Number(cf.margin_percent || 0);
-    return vc + vc * (mp / 100);
-  };
+  const calcSelling = (cf: any) => calcTrip(cf, vendorCostByCf.get(cf.id) ?? 0).sellingExGst;
 
   const today = new Date();
   const in30 = addDays(today, 30);
@@ -157,8 +146,8 @@ const TripOperationsReport = () => {
                   ) : cashflows.map((cf) => (
                     <TableRow key={cf.id}>
                       <TableCell className="font-mono text-xs">{cf.cashflow_code || "—"}</TableCell>
-                      <TableCell className="font-medium">{cf.traveller_name || cf.lead?.name || "—"}</TableCell>
-                      <TableCell>{cf.destination?.name || "—"}</TableCell>
+                      <TableCell className="font-medium">{cf.traveller_name || "—"}</TableCell>
+                      <TableCell>{cf.destination_name || "—"}</TableCell>
                       <TableCell className={departureColor(cf.travel_start_date)}>
                         {cf.travel_start_date ? format(new Date(cf.travel_start_date), "dd MMM yyyy") : "—"}
                       </TableCell>

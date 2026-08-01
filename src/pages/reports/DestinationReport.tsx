@@ -8,10 +8,23 @@ import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import {
+  calcTrip,
+  DEFAULT_REPORT_FROM,
+  DEFAULT_REPORT_TO,
+  effectiveDate,
+  fetchAll,
+  fetchCashflowVendors,
+  fetchCashflows,
+  fetchLeads,
+  inRange,
+  isClosed,
+  vendorCostMap,
+} from "@/lib/reporting";
 
 const DestinationReport = () => {
-  const [from, setFrom] = useState(new Date(2020, 0, 1));
-  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
+  const [from, setFrom] = useState(DEFAULT_REPORT_FROM);
+  const [to, setTo] = useState(DEFAULT_REPORT_TO);
   const [leads, setLeads] = useState<any[]>([]);
   const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [cfVendors, setCfVendors] = useState<any[]>([]);
@@ -22,52 +35,48 @@ const DestinationReport = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const [{ data: l }, { data: d }, { data: cf }] = await Promise.all([
-        supabase.from("leads").select("*, destination:destinations(name)").gte("created_at", from.toISOString()).lte("created_at", to.toISOString()),
-        supabase.from("destinations").select("id, name"),
-        supabase.from("trip_cashflow").select("*, destination:destinations(name)"),
+      // trip_cashflow has no FK to destinations, so the name is joined client-side.
+      const [l, d, cf] = await Promise.all([
+        fetchLeads(from, to),
+        fetchAll(() => supabase.from("destinations").select("id, name")),
+        fetchCashflows(),
       ]);
-      setLeads(l || []);
-      setDestinations(d || []);
-      setAllCashflows(cf || []);
-      const cfIds = (cf || []).map((c: any) => c.id);
-      if (cfIds.length > 0) {
-        const { data: v } = await supabase.from("trip_cashflow_vendors").select("*").in("cashflow_id", cfIds);
-        setCfVendors(v || []);
-      }
+      setLeads(l);
+      setDestinations(d);
+      setAllCashflows(cf);
+      setCfVendors(await fetchCashflowVendors(cf.map((c: any) => c.id)));
       setLoading(false);
     };
     fetch();
   }, [from, to]);
 
+  const destNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    destinations.forEach((d: any) => map.set(d.id, d.name));
+    return map;
+  }, [destinations]);
+
   const cashflows = useMemo(
-    () => allCashflows.filter((cf) => {
-      const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
-      const d = raw ? new Date(raw) : null;
-      return d && d >= from && d <= to;
-    }),
+    () => allCashflows.filter((cf) => inRange(effectiveDate(cf), from, to)),
     [allCashflows, from, to]
   );
 
-  const getVendorCost = (cfId: string) => cfVendors.filter((v) => v.cashflow_id === cfId).reduce((s, v) => s + Number(v.cost_per_pax_incl_gst || 0), 0);
+  const costByCf = useMemo(() => vendorCostMap(cfVendors), [cfVendors]);
 
   // Build destination table
   const destMap: Record<string, { name: string; leads: number; closed: number; revenue: number; margin: number }> = {};
   leads.forEach((l) => {
-    const name = l.destination?.name || "Unknown";
+    const name = (l.destination_id ? destNameById.get(l.destination_id) : null) || "Unknown";
     if (!destMap[name]) destMap[name] = { name, leads: 0, closed: 0, revenue: 0, margin: 0 };
     destMap[name].leads++;
-    if (l.sales_status === "File Closed" || l.disposition === "Query Closed") destMap[name].closed++;
+    if (isClosed(l)) destMap[name].closed++;
   });
   cashflows.forEach((cf) => {
-    const name = cf.destination?.name || "Unknown";
+    const name = (cf.destination_id ? destNameById.get(cf.destination_id) : null) || "Unknown";
     if (!destMap[name]) destMap[name] = { name, leads: 0, closed: 0, revenue: 0, margin: 0 };
-    const vc = getVendorCost(cf.id) * (cf.pax_count || 1);
-    const mp = Number(cf.margin_percent || 0);
-    const marginAmount = vc * (mp / 100);
-    const sp = vc + marginAmount;
-    destMap[name].revenue += sp;
-    destMap[name].margin += marginAmount;
+    const t = calcTrip(cf, costByCf.get(cf.id) ?? 0);
+    destMap[name].revenue += t.sellingExGst;
+    destMap[name].margin += t.marginAmount;
   });
   const destData = Object.values(destMap).sort((a, b) => b.leads - a.leads);
 

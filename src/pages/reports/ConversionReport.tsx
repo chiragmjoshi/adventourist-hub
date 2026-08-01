@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { subMonths } from "date-fns";
 import { Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +7,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DEFAULT_REPORT_FROM,
+  DEFAULT_REPORT_TO,
+  fetchLeads,
+  isClosed,
+  isContacted,
+  isLost,
+  isQuoted,
+  SALES_STATUS,
+  statusIs,
+} from "@/lib/reporting";
 
 const ConversionReport = () => {
-  const [from, setFrom] = useState(subMonths(new Date(), 12));
-  const [to, setTo] = useState(new Date());
+  const [from, setFrom] = useState(DEFAULT_REPORT_FROM);
+  const [to, setTo] = useState(DEFAULT_REPORT_TO);
   const [leads, setLeads] = useState<any[]>([]);
   const [destinations, setDestinations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,22 +29,26 @@ const ConversionReport = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const { data: l } = await supabase.from("leads").select("*, destination:destinations(name)").gte("created_at", from.toISOString()).lte("created_at", to.toISOString());
-      setLeads(l || []);
+      const [l, { data: d }] = await Promise.all([
+        fetchLeads(from, to),
+        supabase.from("destinations").select("id, name"),
+      ]);
+      setLeads(l);
+      setDestinations(d || []);
       setLoading(false);
     };
     fetch();
   }, [from, to]);
 
+  const destNameById = new Map<string, string>(destinations.map((d: any) => [d.id, d.name]));
+
   const total = leads.length;
-  const contacted = leads.filter((l) =>
-    ["Contacted", "Quote Sent", "File Closed", "Ongoing Discussions", "Follow Up Needed", "Refund Issued"].includes(l.sales_status)
-  ).length;
-  const quoted = leads.filter((l) => ["Quote Sent", "File Closed"].includes(l.sales_status)).length;
-  const closed = leads.filter((l) => l.sales_status === "File Closed" || l.disposition === "Query Closed").length;
-  const lost = leads.filter((l) => ["Plan Dropped", "Not Interested", "Booked Outside", "Ghosted"].includes(l.disposition)).length;
-  const inPipeline = leads.filter((l) =>
-    ["Contacted", "Quote Sent", "Ongoing Discussions", "Follow Up Needed"].includes(l.sales_status)
+  const contacted = leads.filter(isContacted).length;
+  const quoted = leads.filter(isQuoted).length;
+  const closed = leads.filter(isClosed).length;
+  const lost = leads.filter(isLost).length;
+  const inPipeline = leads.filter(
+    (l) => statusIs(l, SALES_STATUS.CONTACTED, SALES_STATUS.QUOTE_SENT, SALES_STATUS.ONGOING) && !isClosed(l) && !isLost(l)
   ).length;
   const conversionRate = total > 0 ? ((closed / total) * 100).toFixed(1) : "0";
 
@@ -51,20 +65,20 @@ const ConversionReport = () => {
     const p = l.platform || "Direct";
     if (!acc[p]) acc[p] = { platform: p, total: 0, contacted: 0, quoted: 0, closed: 0, lost: 0 };
     acc[p].total++;
-    if (["Contacted", "Quote Sent", "File Closed", "Ongoing Discussions"].includes(l.sales_status)) acc[p].contacted++;
-    if (["Quote Sent", "File Closed"].includes(l.sales_status)) acc[p].quoted++;
-    if (l.sales_status === "File Closed" || l.disposition === "Query Closed") acc[p].closed++;
-    if (["Plan Dropped", "Not Interested", "Booked Outside", "Ghosted"].includes(l.disposition)) acc[p].lost++;
+    if (isContacted(l)) acc[p].contacted++;
+    if (isQuoted(l)) acc[p].quoted++;
+    if (isClosed(l)) acc[p].closed++;
+    if (isLost(l)) acc[p].lost++;
     return acc;
   }, {});
   const platformData = Object.values(byPlatform).sort((a: any, b: any) => (b.total > 0 ? b.closed / b.total : 0) - (a.total > 0 ? a.closed / a.total : 0));
 
   // By destination
   const byDest = leads.reduce((acc: Record<string, any>, l) => {
-    const d = l.destination?.name || "Unknown";
+    const d = (l.destination_id ? destNameById.get(l.destination_id) : null) || "Unknown";
     if (!acc[d]) acc[d] = { dest: d, total: 0, closed: 0 };
     acc[d].total++;
-    if (l.sales_status === "File Closed" || l.disposition === "Query Closed") acc[d].closed++;
+    if (isClosed(l)) acc[d].closed++;
     return acc;
   }, {});
   const destData = Object.values(byDest).sort((a: any, b: any) => (b.total > 0 ? b.closed / b.total : 0) - (a.total > 0 ? a.closed / a.total : 0));

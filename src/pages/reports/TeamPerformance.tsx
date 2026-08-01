@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { subMonths } from "date-fns";
 import { Download, Trophy } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -9,11 +8,20 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
-import { formatINR } from "@/lib/formatINR";
+import {
+  DEFAULT_REPORT_FROM,
+  DEFAULT_REPORT_TO,
+  fetchAll,
+  fetchLeads,
+  isClosed,
+  isContacted,
+  isLost,
+  isQuoted,
+} from "@/lib/reporting";
 
 const TeamPerformance = () => {
-  const [from, setFrom] = useState(subMonths(new Date(), 12));
-  const [to, setTo] = useState(new Date());
+  const [from, setFrom] = useState(DEFAULT_REPORT_FROM);
+  const [to, setTo] = useState(DEFAULT_REPORT_TO);
   const [leads, setLeads] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,12 +29,12 @@ const TeamPerformance = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const [{ data: l }, { data: u }] = await Promise.all([
-        supabase.from("leads").select("*").gte("created_at", from.toISOString()).lte("created_at", to.toISOString()),
-        supabase.from("users").select("*").eq("is_active", true),
+      const [l, u] = await Promise.all([
+        fetchLeads(from, to),
+        fetchAll(() => supabase.from("users").select("*").eq("is_active", true)),
       ]);
-      setLeads(l || []);
-      setUsers(u || []);
+      setLeads(l);
+      setUsers(u);
       setLoading(false);
     };
     fetch();
@@ -34,10 +42,10 @@ const TeamPerformance = () => {
 
   const agentStats = users.map((u) => {
     const agentLeads = leads.filter((l) => l.assigned_to === u.id);
-    const closed = agentLeads.filter((l) => l.sales_status === "file_closed").length;
-    const lost = agentLeads.filter((l) => l.disposition === "file_lost").length;
-    const contacted = agentLeads.filter((l) => ["contacted", "quote_sent", "file_closed"].includes(l.sales_status)).length;
-    const quoted = agentLeads.filter((l) => ["quote_sent", "file_closed"].includes(l.sales_status)).length;
+    const closed = agentLeads.filter(isClosed).length;
+    const lost = agentLeads.filter(isLost).length;
+    const contacted = agentLeads.filter(isContacted).length;
+    const quoted = agentLeads.filter(isQuoted).length;
     return {
       id: u.id, name: u.name, email: u.email,
       total: agentLeads.length, contacted, quoted, closed, lost,

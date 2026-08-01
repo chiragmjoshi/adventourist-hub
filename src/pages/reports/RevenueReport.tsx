@@ -6,8 +6,19 @@ import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
-import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import {
+  calcTrip as calcTripTotals,
+  DEFAULT_REPORT_FROM,
+  DEFAULT_REPORT_TO,
+  effectiveDate as cashflowEffectiveDate,
+  endOfSelectedDay,
+  fetchAll,
+  fetchCashflowVendors,
+  fetchCashflows,
+  vendorCostMap,
+} from "@/lib/reporting";
+import { supabase } from "@/integrations/supabase/client";
 
 type CashflowRow = {
   id: string;
@@ -30,23 +41,9 @@ type DestinationRow = {
   name: string;
 };
 
-const chunk = <T,>(items: T[], size: number) => {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-  return chunks;
-};
-
-const endOfSelectedDay = (date: Date) => {
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
-  return end;
-};
-
 const RevenueReport = () => {
-  const [from, setFrom] = useState(new Date(2020, 0, 1));
-  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
+  const [from, setFrom] = useState(DEFAULT_REPORT_FROM);
+  const [to, setTo] = useState(DEFAULT_REPORT_TO);
   const [allCashflows, setAllCashflows] = useState<CashflowRow[]>([]);
   const [vendors, setVendors] = useState<VendorLine[]>([]);
   const [destinations, setDestinations] = useState<DestinationRow[]>([]);
@@ -55,42 +52,18 @@ const RevenueReport = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const [{ data: cf, error: cashflowError }, { data: d, error: destinationsError }] = await Promise.all([
-        supabase
-        .from("trip_cashflow")
-          .select("id, booking_date, travel_start_date, created_at, destination_id, pax_count, margin_percent, gst_billing")
-          .order("created_at", { ascending: false }),
-        supabase.from("destinations").select("id, name"),
+      const [cf, d] = await Promise.all([
+        fetchCashflows(
+          "id, booking_date, travel_start_date, created_at, destination_id, pax_count, margin_percent, gst_billing"
+        ) as Promise<CashflowRow[]>,
+        fetchAll<DestinationRow>(() => supabase.from("destinations").select("id, name")),
       ]);
 
-      if (cashflowError) console.error("Revenue report cashflow fetch failed", cashflowError);
-      if (destinationsError) console.error("Revenue report destination fetch failed", destinationsError);
-
-      setAllCashflows(cf || []);
-      setDestinations(d || []);
-
-      const cfIds = (cf || []).map((c) => c.id);
-      if (cfIds.length > 0) {
-        const results = await Promise.all(
-          chunk(cfIds, 75).map((ids) =>
-            supabase
-              .from("trip_cashflow_vendors")
-              .select("cashflow_id, cost_per_pax_incl_gst")
-              .in("cashflow_id", ids)
-          )
-        );
-
-        const vendorLines = results.flatMap((result) => {
-          if (result.error) {
-            console.error("Revenue report vendor fetch failed", result.error);
-            return [];
-          }
-          return result.data || [];
-        });
-        setVendors(vendorLines);
-      } else {
-        setVendors([]);
-      }
+      setAllCashflows(cf);
+      setDestinations(d);
+      setVendors(
+        (await fetchCashflowVendors(cf.map((c) => c.id), "cashflow_id, cost_per_pax_incl_gst")) as VendorLine[]
+      );
       setLoading(false);
     };
     fetch();
@@ -102,10 +75,7 @@ const RevenueReport = () => {
     return map;
   }, [destinations]);
 
-  const effectiveDate = (cf: CashflowRow): Date => {
-    const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
-    return raw ? new Date(raw) : new Date(0);
-  };
+  const effectiveDate = (cf: CashflowRow): Date => cashflowEffectiveDate(cf) ?? new Date(0);
 
   const cashflows = useMemo(
     () => allCashflows.filter((cf) => {
@@ -115,29 +85,9 @@ const RevenueReport = () => {
     [allCashflows, from, to]
   );
 
-  const getVendorCost = (cfId: string) => vendors.filter((v) => v.cashflow_id === cfId).reduce((sum, v) => sum + Number(v.cost_per_pax_incl_gst || 0), 0);
+  const costByCf = useMemo(() => vendorCostMap(vendors), [vendors]);
 
-  const calcTrip = (cf: CashflowRow) => {
-    const vendorCostPerPax = getVendorCost(cf.id);
-    const pax = cf.pax_count || 1;
-    const totalVendor = vendorCostPerPax * pax;
-    const marginPct = Number(cf.margin_percent || 0);
-    const marginAmount = totalVendor * (marginPct / 100);
-    const sellingExGst = totalVendor + marginAmount;
-    const gstRate = 5;
-    const gstAmount = cf.gst_billing ? sellingExGst * (gstRate / 100) : 0;
-    const finalPrice = sellingExGst + gstAmount;
-    return {
-      totalVendor,
-      marginAmount,
-      margin: marginAmount,
-      sellingPreGst: sellingExGst,
-      sellingExGst,
-      gstAmount,
-      finalPrice,
-      grossMarginPct: sellingExGst > 0 ? (marginAmount / sellingExGst) * 100 : 0,
-    };
-  };
+  const calcTrip = (cf: CashflowRow) => calcTripTotals(cf, costByCf.get(cf.id) ?? 0);
 
   const totalRevenue = cashflows.reduce((s, cf) => s + calcTrip(cf).sellingExGst, 0);
   const totalMargin = cashflows.reduce((s, cf) => s + calcTrip(cf).marginAmount, 0);

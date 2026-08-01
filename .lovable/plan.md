@@ -1,19 +1,44 @@
-## Root cause (verified in the live preview)
+## What I verified in the database
 
-I reproduced it: selecting "Azerbaijan" fires the toast but no chips light up, and About stays empty. The network trace shows the itinerary editor is served this response:
+- `leads.sales_status` values are Title Case: `File Lost` (5119), `File Closed` (305), `Quote Sent` (226), `Contacted` (150), `New Lead` (36), `Invalid Lead` (25), null (28). There is **no** `file_closed` value anywhere.
+- Total leads = 5889. Google/Paid/Search Ads leads include 111 `File Closed` (Ladakh Search alone), so Google closed is definitely not zero.
+- `Google` + `Search Ads` are correctly tagged `channel = Paid` — that grouping is right, no data fix needed there.
+- `trip_cashflow`: 211 rows, only **7** have a `lead_id`, only 11 have `booking_date`; effective dates span 2020-10-09 → 2026-09-28. All 211 have a destination.
+- `trip_cashflow` has **no foreign key** on `destination_id`, so PostgREST embeds like `trip_cashflow.select("*, destination:destinations(name)")` fail (same 400 already fixed in Revenue Report).
 
-`/rest/v1/destinations?select=id,name&is_active=eq.true&order=name.asc`
+## Confirmed defects
 
-Only `id` and `name` — no `best_months`, `themes`, `suitable_for`, `about`. So the sync handler finds the destination (hence the toast with its name) but every attribute is `undefined`, and it sets all chip arrays to empty.
+1. **Case mismatch → always zero** (`Platform ROI`, `Team Performance`, `Dashboard`): compare against `file_closed`, `contacted`, `quote_sent`. This is the exact cause of "Google shows 0 closed".
+2. **Silent 1000-row cap**: Sales, Conversion, Destination, Team Performance, Platform ROI fetch leads with no `.limit()`, so PostgREST returns at most 1000 of 5889 rows. Every count and conversion % on those pages is understated.
+3. **Broken embed**: `DestinationReport` joins `destinations` off `trip_cashflow` — returns an error, so cashflow revenue silently drops to zero there.
+4. **Two different revenue formulas**: Revenue Report uses `vendorCost x (1 + margin%)`; Platform ROI uses `vendorCost / (1 - margin%)`. Same trip reports different revenue on different pages.
+5. **Attribution gap**: Platform ROI attributes cashflow revenue via `lead_id`, but only 7 of 211 trips have one — so ~97% of revenue lands in "Direct" regardless of platform.
+6. **Inconsistent close definition**: some reports count `File Closed` only, others `File Closed OR disposition = Query Closed`.
+7. **Inconsistent date defaults**: Platform ROI starts last year, Sales Report last 12 months, Revenue Report 2020 — so the same period shows different totals page to page.
 
-Why: `src/components/AppLayout.tsx` (line 31) prefetches destinations under the React Query key `["destinations_active"]` selecting only `id, name`. `src/pages/ItineraryEdit.tsx` (line 106) uses the **same key** with a wider `select`. AppLayout's cached slim result wins, so the editor's own query never runs. The DB itself is fine — Azerbaijan has best_months [3,4,5,6], themes [Mountain Retreat, Cultural & Heritage], suitable_for [Family Trips, Friends / Groups, Couples], and all values match the master lists exactly.
+## Plan
 
-## Fix
+**A. Shared reporting layer** — new `src/lib/reporting.ts`:
+- Canonical status constants (`File Closed`, `Quote Sent`, ...) plus a normalizer that accepts legacy snake_case, so no page hardcodes strings again.
+- One `isClosed(lead)` = `sales_status === "File Closed" || disposition === "Query Closed"`, used everywhere.
+- One `effectiveDate(cashflow)` = `booking_date -> travel_start_date -> created_at`.
+- One `calcTrip(cashflow, vendorLines)` implementing the Revenue Report formula (vendor cost x pax, + margin %, + 5% GST when `gst_billing`) as the single source of truth.
+- A paged fetch helper that loops in 1000-row pages so full lead/cashflow sets load.
+- Shared default range: FY-to-date with an "All time" option, identical across every report.
 
-1. In `src/pages/ItineraryEdit.tsx`, change the query key to a distinct one (e.g. `["destinations_full_attrs"]`) so the full-column fetch is cached separately from AppLayout's slim list. No other logic change needed — the existing sync handler then works.
-2. Audit the other pages sharing `["destinations_active"]` (`ItineraryList`, `LandingPageList`, `LandingPageEdit`, `TripCashflowEdit`, `VendorEdit`, `LeadManagement`) and give any that select more than `id, name` its own key too, so the same collision can't silently blank data elsewhere.
-3. Re-verify in the browser: pick a destination on `/admin/itineraries/new` and confirm Mar/Apr/May/Jun, the two themes, and the three suitable-for chips visibly highlight, and About fills when blank.
+**B. Per-report fixes**
+- `PlatformROI`: use shared helpers; fix status casing; paged lead fetch; switch revenue to the canonical formula; attribute cashflow revenue by `lead_id` when present, else fall back to matching on `traveller_code`, else bucket as "Unattributed" (shown as its own row rather than silently inflating "Direct"). Add a note when unattributed revenue exists.
+- `TeamPerformance`: fix casing for closed/contacted/quoted; paged fetch.
+- `Dashboard`: fix `file_closed` in the funnel, KPI count and monthly rollup.
+- `DestinationReport`: drop the broken embed, fetch destinations separately and map client-side; paged lead fetch.
+- `SalesReport`, `ConversionReport`: paged fetch; adopt shared `isClosed`.
+- `RevenueReport`, `VendorReport`, `TripOperationsReport`: swap local math for the shared `calcTrip`/`effectiveDate` so numbers reconcile.
 
-## Notes
+**C. Verification**
+Cross-check each page in the browser against direct database counts: total leads 5889, File Closed 305, Google closed > 0, total trips 211, and confirm Revenue Report and Platform ROI report the same total revenue for the same period.
 
-Save payload, schema, and reports are untouched.
+## Not changing
+The Google/Search-under-Paid mapping — the database is already correct there.
+
+## Technical notes
+No schema migration required. All changes are client-side in `src/lib/reporting.ts`, `src/pages/Dashboard.tsx` and the seven files under `src/pages/reports/`.
