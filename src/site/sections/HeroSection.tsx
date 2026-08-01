@@ -1,39 +1,21 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { waLink } from "@/site/lib/utils";
-import { getDestinationImage } from "@/site/lib/destinationImages";
-import heroImg from "@/assets/about-hero.jpg";
-
-const HERO_BG = heroImg;
-
-const destinations = [
-  { name: "Bali",       tagline: "Island of the Gods",       region: "Indonesia", image: getDestinationImage("bali") },
-  { name: "Leh Ladakh", tagline: "Where Sky Meets Earth",    region: "India",     image: getDestinationImage("leh ladakh") },
-  { name: "Singapore",  tagline: "Lion City",                region: "Southeast Asia", image: getDestinationImage("singapore") },
-  { name: "Dubai",      tagline: "City of Gold",             region: "UAE",       image: getDestinationImage("dubai") },
-];
 
 export default function HeroSection() {
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setCurrent((c) => (c + 1) % destinations.length), 6000);
-    return () => clearInterval(t);
-  }, []);
-
-  const dest = destinations[current];
-
   return (
     <section className="relative w-full min-h-[92vh] bg-abyss overflow-hidden -mt-16 lg:-mt-20">
       {/* Full-bleed background image (LCP candidate — eager, high priority) */}
       <img
-        src={HERO_BG}
+        src="/site-images/hero-home-1600.webp"
+        srcSet="/site-images/hero-home-800.webp 800w, /site-images/hero-home-1600.webp 1600w"
+        sizes="100vw"
+        width={1600}
+        height={906}
         alt=""
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover"
         loading="eager"
-        decoding="async"
+        decoding="sync"
         // @ts-expect-error fetchpriority is a valid HTML attribute, React types lag
         fetchpriority="high"
       />
@@ -99,58 +81,9 @@ export default function HeroSection() {
           </a>
         </div>
 
-        {/* Destination strip — 200px image carousel */}
-        <div className="relative h-[200px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={`img-${current}`}
-              src={dest.image}
-              alt={`${dest.name} — ${dest.tagline}`}
-              initial={{ opacity: 0, scale: 1.06 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.7 }}
-              className="absolute inset-0 w-full h-full object-cover"
-              loading={current === 0 ? "eager" : "lazy"}
-              decoding="async"
-              fetchPriority={current === 0 ? "high" : "low"}
-              width={800}
-              height={400}
-            />
-          </AnimatePresence>
-          <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/40 to-abyss/10" />
-
-          <div className="relative z-10 h-full flex items-end justify-between gap-4 p-5 lg:p-6">
-            <div>
-              <p className="font-body text-white/70 text-[11px] uppercase tracking-[0.2em] mb-1">
-                Now showing · {dest.region}
-              </p>
-              <p className="font-display font-bold text-white text-2xl sm:text-3xl">
-                {dest.name}{" "}
-                <span className="text-white/70 font-normal italic text-base sm:text-lg">
-                  — {dest.tagline}
-                </span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 pb-1">
-              {destinations.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrent(i)}
-                  aria-label={`Show ${destinations[i].name}`}
-                  className="p-2 -m-2"
-                >
-                  <span
-                    className={`block h-1.5 rounded-full transition-all duration-300 ${
-                      i === current ? "w-10 bg-blaze" : "w-1.5 bg-white/40 hover:bg-white/70"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <p className="font-body text-white/60 text-xs sm:text-sm tracking-[0.2em] uppercase">
+          Bali · Leh Ladakh · Singapore · Dubai · Thailand · Kerala
+        </p>
       </div>
     </section>
   );
