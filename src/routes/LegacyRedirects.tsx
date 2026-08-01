@@ -182,6 +182,24 @@ export function legacyRedirectRoutes() {
       {/* Categories */}
       <Route path="/travel-blog/category/*" element={<RedirectStatic to="/travel-stories" />} />
 
+      {/* WordPress taxonomy / author / feed archives that leaked onto the main host.
+          These generate hundreds of thin, duplicate URLs — all collapse to the
+          stories listing. */}
+      <Route path="/feed" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/travel-stories/feed" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/travel-stories/category/*" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/travel-stories/tag/:tag" element={<TagRedirect />} />
+      <Route path="/travel-stories/tag/:tag/*" element={<TagRedirect />} />
+      <Route path="/travel-stories/author/*" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/travel-stories/page/*" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/category/*" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/tag/:tag" element={<TagRedirect />} />
+      <Route path="/tag/:tag/*" element={<TagRedirect />} />
+      <Route path="/author/*" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/comments/*" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/wp-content/*" element={<RedirectStatic to="/" />} />
+      <Route path="/wp-includes/*" element={<RedirectStatic to="/" />} />
+
       {/* Tags (with slug mapping where possible) */}
       <Route path="/travel-blog/tag/:tag" element={<TagRedirect />} />
       <Route path="/travel-blog/tag/:tag/*" element={<TagRedirect />} />
