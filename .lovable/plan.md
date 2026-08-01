@@ -1,55 +1,34 @@
-## What this list actually shows
+# Search Console Property Cleanup
 
-Grouping the 150 URLs by cause:
+Goal: one authoritative Search Console property (`adventourist.in` domain property), with all site signals consistently pointing at `https://www.adventourist.in`.
 
-| Group | Count | Cause | Fixable in app? |
-|---|---|---|---|
-| `/travel-blog/*` post, category, page, `/feed`, `/1000`, `?utm_source=rss` | ~130 | Old WordPress blog paths. App-side rules for these shipped in Aug 2026; every crawl date here is **Jan–May 2026**, i.e. before the fix | Mostly already fixed — but 6 real gaps remain (below) |
-| `/itinerary/Bhutan-Itinerary-for-8-Days`, `Spiti-Valley-Itinerary-6-Days`, `kashmir-trip-itinerary`, `Srilanka-Maldives-Itinerary-7-Nights` | 4 | Already in the itinerary map; crawled Mar–Apr 2026, before the fix | Already fixed |
-| `uat.`, `cms.`, `blog.` subdomains | 4 | Separate hosts | No — DNS/Cloudflare |
-| `/_next/static/media/*.woff2`, `/cdn-cgi/l/email-protection` | 2 | Artifacts of the old Next.js build and Cloudflare's email obfuscation | No — harmless, ignore |
+## Current state (verified in the codebase)
 
-So the bulk is stale. But verification against the live `travel_stories` table found **real mapping bugs that still 404 today**.
+All canonical signals already agree on `https://www.adventourist.in`:
+- `src/components/SEO.tsx` — `SITE_URL` and OG image use `www`
+- `index.html` — Organization/WebSite JSON-LD, OG and Twitter images use `www`
+- `scripts/generate-sitemap.ts` — `BASE_URL` is `https://www.adventourist.in`
+- `public/robots.txt` — `Sitemap:` and `Host:` both point to `https://www.adventourist.in`
 
-## Confirmed bugs (verified against the database)
+So no canonical-domain code change is required. The cleanup is mostly on the Search Console side, plus two small hygiene items.
 
-1. `STORY_MAP` sends `/story/camping-tips` → `/travel-stories/27-camping-tips`. The database slug is `camping-tips` — `27-camping-tips` does not exist. This redirect currently lands on a 404.
-2. Six legacy blog slugs have no matching story row, so `/travel-blog/:slug` forwards them to a dead story page:
-   - `interesting-facts-about-leh-ladakh`
-   - `things-to-do-in-jodhpur-rajasthan`
-   - `6-reasons-to-visit-himachal-pradesh`
-   - `27-camping-tips`
-   - `vacations-in-the-valleys-of-bhutan`
-   - `things-to-do-in-udaipur`
-3. URLs with a double slash before the suffix (`/travel-blog/leh-ladakh-road-trip//1000`, `/things-to-do-in-maldives//1000`) — roughly 15 URLs in this list — do not match the current React Router patterns, because the empty path segment breaks the `:slug` match.
-4. Any unmapped legacy blog slug forwards blindly to `/travel-stories/<slug>`, producing a fresh soft-404 instead of a useful landing.
+## Steps you take in Search Console (I can't do these)
 
-## Plan
+1. Keep `adventourist.in` (domain property) as the primary. It covers http/https, www/non-www, and all subdomains.
+2. In the domain property, submit `https://www.adventourist.in/sitemap.xml` and confirm it's the only sitemap listed. Remove any stale sitemaps (old WordPress `sitemap_index.xml`, `post-sitemap.xml`, etc.).
+3. Leave the URL-prefix property `https://www.adventourist.in/` in place for ~30 days as a read-only cross-check, then remove it (Settings → Remove property). Removing it deletes nothing on the site and does not affect indexing.
+4. Do not verify or add properties for `blog.`, `uat.`, `cms.`, or `staging.` — those hostnames should be removed from public DNS instead (still outstanding from the earlier 404 work).
+5. If Google Analytics / Looker Studio is linked to the URL-prefix property, relink it to the domain property before removing it, or historical reporting connections break.
 
-**1. Fix the broken slug maps** (`src/routes/LegacyRedirects.tsx`)
-- Correct `camping-tips` → `camping-tips` (drop the `27-` prefix).
-- Add a `BLOG_SLUG_MAP` for the six orphans, pointing each at the closest live story:
-  `interesting-facts-about-leh-ladakh` → `interesting-facts-about-ladakh`;
-  `things-to-do-in-jodhpur-rajasthan` → `places-to-visit-in-jodhpur`;
-  `6-reasons-to-visit-himachal-pradesh` → `must-visit-places-in-himachal-pradesh`;
-  `27-camping-tips` → `camping-tips`;
-  `vacations-in-the-valleys-of-bhutan` → `visit-thimphu-in-bhutan`;
-  `things-to-do-in-udaipur` → `best-things-to-do-in-udaipur`.
+## Work I do in the app
 
-**2. Handle the malformed URL shapes**
-- Add a path pre-normaliser (extend the existing `UrlNormaliser`) that collapses repeated slashes and strips trailing `/1000`, `/feed`, `/amp` **before** the router matches, so `//1000` variants resolve like their clean counterparts.
+1. **Sitemap sanity pass** — regenerate `public/sitemap.xml` and confirm every URL is `https://www.adventourist.in/...`, no `http`, no bare-apex, no subdomain entries, no malformed slugs.
+2. **Self-referencing canonical audit** — spot-check the main route families (home, `/destinations/:slug`, `/trips/:slug`, `/travel-stories/:slug`) in the running preview and confirm each emits exactly one `<link rel="canonical">` on the `www` host, matching the sitemap URL exactly (trailing-slash form included).
+3. **Verification tag safety** — confirm the existing `google-site-verification` meta tag in `index.html` (if present) is retained, so removing the URL-prefix property doesn't accidentally unverify the domain property. Domain properties verify by DNS TXT, so I'll also flag if the DNS TXT record is the only proof of ownership.
+4. **Report** — a short list of any URL where the canonical, sitemap entry, and live host disagree, with the fix applied.
 
-**3. Stop generating new soft-404s**
-- Change the legacy blog redirect from "forward blindly" to "verify first": look the slug up against the live story list; on a miss, send the visitor to `/travel-stories` rather than a dead story URL.
+## Technical notes
 
-**4. Regenerate the Cloudflare 301 list**
-- Rebuild `adventourist-redirects.csv` to include every URL in this report — both `adventourist.in` and `www.` variants, all `/travel-blog/*` shapes, the `?utm_source=rss` versions and the `/1000` and `//1000` tails — mapped to their final destinations. Client-side redirects return HTTP 200 and Google treats them as soft redirects; only the Cloudflare rules give real 301s that clear these from Search Console.
-
-**5. Verify**
-- Drive the browser over a sample of ~20 URLs from this exact report (including the double-slash and `/story/camping-tips` cases) and confirm each ends on a live page with `index, follow`, not on a `noindex` 404.
-
-## Still requires your action outside the app
-
-- Remove `uat.adventourist.in`, `cms.adventourist.in` and `blog.adventourist.in` from public DNS, or 301 them to `www`.
-- Upload the regenerated redirect CSV to Cloudflare Bulk Redirects.
-- The `/_next/*` font and `/cdn-cgi/l/email-protection` entries need no action — Google drops them once the old host stops serving links.
+- Domain-property verification is DNS TXT based; the meta tag only backs the URL-prefix property. Removing the prefix property is safe as long as the DNS TXT record stays.
+- Data does not merge across properties. The domain property's history starts from its own verification date, so expect the graph to look shorter than the prefix property's — this is normal, not a loss of rankings.
+- Any remaining apex → www consolidation must happen as a real 301 at Cloudflare; the app can only emit canonicals, not status codes.
