@@ -10,12 +10,6 @@ import { getTravelStoryBySlug } from "@/site/lib/api";
  * (apex→www, blog.* subdomain) MUST live in Cloudflare.
  */
 
-function RedirectParam({ to }: { to: string }) {
-  const params = useParams();
-  const target = to.replace(/:(\w+)/g, (_, k) => (params as Record<string, string>)[k] ?? "");
-  return <Navigate to={target} replace />;
-}
-
 function RedirectStatic({ to }: { to: string }) {
   return <Navigate to={to} replace />;
 }
