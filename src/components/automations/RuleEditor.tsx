@@ -62,7 +62,7 @@ const emptyRule = {
   wa_recipient: "customer",
   wa_template_name: "",
   wa_message_body: "",
-  email_enabled: false,
+  email_enabled: true,
   email_recipient: "customer",
   email_subject: "",
   email_body: "",
