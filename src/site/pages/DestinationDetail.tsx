@@ -9,6 +9,7 @@ import {
   getPublicDestinations,
   getCMSImageUrl,
   formatINRPrice,
+  slugToTitle,
   type CMSDestinationFull,
   type CMSItinerary,
 } from "@/site/lib/api";
