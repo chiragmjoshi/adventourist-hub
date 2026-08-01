@@ -7,6 +7,14 @@ import {
 import { TrendingUp, TrendingDown, Pencil, Minus, CalendarIcon } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  calcTrip,
+  fetchAll,
+  fetchCashflowVendors,
+  isClosed,
+  normaliseStatus,
+  SALES_STATUS,
+} from "@/lib/reporting";
 import { formatINR } from "@/lib/formatINR";
 import { useAuth } from "@/contexts/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
