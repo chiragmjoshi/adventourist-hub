@@ -109,6 +109,7 @@ const Settings = () => {
   const [testResult, setTestResult] = useState<"idle" | "loading" | "success" | "fail">("idle");
   const [testError, setTestError] = useState("");
   const [smtpTesting, setSmtpTesting] = useState(false);
+  const [resendTesting, setResendTesting] = useState(false);
 
   useEffect(() => {
     if (autoSettings.length > 0) {
@@ -165,7 +166,7 @@ const Settings = () => {
 
   const saveAutomation = useMutation({
     mutationFn: async () => {
-      const validKeys = ["aisensy_api_key", "review_link", "pre_trip_reminder_days", "safe_journey_hour", "review_request_hour", "smtp_host", "smtp_port", "smtp_username", "smtp_password", "email_from_name", "email_from_address"];
+      const validKeys = ["aisensy_api_key", "review_link", "pre_trip_reminder_days", "safe_journey_hour", "review_request_hour", "smtp_host", "smtp_port", "smtp_username", "smtp_password", "email_from_name", "email_from_address", "email_provider", "resend_from_address"];
       for (const key of validKeys) {
         const value = autoForm[key] ?? getAutoSetting(key) ?? "";
         const { data: existing, error: readError } = await supabase.from("automation_settings").select("id").eq("key", key).maybeSingle();
@@ -225,21 +226,30 @@ const Settings = () => {
     getAutomationFieldValue("smtp_username").trim() &&
     getAutomationFieldValue("smtp_password").trim()
   );
+  const emailProvider = getAutomationFieldValue("email_provider") || "smtp";
+  const isResendEnabled = emailProvider !== "smtp";
 
-  const handleSendTestEmail = async () => {
-    setSmtpTesting(true);
+  const handleSendTestEmail = async (provider?: "smtp" | "resend") => {
+    const setBusy = provider === "resend" ? setResendTesting : setSmtpTesting;
+    setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-test-email", {
-        body: { to: profile?.email },
+        body: { to: profile?.email, provider },
       });
-      if (error) throw error;
+      if (error) {
+        const details = (error as any)?.context?.text ? await (error as any).context.text() : error.message;
+        let msg = details;
+        try { msg = JSON.parse(details)?.error || details; } catch { /* keep raw */ }
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Test email sent to ${(data as any)?.to || profile?.email}`);
+      const via = (data as any)?.provider === "resend" ? "Resend" : "SMTP";
+      toast.success(`Test email sent via ${via} to ${(data as any)?.to || profile?.email}`);
       queryClient.invalidateQueries({ queryKey: ["automation_settings"] });
     } catch (e: any) {
       toast.error(e?.message || "Failed to send test email");
     } finally {
-      setSmtpTesting(false);
+      setBusy(false);
     }
   };
 
