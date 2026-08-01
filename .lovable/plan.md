@@ -1,50 +1,51 @@
-## Goal
+## Context
 
-Clean up the Google Search Console account for adventourist.in. All three actions are account-level changes made through the Search Console connector — no code changes to the app.
+The audit's three biggest findings (duplicate metadata, "Loading…" titles, missing schema) all share one root cause: the site is a client-rendered SPA. The metadata and structured data already exist in the code — `TripDetail` emits `TouristTrip` + `BreadcrumbList`, `TripsList`/`TravelStories` emit `ItemList` + `BreadcrumbList`, and every page sets a self-referencing canonical via the `SEO` component. None of it is in the HTML a crawler receives before JavaScript runs.
 
-## Actions
+So this pass makes the served HTML correct, rather than re-adding things that are already there.
 
-### 1. Remove 3 stale WordPress sitemaps
+## 1. Build-time prerendering (the main fix)
 
-Delete these entries from the `adventourist.in` domain property (all currently "Couldn't fetch"):
+Add a post-build prerender step that runs the app in headless Chromium and writes real static HTML for each public route.
 
-```text
-https://blog.adventourist.in/sitemap_index.xml            (21 Mar 2026)
-https://www.adventourist.in/travel-blog/post-sitemap.xml  (31 Mar 2022)
-https://adventourist.in/travel-blog/sitemap_index.xml     (27 Oct 2020)
-```
+- New `scripts/prerender.ts`, run after `vite build`, serving `dist/` locally.
+- Route list comes from the same source the sitemap generator already uses, so the two stay in sync automatically (currently 194 URLs: home, `/trips`, `/trips/:slug`, `/destinations`, `/destinations/:slug`, `/travel-stories`, `/travel-stories/:slug`, `/travel-agency-mumbai`, about, contact, team, FAQs, policies).
+- For each route: load, wait until the page's real title has resolved (not `Loading…`), then snapshot `document.documentElement.outerHTML` to `dist/<path>/index.html`.
+- A hard `MAX_PRERENDER_PAGES` cap (default 500) guards against the page count growing past publish limits; anything beyond the cap still works as a normal client-rendered route and stays in the sitemap.
+- Guard rails: fail the build if any snapshot still contains `Loading…` in the title or is missing a canonical, so a regression can't ship silently.
 
-The live sitemap `https://www.adventourist.in/sitemap.xml` (194 URLs, status Success) stays untouched and remains the only submitted sitemap. No resubmission needed.
+Result: every route serves its own title, description, canonical, H1, and JSON-LD in the initial HTML — for Googlebot, social preview bots, and AI crawlers alike. Content is refreshed on each publish.
 
-### 2. Re-associate GA4
+Trip pages also get a small change so the initial render isn't a "Loading…" shell: the `SEO` tag for the loading state will carry the slug-derived title instead of the literal `Loading… — Adventourist`, so even non-prerendered navigation never exposes that string.
 
-Remove the existing Google Analytics association (stream "www.adventourist.in - GA4", currently labelled with the stale `https://adventourist.in/travel-blog/` URL) and create a fresh association pointing at the canonical property.
+SSR via TanStack Start remains the eventual answer for always-fresh server rendering; that's a separate follow-up, not this pass.
 
-Important: re-association sends an authorization request that **you must accept from the Google Analytics side**. Until you accept, Search Console data will not flow into GA4. I'll tell you exactly when to go accept it.
+## 2. Soft-404 signals (app-side)
 
-No Looker Studio action — Looker connects through its own OAuth flow, so there is nothing linked here to repair.
+The SPA always returns HTTP 200, so a true 404 status needs edge config — out of scope per your call. App-side:
 
-### 3. Delete the URL-prefix property
+- `src/pages/NotFound.tsx` and the site-facing not-found states get an explicit `noindex, nofollow` (the `SEO` component already rewrites the static `index.html` robots tag when `noIndex` is set — I'll confirm every not-found path routes through it).
+- Legacy `/travel-blog/*` paths that resolve to nothing land on a noindexed not-found rather than a 200 indexable page.
+- Prerender skips not-found routes entirely, so no soft-404 HTML gets written to `dist/`.
 
-Permanently delete `https://www.adventourist.in/` (URL-prefix). The `adventourist.in` domain property remains and already covers every protocol, subdomain, and path.
+## 3. Images
 
-Consequences to be aware of:
-- Historical performance data held only in the prefix property is lost permanently.
-- Any Looker Studio report or third-party tool pointing at the prefix property will break and must be repointed at the domain property.
-- The `google-site-verification` meta tag in `index.html` backed only the prefix property, so it becomes inert. The `_google` DNS TXT record at Cloudflare backs the domain property and **must not be removed**.
+- Convert the remaining 19 JPG + 3 PNG in `public/site-images` (~27 MB) and the 14 raster files in `src/assets` to WebP, keeping originals as fallbacks where a component needs them.
+- Update the components referencing them to use `<picture>`/`srcSet` with the WebP first.
+- Add missing `alt` text on the one homepage image lacking it and sweep the trips/destinations grids.
 
-## Order of operations
+## 4. Homepage meta description
 
-1. Remove the 3 stale sitemaps.
-2. Re-associate GA4, then hand off the authorization step to you.
-3. Delete the URL-prefix property last, so nothing else depends on it mid-flight.
-4. Re-read the domain property afterwards and report the final state: submitted sitemaps, associations, verification method.
+Trim the `index.html` description (and the homepage `SEO` call) from ~180 to ~150–155 characters so it isn't truncated in the SERP.
 
 ## Technical notes
 
-Every step runs through the Search Console connector against the verified `sc-domain:adventourist.in` property, resolved from a live property listing at execution time rather than a hardcoded identifier. Sitemap removal uses `DELETE /webmasters/v3/sites/{site}/sitemaps/{sitemapUrl}`; property deletion uses `DELETE /webmasters/v3/sites/{site}`. If the connector's granted scopes are read-only, the write calls will return 403 — in that case I'll stop and ask you to reconnect with write scope rather than retrying.
+- Prerendering runs in the build pipeline only; dev is unchanged.
+- `scripts/generate-sitemap.ts` gets a small refactor to export its route list so `prerender.ts` can import it — one source of truth, no duplicated route logic.
+- Verification: build, then grep the emitted HTML for per-route titles, canonicals and JSON-LD; confirm no `Loading…` and no duplicate canonical tags.
 
-## Out of scope
+## Not included
 
-- No app code, sitemap generator, robots.txt, or canonical changes — the app side was already verified clean.
-- DNS changes for `uat.`, `cms.`, and `blog.` subdomains and the Cloudflare bulk-redirect CSV upload remain your manual tasks.
+- Real HTTP 404/410 status codes (needs Cloudflare/edge rules).
+- The TanStack Start SSR migration.
+- Search Console account actions (still blocked on a connection for the account that owns `adventourist.in`).
