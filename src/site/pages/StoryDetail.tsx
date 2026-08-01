@@ -228,6 +228,26 @@ export default function StoryDetail() {
             <p className="font-body text-ink/60">This story has no content yet.</p>
           )}
 
+          {linkedDestinations.length > 0 && (
+            <div className="mt-10 bg-drift/60 rounded-2xl p-6">
+              <h2 className="font-display font-bold text-lg text-abyss mb-3">
+                Plan a trip to {linkedDestinations.map((d) => d.name).join(" or ")}
+              </h2>
+              <ul className="flex flex-wrap gap-2">
+                {linkedDestinations.map((d) => (
+                  <li key={d.id}>
+                    <Link
+                      to={`/destinations/${d.slug}`}
+                      className="inline-block bg-white hover:bg-blaze hover:text-white text-abyss font-body text-sm px-4 py-2 rounded-full transition-colors"
+                    >
+                      {d.name} travel guide →
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Share */}
           <div className="mt-10 pt-6 border-t border-abyss/10 flex flex-wrap gap-3">
             <a
