@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { sendWhatsAppMessage } from "./aisensy";
 import { format, differenceInDays } from "date-fns";
 import { wrapInBrandShell } from "@/lib/emailShell";
 
@@ -115,10 +114,10 @@ function matchConditions(rule: any, lead: any): boolean {
   );
 }
 
-function recipientsFor(channel: "wa" | "email", recipientType: string, ctx: VariableContext): { type: string; contact: string }[] {
+function recipientsFor(recipientType: string, ctx: VariableContext): { type: string; contact: string }[] {
   const out: { type: string; contact: string }[] = [];
-  const customer = channel === "wa" ? ctx.lead?.mobile : ctx.lead?.email;
-  const agent = channel === "wa" ? ctx.agent?.mobile : ctx.agent?.email;
+  const customer = ctx.lead?.email;
+  const agent = ctx.agent?.email;
   if (recipientType === "customer" || recipientType === "both") {
     if (customer) out.push({ type: "customer", contact: customer });
   }
@@ -128,25 +127,13 @@ function recipientsFor(channel: "wa" | "email", recipientType: string, ctx: Vari
   return out;
 }
 
-async function dispatchExecution(executionId: string, rule: any, ctx: VariableContext, channel: "whatsapp" | "email", recipientType: string, recipientContact: string) {
+async function dispatchExecution(executionId: string, rule: any, ctx: VariableContext, _channel: "email", recipientType: string, recipientContact: string) {
   let success = false;
   let errorMessage = "";
   let messagePreview = "";
 
   try {
-    if (channel === "whatsapp") {
-      const body = resolveVariables(rule.wa_message_body || "", ctx);
-      messagePreview = body.slice(0, 200);
-      const tplName = rule.wa_template_name || "";
-      const result = await sendWhatsAppMessage(
-        tplName,
-        recipientContact,
-        [body],
-        recipientType === "agent" ? (ctx.agent?.name || "Agent") : (ctx.lead?.name || "Customer"),
-      );
-      success = result.success;
-      if (!success) errorMessage = JSON.stringify(result.response).slice(0, 500);
-    } else if (channel === "email") {
+    {
       const body = resolveVariables(rule.email_body || "", ctx);
       const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist", ctx);
       messagePreview = body.replace(/<[^>]+>/g, "").slice(0, 200);
@@ -156,8 +143,8 @@ async function dispatchExecution(executionId: string, rule: any, ctx: VariableCo
       const heroSubtitle = rule.email_hero_subtitle
         ? resolveVariables(rule.email_hero_subtitle, ctx)
         : undefined;
-      const ctaUrl = rule.email_cta_url || "https://wa.me/919930400694";
-      const ctaLabel = rule.email_cta_label || "Message us on WhatsApp →";
+      const ctaUrl = rule.email_cta_url || "https://adventourist.in/contact";
+      const ctaLabel = rule.email_cta_label || "Plan your trip →";
       const brandedHtml = wrapInBrandShell({
         heroTitle,
         heroSubtitle,
