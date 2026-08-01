@@ -28,6 +28,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://wa.me" />
+    <!-- LCP hero image preload -->
+    <link
+      rel="preload"
+      as="image"
+      href="/site-images/hero-home-1600.webp"
+      imagesrcset="/site-images/hero-home-800.webp 800w, /site-images/hero-home-1600.webp 1600w"
+      imagesizes="100vw"
+      fetchpriority="high"
+    />
     <!-- Non-blocking Google Fonts (preload + swap) -->
     <link
       rel="preload"
