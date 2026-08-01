@@ -37,6 +37,13 @@ const ITINERARY_MAP: Record<string, string> = {
   "bali-5days-4nights":                          "bali-bliss-trip-5-nights-6-days",
   "vietnam-tour-package":                        "vibrant-vietnam-5-nights-6-days",
   "itinerary-darjeeling-pelling-sikkim-gangtok": "north-east-vacation-in-8-nights-9-days",
+  // Observed in Search Console "crawled – currently not indexed" (Aug 2026)
+  "rajasthan-itinerary":                         "royal-rajasthan-trip-6-nights-7-days",
+  "kenya-safari":                                "big-five-kenya-safari-7-nights-8-days",
+  "andaman-itinerary-6-days":                    "andaman-nicobar-islands-5-nights-6-days",
+  "kasol-kheerganaga-itinerary":                 "offbeat-himachal-kasol-jibhi-in-4-nights-5-days",
+  "manali-dalhousie-amritsar-itinerary":         "getaway-to-dharamshala-dalhousie-in-6-nights-7-days",
+  "6-days-5-nights-bangkok-and-pattaya":         "thai-away-bangkok-and-pattaya-6-days-5-nights",
 };
 
 function normaliseSlug(s: string): string {
@@ -152,6 +159,16 @@ function TagRedirect() {
   return <Navigate to={mapped ? `/travel-stories/${mapped}` : "/travel-stories"} replace />;
 }
 
+/** /travel-stories/:slug/feed, /1000, /amp → the clean story URL. */
+function StorySlugRedirect() {
+  const { slug = "" } = useParams();
+  const clean = slug.replace(/\/+$/g, "");
+  if (!clean || clean === "feed" || clean === "1000" || clean === "amp") {
+    return <Navigate to="/travel-stories" replace />;
+  }
+  return <Navigate to={`/travel-stories/${clean}`} replace />;
+}
+
 // Catches /travel-blog/:slug/1000, /travel-blog/:slug//1000, /travel-blog/:slug/feed, etc.
 function BlogPostRedirect() {
   const { slug = "" } = useParams();
@@ -187,6 +204,10 @@ export function legacyRedirectRoutes() {
           stories listing. */}
       <Route path="/feed" element={<RedirectStatic to="/travel-stories" />} />
       <Route path="/travel-stories/feed" element={<RedirectStatic to="/travel-stories" />} />
+      <Route path="/travel-stories/:slug/feed" element={<StorySlugRedirect />} />
+      <Route path="/travel-stories/:slug/feed/*" element={<StorySlugRedirect />} />
+      <Route path="/travel-stories/:slug/1000" element={<StorySlugRedirect />} />
+      <Route path="/travel-stories/:slug/amp" element={<StorySlugRedirect />} />
       <Route path="/travel-stories/category/*" element={<RedirectStatic to="/travel-stories" />} />
       <Route path="/travel-stories/tag/:tag" element={<TagRedirect />} />
       <Route path="/travel-stories/tag/:tag/*" element={<TagRedirect />} />
@@ -199,6 +220,10 @@ export function legacyRedirectRoutes() {
       <Route path="/comments/*" element={<RedirectStatic to="/travel-stories" />} />
       <Route path="/wp-content/*" element={<RedirectStatic to="/" />} />
       <Route path="/wp-includes/*" element={<RedirectStatic to="/" />} />
+
+      {/* Inherited WordPress search URLs (incl. literal {search_term_string}) */}
+      <Route path="/search" element={<RedirectStatic to="/trips" />} />
+      <Route path="/search/*" element={<RedirectStatic to="/trips" />} />
 
       {/* Tags (with slug mapping where possible) */}
       <Route path="/travel-blog/tag/:tag" element={<TagRedirect />} />
@@ -240,6 +265,7 @@ export function legacyRedirectRoutes() {
       <Route path="/about" element={<RedirectStatic to="/about-us" />} />
       <Route path="/contactus" element={<RedirectStatic to="/contact" />} />
       <Route path="/contact-us" element={<RedirectStatic to="/contact" />} />
+      <Route path="/feedback-suggestions" element={<RedirectStatic to="/contact" />} />
       <Route path="/home" element={<RedirectStatic to="/" />} />
       <Route path="/faq" element={<RedirectStatic to="/faqs" />} />
     </>
