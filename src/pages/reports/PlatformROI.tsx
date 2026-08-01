@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Download } from "lucide-react";
+import { Download, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,10 +7,22 @@ import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import {
+  calcTrip,
+  DEFAULT_REPORT_FROM,
+  DEFAULT_REPORT_TO,
+  effectiveDate,
+  fetchCashflowVendors,
+  fetchCashflows,
+  fetchLeads,
+  inRange,
+  isClosed,
+  vendorCostMap,
+} from "@/lib/reporting";
 
 const PlatformROI = () => {
-  const [from, setFrom] = useState(new Date(new Date().getFullYear() - 1, 0, 1));
-  const [to, setTo] = useState(new Date(new Date().getFullYear() + 1, 11, 31));
+  const [from, setFrom] = useState(DEFAULT_REPORT_FROM);
+  const [to, setTo] = useState(DEFAULT_REPORT_TO);
   const [leads, setLeads] = useState<any[]>([]);
   const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [cfVendors, setCfVendors] = useState<any[]>([]);
@@ -19,49 +31,67 @@ const PlatformROI = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const [{ data: l }, { data: cf }] = await Promise.all([
-        supabase.from("leads").select("*").gte("created_at", from.toISOString()).lte("created_at", to.toISOString()),
-        supabase.from("trip_cashflow").select("*"),
-      ]);
-      setLeads(l || []);
-      setAllCashflows(cf || []);
-      if ((cf || []).length > 0) {
-        const { data: v } = await supabase.from("trip_cashflow_vendors").select("*").in("cashflow_id", (cf || []).map((c: any) => c.id));
-        setCfVendors(v || []);
-      }
+      const [l, cf] = await Promise.all([fetchLeads(from, to), fetchCashflows()]);
+      setLeads(l);
+      setAllCashflows(cf);
+      setCfVendors(await fetchCashflowVendors(cf.map((c: any) => c.id)));
       setLoading(false);
     };
     fetch();
   }, [from, to]);
 
   const cashflows = useMemo(
-    () => allCashflows.filter((cf) => {
-      const raw = cf.booking_date || cf.travel_start_date || cf.created_at;
-      const d = raw ? new Date(raw) : null;
-      return d && d >= from && d <= to;
-    }),
+    () => allCashflows.filter((cf) => inRange(effectiveDate(cf), from, to)),
     [allCashflows, from, to]
   );
 
+  const costByCf = useMemo(() => vendorCostMap(cfVendors), [cfVendors]);
+
+  const leadById = useMemo(() => {
+    const map = new Map<string, any>();
+    leads.forEach((l) => map.set(l.id, l));
+    return map;
+  }, [leads]);
+
+  /* Only 7 of ~211 trips carry a lead_id, so fall back to traveller_code
+     before giving up and bucketing revenue as Unattributed. */
+  const leadByTravellerCode = useMemo(() => {
+    const map = new Map<string, any>();
+    leads.forEach((l) => {
+      if (l.traveller_code && !map.has(l.traveller_code)) map.set(l.traveller_code, l);
+    });
+    return map;
+  }, [leads]);
+
+  const attributedLead = (cf: any) =>
+    (cf.lead_id ? leadById.get(cf.lead_id) : null) ||
+    (cf.traveller_code ? leadByTravellerCode.get(cf.traveller_code) : null) ||
+    null;
+
   const buildTable = (field: string) => {
     const map: Record<string, { key: string; leads: number; closed: number; revenue: number }> = {};
+    const bucket = (k: string) => {
+      if (!map[k]) map[k] = { key: k, leads: 0, closed: 0, revenue: 0 };
+      return map[k];
+    };
     leads.forEach((l) => {
-      const k = (l as any)[field] || "Direct";
-      if (!map[k]) map[k] = { key: k, leads: 0, closed: 0, revenue: 0 };
-      map[k].leads++;
-      if (l.sales_status === "file_closed") map[k].closed++;
+      const row = bucket((l as any)[field] || "Direct");
+      row.leads++;
+      if (isClosed(l)) row.closed++;
     });
-    // Revenue from cashflows matched by lead platform
     cashflows.forEach((cf) => {
-      const lead = leads.find((l) => l.id === cf.lead_id);
-      const k = lead ? ((lead as any)[field] || "Direct") : "Direct";
-      if (!map[k]) map[k] = { key: k, leads: 0, closed: 0, revenue: 0 };
-      const vc = cfVendors.filter((v) => v.cashflow_id === cf.id).reduce((s, v) => s + Number(v.cost_per_pax_incl_gst || 0), 0) * (cf.pax_count || 1);
-      const mp = Number(cf.margin_percent || 0);
-      map[k].revenue += vc / (1 - mp / 100);
+      const lead = attributedLead(cf);
+      const key = lead ? ((lead as any)[field] || "Direct") : "Unattributed";
+      bucket(key).revenue += calcTrip(cf, costByCf.get(cf.id) ?? 0).sellingExGst;
     });
-    return Object.values(map).sort((a, b) => b.leads - a.leads);
+    return Object.values(map).sort((a, b) => b.leads - a.leads || b.revenue - a.revenue);
   };
+
+  const unattributedRevenue = useMemo(
+    () => cashflows.filter((cf) => !attributedLead(cf))
+      .reduce((s, cf) => s + calcTrip(cf, costByCf.get(cf.id) ?? 0).sellingExGst, 0),
+    [cashflows, costByCf, leadById, leadByTravellerCode]
+  );
 
   const sections = [
     { title: "Platform Breakdown", data: buildTable("platform") },
@@ -70,8 +100,8 @@ const PlatformROI = () => {
     { title: "Ad Group Breakdown", data: buildTable("ad_group") },
   ];
 
-  const bestPlatform = sections[0].data[0]?.key || "—";
-  const bestChannel = sections[1].data[0]?.key || "—";
+  const bestPlatform = sections[0].data.filter((r) => r.key !== "Unattributed")[0]?.key || "—";
+  const bestChannel = sections[1].data.filter((r) => r.key !== "Unattributed")[0]?.key || "—";
 
   return (
     <AppLayout title="Platform ROI Report">
@@ -88,8 +118,19 @@ const PlatformROI = () => {
             <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Best Platform</p><p className="text-lg font-bold mt-1 truncate">{bestPlatform}</p></CardContent></Card>
             <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Best Channel</p><p className="text-lg font-bold mt-1 truncate">{bestChannel}</p></CardContent></Card>
             <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Leads</p><p className="text-2xl font-bold mt-1">{leads.length}</p></CardContent></Card>
-            <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Closed</p><p className="text-2xl font-bold mt-1">{leads.filter((l) => l.sales_status === "file_closed").length}</p></CardContent></Card>
+            <Card className="border shadow-sm"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Closed</p><p className="text-2xl font-bold mt-1">{leads.filter(isClosed).length}</p></CardContent></Card>
           </div>
+
+          {unattributedRevenue > 0 && (
+            <div className="flex items-start gap-2 mb-6 rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <Info className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                {formatINR(Math.round(unattributedRevenue))} of revenue could not be matched to a lead
+                (mostly legacy trips imported without a lead link) and is shown in the
+                <strong className="font-medium"> Unattributed</strong> row.
+              </span>
+            </div>
+          )}
 
           {sections.map((s) => (
             <Card key={s.title} className="border shadow-sm mb-6">
