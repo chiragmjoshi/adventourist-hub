@@ -55,7 +55,12 @@ export function stripHtml(html?: string | null): string {
 /** Mirrors src/site/lib/api.ts getCMSImageUrl for build-time use. */
 export function imageUrl(p?: string | null): string {
   if (!p) return DEFAULT_OG_IMAGE;
-  if (p.startsWith("/site-images/") || p.startsWith("/assets/")) return `${BASE_URL}${p}`;
+  if (p.startsWith("/site-images/") || p.startsWith("/assets/")) {
+    // Social crawlers are most reliable with JPEG; local story/destination
+    // covers ship as both .webp (page render) and .jpg (share preview).
+    const share = p.startsWith("/site-images/stories/") ? p.replace(/\.webp$/, ".jpg") : p;
+    return `${BASE_URL}${share}`;
+  }
   if (p.startsWith("http")) return p;
   const clean = p.startsWith("/") ? p.slice(1) : p;
   return clean.includes("/")
