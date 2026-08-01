@@ -180,7 +180,6 @@ const Automations = () => {
                   <Badge variant="outline" className={`text-[10px] ${TRIGGER_COLORS[r.trigger_event] || ""}`}>
                     {TRIGGER_LABELS[r.trigger_event] || r.trigger_event}
                   </Badge>
-                  {r.wa_enabled && <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-700 border-emerald-300">WA → {r.wa_recipient}</Badge>}
                   {r.email_enabled && <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-700 border-blue-300">Email → {r.email_recipient}</Badge>}
                 </div>
                 <p className="text-[11px] text-muted-foreground mb-2">{conditionSummary(r)}</p>
@@ -216,7 +215,7 @@ const Automations = () => {
           <Select value={logFilters.channel} onValueChange={(v) => setLogFilters((f) => ({ ...f, channel: v }))}>
             <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {["all", "whatsapp", "email"].map((s) => <SelectItem key={s} value={s} className="text-xs capitalize">{s}</SelectItem>)}
+              {["all", "email"].map((s) => <SelectItem key={s} value={s} className="text-xs capitalize">{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={logFilters.rule} onValueChange={(v) => setLogFilters((f) => ({ ...f, rule: v }))}>
