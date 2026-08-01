@@ -155,7 +155,7 @@ export default function MumbaiAgency() {
           </div>
           <div className="aspect-[4/5] lg:aspect-[5/6] rounded-3xl overflow-hidden bg-abyss/10 shadow-xl">
             <img
-              src="/site-images/bg-home-page.jpg"
+              src="/site-images/bg-home-page.webp"
               alt="Mumbai-based Adventourist travel team planning a trip"
               className="w-full h-full object-cover"
             />
