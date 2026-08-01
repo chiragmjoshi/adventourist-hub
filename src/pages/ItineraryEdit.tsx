@@ -103,7 +103,7 @@ const ItineraryEdit = () => {
   });
 
   const { data: destinations = [] } = useQuery({
-    queryKey: ["destinations_active"],
+    queryKey: ["destinations_full_attrs"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("destinations")
