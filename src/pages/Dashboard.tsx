@@ -157,24 +157,20 @@ function cashflowEffectiveDate(c: { booking_date?: string | null; travel_start_d
 async function fetchDashboardData(): Promise<DashboardData> {
   const now = new Date();
 
-  const [leadsRes, cashflowRes, expensesRes, destinationsRes] = await Promise.all([
-    supabase.from("leads")
-      .select("id, created_at, sales_status, destination_id, platform")
-      .limit(50000),
-    supabase.from("trip_cashflow")
-      .select("id, lead_id, pax_count, margin_percent, created_at, booking_date, travel_start_date, destination_id, trip_stage")
-      .limit(50000),
-    supabase.from("monthly_expenses").select("*").limit(1000),
-    supabase.from("destinations").select("id, name").limit(1000),
+  const [leadRows, cashflows, expenseRows, destinationRows] = await Promise.all([
+    fetchAll<any>(() => supabase.from("leads").select("id, created_at, sales_status, disposition, destination_id, platform")),
+    fetchAll<any>(() => supabase.from("trip_cashflow")
+      .select("id, lead_id, pax_count, margin_percent, gst_billing, created_at, booking_date, travel_start_date, destination_id, trip_stage")),
+    fetchAll<any>(() => supabase.from("monthly_expenses").select("*")),
+    fetchAll<any>(() => supabase.from("destinations").select("id, name")),
   ]);
+  const leadsRes = { data: leadRows };
+  const expensesRes = { data: expenseRows };
+  const destinationsRes = { data: destinationRows };
 
-  const cashflows = cashflowRes.data ?? [];
-  const vendorRes = cashflows.length
-    ? await supabase.from("trip_cashflow_vendors")
-        .select("cashflow_id, cost_per_pax_incl_gst")
-        .in("cashflow_id", cashflows.map((c) => c.id))
-        .limit(50000)
-    : { data: [] as any[] };
+  const vendorRes = {
+    data: await fetchCashflowVendors(cashflows.map((c: any) => c.id), "cashflow_id, cost_per_pax_incl_gst"),
+  };
 
   // vendor cost per cashflow (sum of cost_per_pax_incl_gst rows)
   const vendorCostByCashflow = new Map<string, number>();
@@ -187,11 +183,9 @@ async function fetchDashboardData(): Promise<DashboardData> {
 
   // per-cashflow derived numbers, dated by booking → travel → created
   const cashflowDerived = cashflows.map((c: any) => {
-    const vendorCostPerPax = vendorCostByCashflow.get(c.id) ?? 0;
-    const pax = Number(c.pax_count ?? 1) || 1;
-    const totalVendorCost = vendorCostPerPax * pax;
-    const m = Number(c.margin_percent ?? 0);
-    const sellingPrice = m < 100 ? totalVendorCost / (1 - m / 100) : totalVendorCost;
+    const totals = calcTrip(c, vendorCostByCashflow.get(c.id) ?? 0);
+    const totalVendorCost = totals.totalVendorCost;
+    const sellingPrice = totals.sellingExGst;
     const effective = cashflowEffectiveDate(c);
     return {
       id: c.id,
@@ -240,7 +234,7 @@ async function fetchDashboardData(): Promise<DashboardData> {
       const ts = new Date(l.created_at);
       return ts >= start && ts < end;
     });
-    const filesClosed = monthLeads.filter((l: any) => l.sales_status === "file_closed").length;
+    const filesClosed = monthLeads.filter(isClosed).length;
 
     const monthCash = cashflowDerived.filter((c) => {
       if (!c.effective_at) return false;
@@ -271,36 +265,14 @@ async function fetchDashboardData(): Promise<DashboardData> {
   }
 
   /* lifetime — all-time, no filter */
-  const [allLeadsCount, allClosedCount, allCashflowsRes, firstLeadRes] = await Promise.all([
-    supabase.from("leads").select("*", { count: "exact", head: true }),
-    supabase.from("leads").select("*", { count: "exact", head: true }).eq("sales_status", "file_closed"),
-    supabase.from("trip_cashflow").select("id, pax_count, margin_percent").limit(50000),
-    supabase.from("leads").select("created_at").order("created_at", { ascending: true }).limit(1),
-  ]);
-  const allCashIds = (allCashflowsRes.data ?? []).map((c: any) => c.id);
-  let allCashVendors: any[] = [];
-  if (allCashIds.length) {
-    const r = await supabase.from("trip_cashflow_vendors")
-      .select("cashflow_id, cost_per_pax_incl_gst")
-      .in("cashflow_id", allCashIds)
-      .limit(100000);
-    allCashVendors = r.data ?? [];
-  }
-  const allVendorByCash = new Map<string, number>();
-  for (const v of allCashVendors) {
-    allVendorByCash.set(v.cashflow_id, (allVendorByCash.get(v.cashflow_id) ?? 0) + Number(v.cost_per_pax_incl_gst ?? 0));
-  }
-  let allRevenue = 0;
-  for (const c of (allCashflowsRes.data ?? []) as any[]) {
-    const vp = allVendorByCash.get(c.id) ?? 0;
-    const pax = Number(c.pax_count ?? 1) || 1;
-    const tvc = vp * pax;
-    const m = Number(c.margin_percent ?? 0);
-    const sp = m < 100 ? tvc / (1 - m / 100) : tvc;
-    allRevenue += sp;
-  }
-  const totalLeads = allLeadsCount.count ?? 0;
-  const totalClosed = allClosedCount.count ?? 0;
+  const firstLeadRes = await supabase
+    .from("leads")
+    .select("created_at")
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const allRevenue = cashflowDerived.reduce((s, c) => s + c.sellingPrice, 0);
+  const totalLeads = leadRows.length;
+  const totalClosed = leadRows.filter(isClosed).length;
   const firstLeadAt = firstLeadRes.data?.[0]?.created_at;
   let monthsActive = 1;
   if (firstLeadAt) {
@@ -357,14 +329,14 @@ async function fetchDashboardData(): Promise<DashboardData> {
     .slice(0, 3);
 
   const funnelStages: { key: string; label: string; fill: string }[] = [
-    { key: "new_lead", label: "New", fill: LAGOON },
-    { key: "contacted", label: "Contacted", fill: HORIZON },
-    { key: "quote_sent", label: "Quote Sent", fill: BLAZE },
-    { key: "file_closed", label: "File Closed", fill: RIDGE },
+    { key: SALES_STATUS.NEW_LEAD, label: "New", fill: LAGOON },
+    { key: SALES_STATUS.CONTACTED, label: "Contacted", fill: HORIZON },
+    { key: SALES_STATUS.QUOTE_SENT, label: "Quote Sent", fill: BLAZE },
+    { key: SALES_STATUS.FILE_CLOSED, label: "File Closed", fill: RIDGE },
   ];
   const stageCounts: Record<string, number> = {};
   for (const l of thisMonthLeads) {
-    const s = (l as any).sales_status ?? "new_lead";
+    const s = normaliseStatus((l as any).sales_status) || SALES_STATUS.NEW_LEAD;
     stageCounts[s] = (stageCounts[s] ?? 0) + 1;
   }
   const funnelTotal = thisMonthLeads.length || 1;
