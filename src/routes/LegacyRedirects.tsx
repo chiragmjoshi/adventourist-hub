@@ -149,7 +149,6 @@ const STORY_MAP: Record<string, string> = {
   "6-reasons-to-visit-himachal-pradesh": "must-visit-places-in-himachal-pradesh",
   "vacations-in-the-valleys-of-bhutan": "visit-thimphu-in-bhutan",
   "things-to-do-in-udaipur": "best-things-to-do-in-udaipur",
-  "places-to-visit-in-kashmir-2": "places-to-visit-in-kashmir",
 };
 
 function StoryRedirect() {
