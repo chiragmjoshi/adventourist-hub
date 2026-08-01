@@ -7,27 +7,30 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
-import Login from "./pages/Login";
-import LandingPage from "./pages/LandingPage";
-import ThankYouPage from "./landing/ThankYouPage";
 import SiteHome from "./site/pages/Home";
-import SiteTripsList from "./site/pages/TripsList";
-import SiteTripDetail from "./site/pages/TripDetail";
-import SiteAbout from "./site/pages/About";
-import SiteContact from "./site/pages/Contact";
-import SiteFAQs from "./site/pages/FAQs";
-import SiteTeam from "./site/pages/Team";
-import SiteTravelStories from "./site/pages/TravelStories";
-import SiteStoryDetail from "./site/pages/StoryDetail";
-import SiteDestinationsList from "./site/pages/DestinationsList";
-import SiteDestinationDetail from "./site/pages/DestinationDetail";
-import SiteMumbaiAgency from "./site/pages/MumbaiAgency";
-import { PrivacyPolicy, TermsConditions, RefundPolicy, PaymentPolicy } from "./site/pages/PolicyPage";
-import NotFound from "./pages/NotFound";
-import AcceptInvite from "./pages/AcceptInvite";
-import ResetPassword from "./pages/ResetPassword";
+const Login = lazy(() => import("./pages/Login"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const ThankYouPage = lazy(() => import("./landing/ThankYouPage"));
+// Secondary public pages — lazy loaded so the landing route ships a small bundle
+const SiteTripsList = lazy(() => import("./site/pages/TripsList"));
+const SiteTripDetail = lazy(() => import("./site/pages/TripDetail"));
+const SiteAbout = lazy(() => import("./site/pages/About"));
+const SiteContact = lazy(() => import("./site/pages/Contact"));
+const SiteFAQs = lazy(() => import("./site/pages/FAQs"));
+const SiteTeam = lazy(() => import("./site/pages/Team"));
+const SiteTravelStories = lazy(() => import("./site/pages/TravelStories"));
+const SiteStoryDetail = lazy(() => import("./site/pages/StoryDetail"));
+const SiteDestinationsList = lazy(() => import("./site/pages/DestinationsList"));
+const SiteDestinationDetail = lazy(() => import("./site/pages/DestinationDetail"));
+const SiteMumbaiAgency = lazy(() => import("./site/pages/MumbaiAgency"));
+const PrivacyPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.PrivacyPolicy })));
+const TermsConditions = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.TermsConditions })));
+const RefundPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.RefundPolicy })));
+const PaymentPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.PaymentPolicy })));
 import { legacyRedirectRoutes } from "./routes/LegacyRedirects";
-import { processAutomationQueue } from "./services/automationEngine";
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 import { getCrossHostRedirect, getHostKind, isAdminPath } from "@/lib/hostname";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useDBHealthCheck } from "@/hooks/useDBHealthCheck";
@@ -126,9 +129,13 @@ const App = () => {
 
     // Only run automation worker on admin/preview hosts — never on the public site.
     if (kind === "public" && !isAdminPath(window.location.pathname)) return;
-    processAutomationQueue();
-    const interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    // Dynamic import keeps the automation engine out of the initial bundle.
+    import("./services/automationEngine").then(({ processAutomationQueue }) => {
+      processAutomationQueue();
+      interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
+    });
+    return () => { if (interval) clearInterval(interval); };
   }, []);
 
   return (

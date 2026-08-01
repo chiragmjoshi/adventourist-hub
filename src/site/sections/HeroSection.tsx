@@ -26,11 +26,16 @@ export default function HeroSection() {
 
   return (
     <section className="relative w-full min-h-[92vh] bg-abyss overflow-hidden -mt-16 lg:-mt-20">
-      {/* Full-bleed background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${HERO_BG})` }}
+      {/* Full-bleed background image (LCP candidate — eager, high priority) */}
+      <img
+        src={HERO_BG}
+        alt=""
         aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover"
+        loading="eager"
+        decoding="async"
+        // @ts-expect-error fetchpriority is a valid HTML attribute, React types lag
+        fetchpriority="high"
       />
       {/* Dark overlay */}
       <div className="absolute inset-0" style={{ backgroundColor: "rgba(26, 29, 46, 0.35)" }} />
