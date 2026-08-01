@@ -157,14 +157,14 @@ async function dispatchExecution(
   executionId: string,
   rule: any,
   ctx: any,
-  channel: "whatsapp" | "email",
+  channel: "email",
   recipientContact: string,
 ) {
   let success = false;
   let errorMessage = "";
   let messagePreview = "";
 
-  if (channel === "email") {
+  {
     const html = resolveVariables(rule.email_body || "", ctx);
     const subject = resolveVariables(rule.email_subject || rule.name || "Adventourist", ctx);
     messagePreview = html.replace(/<[^>]+>/g, "").slice(0, 200);
@@ -174,8 +174,8 @@ async function dispatchExecution(
     const heroSubtitle = rule.email_hero_subtitle
       ? resolveVariables(rule.email_hero_subtitle, ctx)
       : undefined;
-    const ctaUrl = rule.email_cta_url || "https://wa.me/919930400694";
-    const ctaLabel = rule.email_cta_label || "Message us on WhatsApp →";
+    const ctaUrl = rule.email_cta_url || "https://adventourist.in/contact";
+    const ctaLabel = rule.email_cta_label || "Plan your trip →";
     const brandedHtml = wrapInBrandShell({
       heroTitle,
       heroSubtitle,
@@ -188,9 +188,6 @@ async function dispatchExecution(
     const r = await sendEmail(supabaseUrl, serviceKey, recipientContact, subject, brandedHtml);
     success = r.success;
     if (!success) errorMessage = (r.error || "Email send failed").slice(0, 500);
-  } else {
-    // WhatsApp dispatch is handled client-side via aisensy.ts; skip here.
-    errorMessage = "WhatsApp dispatch handled by client";
   }
 
   await admin
@@ -223,14 +220,11 @@ async function scheduleRule(
   ctx: any,
   triggerEvent: string,
 ) {
-  const channels: { ch: "whatsapp" | "email"; enabled: boolean; recipient: string }[] = [
-    { ch: "whatsapp", enabled: !!rule.wa_enabled, recipient: rule.wa_recipient || "customer" },
+  const channels: { ch: "email"; enabled: boolean; recipient: string }[] = [
     { ch: "email", enabled: !!rule.email_enabled, recipient: rule.email_recipient || "customer" },
   ];
   for (const c of channels) {
     if (!c.enabled) continue;
-    // Server-side runner only handles email; WhatsApp continues to fire from the client.
-    if (c.ch === "whatsapp") continue;
     const recips = recipientsFor("email", c.recipient, ctx);
     for (const r of recips) {
       const scheduled = new Date(
