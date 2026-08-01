@@ -8,8 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   getTravelStoryBySlug,
   getRelatedTravelStories,
+  getPublicDestinations,
   travelStoryImage,
   type TravelStory,
+  type CMSDestinationFull,
 } from "@/site/lib/api";
 import { WHATSAPP_URL } from "@/site/lib/constants";
 
@@ -75,6 +77,11 @@ export default function StoryDetail() {
   const { toast } = useToast();
   const [story, setStory] = useState<TravelStory | null | undefined>(undefined);
   const [related, setRelated] = useState<TravelStory[]>([]);
+  const [destinations, setDestinations] = useState<CMSDestinationFull[]>([]);
+
+  useEffect(() => {
+    getPublicDestinations().then(setDestinations);
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -92,6 +99,18 @@ export default function StoryDetail() {
     () => (story?.content_html ? DOMPurify.sanitize(story.content_html) : ""),
     [story?.content_html],
   );
+
+  // Destinations mentioned in this story's title / tags — gives every story page
+  // an outbound internal link to the matching destination guide.
+  const linkedDestinations = useMemo(() => {
+    if (!story || destinations.length === 0) return [];
+    const haystack = [story.title, story.focus_keyword ?? "", ...(story.tags ?? [])]
+      .join(" ")
+      .toLowerCase();
+    return destinations
+      .filter((d) => d.slug && d.name && haystack.includes(d.name.toLowerCase()))
+      .slice(0, 4);
+  }, [story, destinations]);
 
   if (story === undefined) {
     return (
@@ -207,6 +226,26 @@ export default function StoryDetail() {
             />
           ) : (
             <p className="font-body text-ink/60">This story has no content yet.</p>
+          )}
+
+          {linkedDestinations.length > 0 && (
+            <div className="mt-10 bg-drift/60 rounded-2xl p-6">
+              <h2 className="font-display font-bold text-lg text-abyss mb-3">
+                Plan a trip to {linkedDestinations.map((d) => d.name).join(" or ")}
+              </h2>
+              <ul className="flex flex-wrap gap-2">
+                {linkedDestinations.map((d) => (
+                  <li key={d.id}>
+                    <Link
+                      to={`/destinations/${d.slug}`}
+                      className="inline-block bg-white hover:bg-blaze hover:text-white text-abyss font-body text-sm px-4 py-2 rounded-full transition-colors"
+                    >
+                      {d.name} travel guide →
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {/* Share */}
