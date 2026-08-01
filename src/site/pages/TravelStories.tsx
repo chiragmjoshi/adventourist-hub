@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import {
   getAllTravelStories,
   travelStoryImage,
+  travelStoryAlt,
   type TravelStory,
   type TravelStoryCategory,
 } from "@/site/lib/api";

@@ -10,6 +10,7 @@ import {
   getRelatedTravelStories,
   getPublicDestinations,
   travelStoryImage,
+  travelStoryAlt,
   slugToTitle,
   type TravelStory,
   type CMSDestinationFull,
@@ -130,6 +131,10 @@ export default function StoryDetail() {
   if (story === null) return <NotFound />;
 
   const cover = travelStoryImage(story);
+  const coverAbs = cover.startsWith("http")
+    ? cover
+    : `https://www.adventourist.in${cover}`;
+  const coverAlt = travelStoryAlt(story);
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareText = `${story.title} — Adventourist`;
   const ctaSubject = story.focus_keyword?.trim();
@@ -141,7 +146,7 @@ export default function StoryDetail() {
       "@type": "Article",
       headline: story.title,
       description: story.seo_description ?? story.excerpt ?? undefined,
-      image: cover,
+      image: coverAbs,
       author: { "@type": "Person", name: story.author ?? "Adventourist" },
       datePublished: story.published_at ?? undefined,
       dateModified: (story as any).updated_at ?? story.published_at ?? undefined,
@@ -183,7 +188,11 @@ export default function StoryDetail() {
       <section className="relative h-[55vh] min-h-[360px] w-full overflow-hidden">
         <img
           src={cover}
-          alt={story.title}
+          alt={coverAlt}
+          width={1600}
+          height={900}
+          fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/30 to-transparent" />
@@ -330,8 +339,11 @@ export default function StoryDetail() {
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
                       src={travelStoryImage(s)}
-                      alt={s.title}
+                      alt={travelStoryAlt(s)}
+                      width={800}
+                      height={600}
                       loading="lazy"
+                      decoding="async"
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                     />
                     <span
