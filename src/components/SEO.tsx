@@ -31,7 +31,11 @@ const SEO = ({
   const absoluteCanonical = canonical.startsWith("http")
     ? canonical
     : `${SITE_URL}${canonical}`;
-  const image = ogImage || DEFAULT_OG_IMAGE;
+  const image = ogImage
+    ? ogImage.startsWith("http")
+      ? ogImage
+      : `${SITE_URL}${ogImage.startsWith("/") ? "" : "/"}${ogImage}`
+    : DEFAULT_OG_IMAGE;
   const schemas = Array.isArray(schema) ? schema : schema ? [schema] : [];
 
   // The static index.html <head> ships sitewide fallbacks for non-JS social

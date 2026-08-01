@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import {
   getAllTravelStories,
   travelStoryImage,
+  travelStoryAlt,
   type TravelStory,
   type TravelStoryCategory,
 } from "@/site/lib/api";
@@ -71,8 +72,11 @@ function StoryCard({ s, index }: { s: TravelStory; index: number }) {
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
             src={travelStoryImage(s)}
-            alt={s.title}
+            alt={travelStoryAlt(s)}
+            width={800}
+            height={600}
             loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
           />
           <span

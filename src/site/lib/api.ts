@@ -435,6 +435,24 @@ export function travelStoryImage(s: {
 const TRAVEL_STORY_LIST_COLS =
   "id,title,slug,excerpt,category,thumbnail_url,read_time_minutes,views,published_at,author,tags,status,seo_title,seo_description,focus_keyword";
 
+/**
+ * Descriptive, SEO-friendly alt text for a travel-story cover image.
+ * Uses the focus keyword where available so the alt describes the subject
+ * (destination / topic) rather than repeating the headline verbatim.
+ */
+export function travelStoryAlt(s: {
+  title?: string | null;
+  focus_keyword?: string | null;
+}): string {
+  const kw = s.focus_keyword?.trim();
+  const title = (s.title ?? "").trim();
+  if (kw) {
+    const pretty = kw.charAt(0).toUpperCase() + kw.slice(1);
+    return `${pretty} — travel photograph illustrating ${title || pretty}`;
+  }
+  return title ? `${title} — Adventourist travel photograph` : "Adventourist travel photograph";
+}
+
 export async function getTopTravelStories(limit = 4): Promise<TravelStory[]> {
   const { data, error } = await supabase
     .from("travel_stories" as any)
