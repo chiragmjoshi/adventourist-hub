@@ -61,6 +61,20 @@ export const formatINRPrice = (n?: number | null): string => {
   return "₹" + n.toLocaleString("en-IN");
 };
 
+/**
+ * Human-readable title derived from a URL slug. Used for the pre-fetch
+ * render so a crawler never sees a literal "Loading…" title while the
+ * real record is still in flight.
+ */
+export function slugToTitle(slug?: string | null): string {
+  if (!slug) return "";
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((w) => (w.length > 2 ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
 // ── Mappers: Supabase row → legacy CMSItinerary shape ─────────────────────────
 function mapItinerary(row: any): CMSItinerary {
   const dest = row.destinations ?? null;
