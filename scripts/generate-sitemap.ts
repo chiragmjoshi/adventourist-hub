@@ -54,6 +54,27 @@ function xmlEscape(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/**
+ * Guards against dead / junk URLs ever re-entering the sitemap.
+ * A slug must be a clean lower-case path segment — no feeds, no legacy
+ * blog paths, no query strings, no absolute URLs.
+ */
+const BAD_SLUG = /(^$|\s|\?|#|\/|^https?:|feed|travel-blog|wp-|staging|replytocom)/i;
+
+function isValidSlug(slug: unknown): slug is string {
+  return typeof slug === "string" && !BAD_SLUG.test(slug.trim());
+}
+
+function warnDropped(kind: string, rows: any[]) {
+  const dropped = rows.filter((r) => !isValidSlug(r?.slug));
+  if (dropped.length) {
+    console.warn(
+      `[sitemap] dropped ${dropped.length} invalid ${kind} slug(s):`,
+      dropped.map((r) => r?.slug).slice(0, 10),
+    );
+  }
+}
+
 function render(entries: Entry[]) {
   const urls = entries.map((e) => {
     const lines = [
@@ -82,8 +103,12 @@ async function main() {
     fetchTable("destinations", "select=slug,updated_at&is_active=eq.true&order=name.asc"),
   ]);
 
+  warnDropped("itinerary", trips);
+  warnDropped("story", stories);
+  warnDropped("destination", dests);
+
   const tripEntries: Entry[] = trips
-    .filter((t) => t.slug)
+    .filter((t) => isValidSlug(t.slug))
     .map((t) => ({
       path: `/trips/${t.slug}`,
       lastmod: t.updated_at ? new Date(t.updated_at).toISOString().slice(0, 10) : undefined,
@@ -92,7 +117,7 @@ async function main() {
     }));
 
   const storyEntries: Entry[] = stories
-    .filter((s) => s.slug)
+    .filter((s) => isValidSlug(s.slug))
     .map((s) => ({
       path: `/travel-stories/${s.slug}`,
       lastmod: s.updated_at ? new Date(s.updated_at).toISOString().slice(0, 10) : undefined,
@@ -101,7 +126,7 @@ async function main() {
     }));
 
   const destEntries: Entry[] = dests
-    .filter((d) => d.slug)
+    .filter((d) => isValidSlug(d.slug))
     .map((d) => ({
       path: `/destinations/${d.slug}`,
       lastmod: d.updated_at ? new Date(d.updated_at).toISOString().slice(0, 10) : undefined,
@@ -109,7 +134,13 @@ async function main() {
       priority: "0.75",
     }));
 
-  const all = [...staticEntries, ...tripEntries, ...destEntries, ...storyEntries];
+  // De-duplicate by path so no URL is advertised twice.
+  const seen = new Set<string>();
+  const all = [...staticEntries, ...tripEntries, ...destEntries, ...storyEntries].filter((e) => {
+    if (seen.has(e.path)) return false;
+    seen.add(e.path);
+    return true;
+  });
   const xml = render(all);
   writeFileSync(resolve("public/sitemap.xml"), xml);
   console.log(
