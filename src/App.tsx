@@ -7,10 +7,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
-import Login from "./pages/Login";
-import LandingPage from "./pages/LandingPage";
-import ThankYouPage from "./landing/ThankYouPage";
 import SiteHome from "./site/pages/Home";
+const Login = lazy(() => import("./pages/Login"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const ThankYouPage = lazy(() => import("./landing/ThankYouPage"));
 // Secondary public pages — lazy loaded so the landing route ships a small bundle
 const SiteTripsList = lazy(() => import("./site/pages/TripsList"));
 const SiteTripDetail = lazy(() => import("./site/pages/TripDetail"));
@@ -27,11 +27,10 @@ const PrivacyPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => (
 const TermsConditions = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.TermsConditions })));
 const RefundPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.RefundPolicy })));
 const PaymentPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.PaymentPolicy })));
-import NotFound from "./pages/NotFound";
-import AcceptInvite from "./pages/AcceptInvite";
-import ResetPassword from "./pages/ResetPassword";
 import { legacyRedirectRoutes } from "./routes/LegacyRedirects";
-import { processAutomationQueue } from "./services/automationEngine";
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 import { getCrossHostRedirect, getHostKind, isAdminPath } from "@/lib/hostname";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useDBHealthCheck } from "@/hooks/useDBHealthCheck";
