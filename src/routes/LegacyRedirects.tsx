@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Route, Navigate, useParams, useLocation } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
+import { getTravelStoryBySlug } from "@/site/lib/api";
 
 /**
  * Legacy URL redirects for old WordPress / pre-rebuild paths.
@@ -135,15 +136,25 @@ function RootSlugRedirect() {
   return <Navigate to={`/trips/${mapped}`} replace />;
 }
 
-// Old /story/ slug map
+/**
+ * Legacy blog / story slug aliases → the slug that actually exists in
+ * `travel_stories`. Verified against the live table (Aug 2026).
+ */
 const STORY_MAP: Record<string, string> = {
-  "camping-tips": "27-camping-tips",
+  "camping-tips": "camping-tips",
+  "27-camping-tips": "camping-tips",
   "we-bet-you-didn-t-know-about-these-intriguing-facts-about-ladakh": "interesting-facts-about-ladakh",
+  "interesting-facts-about-leh-ladakh": "interesting-facts-about-ladakh",
+  "things-to-do-in-jodhpur-rajasthan": "places-to-visit-in-jodhpur",
+  "6-reasons-to-visit-himachal-pradesh": "must-visit-places-in-himachal-pradesh",
+  "vacations-in-the-valleys-of-bhutan": "visit-thimphu-in-bhutan",
+  "things-to-do-in-udaipur": "best-things-to-do-in-udaipur",
+  "places-to-visit-in-kashmir-2": "places-to-visit-in-kashmir",
 };
 
 function StoryRedirect() {
   const { slug = "" } = useParams();
-  const mapped = STORY_MAP[slug];
+  const mapped = STORY_MAP[normaliseSlug(slug)];
   return <Navigate to={mapped ? `/travel-stories/${mapped}` : "/travel-stories"} replace />;
 }
 
