@@ -2,14 +2,16 @@ import { Link } from "react-router-dom";
 import { PHONE_DISPLAY, SUPPORT_EMAIL } from "@/site/lib/constants";
 
 const destinations = [
-  { label: "Bali",              href: "/trips?destination=Bali" },
-  { label: "Leh Ladakh",        href: "/trips?destination=Leh+Ladakh" },
-  { label: "Thailand",          href: "/trips?destination=Thailand" },
-  { label: "Sri Lanka",         href: "/trips?destination=Sri+Lanka" },
-  { label: "Singapore",         href: "/trips?destination=Singapore" },
-  { label: "Seychelles",        href: "/trips?destination=Seychelles" },
-  { label: "Vietnam",           href: "/trips?destination=Vietnam" },
-  { label: "Himachal Pradesh",  href: "/trips?destination=Himachal+Pradesh" },
+  { label: "Bali",              href: "/destinations/bali" },
+  { label: "Ladakh",            href: "/destinations/ladakh" },
+  { label: "Thailand",          href: "/destinations/thailand" },
+  { label: "Sri Lanka",         href: "/destinations/srilanka" },
+  { label: "Singapore",         href: "/destinations/singapore" },
+  { label: "Seychelles",        href: "/destinations/seychelles" },
+  { label: "Vietnam",           href: "/destinations/vietnam" },
+  { label: "Himachal Pradesh",  href: "/destinations/himachal-pradesh" },
+  { label: "Nepal",             href: "/destinations/nepal" },
+  { label: "All destinations",  href: "/destinations" },
 ];
 
 const company = [
