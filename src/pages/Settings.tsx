@@ -385,6 +385,59 @@ const Settings = () => {
 
           {/* Email Configuration */}
           <Card className="border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm flex items-center gap-2"><Mail className="h-4 w-4" />Email Provider</CardTitle></CardHeader>
+            <CardContent className="px-5 pb-5 space-y-3">
+              <div className="grid gap-2 max-w-lg">
+                {[
+                  { v: "smtp", label: "SMTP only", desc: "Send everything through your SMTP server (current behaviour)" },
+                  { v: "smtp_resend", label: "SMTP with Resend fallback", desc: "Try SMTP first; if it fails, retry the same email via Resend" },
+                  { v: "resend_smtp", label: "Resend with SMTP fallback", desc: "Try Resend first; if it fails, retry the same email via SMTP" },
+                  { v: "resend", label: "Resend only", desc: "Send everything through the Resend API" },
+                ].map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.v}
+                    onClick={() => updateAutoField("email_provider", opt.v)}
+                    className={`text-left rounded-lg border px-3 py-2.5 transition-colors ${emailProvider === opt.v ? "border-primary bg-primary/5" : "border-border/60 hover:bg-muted/40"}`}
+                  >
+                    <p className="text-xs font-medium">{opt.label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">Click Save below to apply. Applies to all automation and system emails.</p>
+            </CardContent>
+          </Card>
+
+          {/* Resend Configuration */}
+          <Card className="border-border/50 shadow-none">
+            <CardHeader className="px-5 pt-4 pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm flex items-center gap-2"><Mail className="h-4 w-4" />Email — Resend API</CardTitle>
+              <Badge className="bg-ridge/20 text-ridge text-[10px]">API key connected</Badge>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 space-y-3">
+              <div className="max-w-sm">
+                <Label className="text-xs text-muted-foreground">Resend From Email (optional)</Label>
+                <Input
+                  type="email"
+                  value={getAutomationFieldValue("resend_from_address")}
+                  onChange={(e) => updateAutoField("resend_from_address", e.target.value)}
+                  className="mt-1 rounded-md"
+                  placeholder="hello@adventourist.in"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Must be on a domain verified inside your Resend account. Leave blank to reuse the From Email below.
+                </p>
+              </div>
+              <Button size="sm" variant="outline" disabled={resendTesting} onClick={() => handleSendTestEmail("resend")}>
+                {resendTesting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Mail className="h-3.5 w-3.5 mr-1" />}
+                {resendTesting ? "Sending…" : "Send Test via Resend"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* SMTP Configuration */}
+          <Card className="border-border/50 shadow-none">
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm flex items-center gap-2"><Mail className="h-4 w-4" />Email — SMTP Configuration</CardTitle></CardHeader>
             <CardContent className="px-5 pb-5 space-y-3">
               <div className="grid grid-cols-2 gap-4 max-w-lg">
@@ -420,10 +473,10 @@ const Settings = () => {
                 size="sm"
                 variant="outline"
                 disabled={smtpTesting}
-                onClick={handleSendTestEmail}
+                onClick={() => handleSendTestEmail("smtp")}
               >
                 {smtpTesting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Mail className="h-3.5 w-3.5 mr-1" />}
-                {smtpTesting ? "Sending…" : "Send Test Email"}
+                {smtpTesting ? "Sending…" : "Send Test via SMTP"}
               </Button>
               {!isSmtpConfigured && (
                 <p className="text-[11px] text-muted-foreground">Fill SMTP Host and Username above, then click Save to enable the test.</p>
