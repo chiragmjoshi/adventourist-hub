@@ -1,40 +1,36 @@
-## Goal
-Every automation runs on email only. WhatsApp is switched off across rules, code paths and UI, and WA-only rules are converted into email rules.
+# Add Resend email integration
 
-## Current state (verified)
-- `automation_rules` has 24 rules. 14 are WhatsApp-only (`wa_enabled = true`, `email_enabled = false`, empty `email_subject`/`email_body`) — they would send nothing if simply activated.
-- 8 rules are inactive today; some are duplicates of newer rules (e.g. "Pre-trip reminder — 3 days before" vs "Pre-Trip — 3 Days Before", "Review request — day after return" vs "Review Request — Day 3", "New lead — agent alert" vs "New Lead — Agent Alert").
-- Server runner (`process-automations`) already skips WhatsApp; the client engine (`automationEngine.ts`) still dispatches via AiSensy.
-- Email dispatch already wraps content in the Adventourist branded shell.
+Give the app a second email channel (Resend) alongside the existing SMTP setup, usable as the primary sender or as an automatic backup when SMTP fails.
 
-## Plan
+## What the user gets
 
-### 1. Data migration: WA → Email
-For every rule:
-- Set `email_enabled = true`, `wa_enabled = false`.
-- Where `email_body` is empty, populate it from `wa_message_body` (converted to paragraph text, variables like `{{name}}` preserved). Where no WA body exists either, write a short on-brand body matching the rule's purpose.
-- Where `email_subject` is empty, write a brand-appropriate subject per rule.
-- Carry `wa_recipient` into `email_recipient` for WA-only rules (customer / agent / both), so agent alerts stay agent alerts.
-- Clear `wa_template_name` so AiSensy templates aren't referenced.
+**Settings → Integrations**: a new "Email (Resend)" card next to the SMTP card showing Connected / Not Connected, emails sent today / this month, and a Configure link.
 
-### 2. Deduplicate before activating
-Retain the newer, richer rule of each duplicate pair and leave the legacy twin inactive, so activation does not double-send. Rules with no duplicate (e.g. "Quote Sent — Follow-up", "Inactive — 7 Day Check-in") get email content and are activated.
+**Settings → Automations → Email section**: a new "Email provider" control with three options:
+- SMTP only (current behaviour)
+- Resend only
+- SMTP with Resend fallback (recommended) — if SMTP errors, the same email is retried through Resend automatically
 
-### 3. Activate
-Set `is_active = true` on the retained rule set (all except the deduplicated legacy twins).
+Plus a "From name" / "From address" reused for both, and a "Send Test Email" button that reports which provider actually delivered the message.
 
-### 4. Code changes
-- `src/services/automationEngine.ts`: remove the WhatsApp branch and the AiSensy import; queue/dispatch email only; `sendTestMessage` becomes email-only.
-- `supabase/functions/process-automations/index.ts`: drop the WhatsApp channel entry entirely instead of skipping it (no more "WhatsApp dispatch handled by client" rows in the log).
-- Leave `src/services/aisensy.ts` in place but unused, so WA can be re-enabled later.
+## Setup / credentials
 
-### 5. UI changes
-- `RuleEditor.tsx`: remove the WhatsApp action section and WA test channel; email becomes the only channel.
-- `Automations.tsx`: drop the "WA →" badge and the WhatsApp option in the channel filter.
-- Default email CTA label changes from "Message us on WhatsApp →" to a neutral "Plan your trip →".
+Resend is available as a built-in connector, so no manual key pasting: connecting it links the Resend credentials to the project and the backend uses them. If you'd rather use your own Resend API key directly, that also works — say so and I'll request it as a secret instead.
 
-### 6. Deploy & verify
-Deploy `process-automations`, then confirm each active rule has a non-empty subject and body and that a test send renders correctly in the branded shell.
+The From address must be on a domain verified in your Resend account (e.g. `notify@adventourist.in`) for delivery to real customers.
 
-## Note
-Existing queued `automation_executions` rows with `channel = 'whatsapp'` will be marked skipped so they don't sit pending forever.
+## Technical changes
+
+1. **`supabase/functions/send-email/index.ts`** — refactor into two senders:
+   - `sendViaSmtp()` (existing nodemailer path, unchanged)
+   - `sendViaResend()` (POST to the Resend gateway `/emails` with from/to/subject/html/text)
+   - dispatcher reads `email_provider` from `automation_settings` and applies the chosen order, with fallback on failure; response returns `{ success, provider, messageId, attempts }`.
+2. **`automation_settings`** — new keys via existing settings rows (no schema change): `email_provider`, `resend_from_address`. No migration required since the table is key/value; only the client-side `validKeys` allowlist in `Settings.tsx` is extended.
+3. **`src/pages/Settings.tsx`** — add the provider selector in the Automations tab, extend `validKeys`, add the Resend integration card, and surface the returned provider in the test-email toast.
+4. **`supabase/functions/send-test-email/index.ts`** — pass through / display provider used.
+5. `process-automations` and `automationEngine` need no changes — they already call `send-email`, which now handles provider selection and fallback internally.
+6. Deploy the updated edge functions.
+
+## Not included
+
+No bulk/marketing sending, no template changes — the existing Adventourist branded shell keeps wrapping every automation email regardless of provider.
