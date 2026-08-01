@@ -10,6 +10,7 @@ import {
   getRelatedTravelStories,
   getPublicDestinations,
   travelStoryImage,
+  slugToTitle,
   type TravelStory,
   type CMSDestinationFull,
 } from "@/site/lib/api";
@@ -114,7 +115,14 @@ export default function StoryDetail() {
 
   if (story === undefined) {
     return (
-      <SiteLayout title="Loading… | Adventourist">
+      <SiteLayout title={`${slugToTitle(slug)} | Adventourist`}>
+        {/* Slug-derived provisional metadata — never a literal "Loading…" title. */}
+        <SEO
+          title={`${slugToTitle(slug)} — Adventourist`}
+          description={`${slugToTitle(slug)} — a travel story from Adventourist.`}
+          canonical={`/travel-stories/${slug}`}
+          ogType="article"
+        />
         <StorySkeleton />
       </SiteLayout>
     );
