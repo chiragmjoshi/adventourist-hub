@@ -4,7 +4,7 @@ import SiteLayout from "@/site/SiteLayout";
 import SEO from "@/components/SEO";
 import TripImage from "@/site/ui/TripImage";
 import TripLeadForm from "@/site/components/trip/TripLeadForm";
-import { getItineraryBySlug, getItineraries, getCMSImageUrl, formatINRPrice, type CMSItinerary } from "@/site/lib/api";
+import { getItineraryBySlug, getItineraries, getCMSImageUrl, formatINRPrice, slugToTitle, type CMSItinerary } from "@/site/lib/api";
 import { waLink } from "@/site/lib/utils";
 
 const SITE = "https://adventourist.in";
