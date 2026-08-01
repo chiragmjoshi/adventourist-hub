@@ -48,6 +48,12 @@ function StorySkeleton() {
 function NotFound() {
   return (
     <SiteLayout title="Story not found | Adventourist">
+      <SEO
+        title="Story Not Found — Adventourist"
+        description="The story you're looking for may have been moved or unpublished."
+        canonical="/travel-stories"
+        noIndex
+      />
       <section className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
         <h1 className="font-display font-black text-4xl text-abyss mb-3">Story not found</h1>
         <p className="font-body text-ink/60 mb-6">

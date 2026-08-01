@@ -69,6 +69,16 @@ Disallow: /reset-password
 Disallow: /l/
 Disallow: /thank-you
 
-Sitemap: https://www.adventourist.in/sitemap.xml
-Sitemap: https://ufjhiqdpshrubephgxrs.supabase.co/functions/v1/sitemap
+# Legacy WordPress crawl-budget sinks
+Disallow: /*?replytocom=
+Disallow: /*?share=
+Disallow: /*?like_comment=
+Disallow: /*/feed/
+Disallow: /*/feed$
+Disallow: /*/amp$
+# NOTE: do NOT block /travel-blog/ until the Cloudflare 301s are live —
+# blocking it first would stop Google from ever seeing the redirects and
+# the ~190 "Page with redirect" URLs would stay stuck permanently.
+# Disallow: /travel-blog/
+
 Host: https://www.adventourist.in

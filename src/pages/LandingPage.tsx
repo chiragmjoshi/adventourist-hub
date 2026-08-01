@@ -108,6 +108,7 @@ const LandingPage = () => {
           canonical={`/l/${slug}`}
           ogImage={(page as any).hero_image}
           ogType="article"
+          noIndex
           schema={[
             {
               "@context": "https://schema.org",

@@ -28,6 +28,7 @@ const TermsConditions = lazy(() => import("./site/pages/PolicyPage").then((m) =>
 const RefundPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.RefundPolicy })));
 const PaymentPolicy = lazy(() => import("./site/pages/PolicyPage").then((m) => ({ default: m.PaymentPolicy })));
 import { legacyRedirectRoutes } from "./routes/LegacyRedirects";
+import UrlNormaliser from "./routes/UrlNormaliser";
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -147,6 +148,7 @@ const App = () => {
       <BrowserRouter>
         <MaybeAuth>
           {getHostKind() !== "public" && <HealthCheckRunner />}
+          <UrlNormaliser />
           <Suspense fallback={<AdminLoader />}>
           <Routes>
             {/* Legacy URL redirects (WordPress → new site) */}
