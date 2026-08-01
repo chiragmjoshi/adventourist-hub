@@ -83,10 +83,8 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
   const qc = useQueryClient();
   const [form, setForm] = useState<any>(emptyRule);
   const [testOpen, setTestOpen] = useState(false);
-  const [testChannel, setTestChannel] = useState<"whatsapp" | "email">("whatsapp");
   const [testContact, setTestContact] = useState("");
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
-  const waRef = useRef<HTMLTextAreaElement>(null);
   const subjRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLTextAreaElement>(null);
   const heroTitleRef = useRef<HTMLInputElement>(null);
@@ -102,10 +100,9 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
 
   const update = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const insertAt = (target: "wa_message_body" | "email_subject" | "email_body" | "email_hero_title" | "email_hero_subtitle", token: string) => {
+  const insertAt = (target: "email_subject" | "email_body" | "email_hero_title" | "email_hero_subtitle", token: string) => {
     const ref =
-      target === "wa_message_body" ? waRef.current
-      : target === "email_subject" ? subjRef.current
+      target === "email_subject" ? subjRef.current
       : target === "email_body" ? emailRef.current
       : target === "email_hero_title" ? heroTitleRef.current
       : heroSubtitleRef.current;
@@ -139,10 +136,7 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
         delay_hours: Number(form.delay_hours) || 0,
         send_time_window_start: form.send_time_window_start || null,
         send_time_window_end: form.send_time_window_end || null,
-        wa_enabled: form.wa_enabled,
-        wa_recipient: form.wa_recipient,
-        wa_template_name: form.wa_template_name || null,
-        wa_message_body: form.wa_message_body || null,
+        wa_enabled: false,
         email_enabled: form.email_enabled,
         email_recipient: form.email_recipient,
         email_subject: form.email_subject || null,
@@ -171,24 +165,16 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
 
   const handleTest = async () => {
     if (!testContact) { toast.error("Enter a recipient"); return; }
-    if (testChannel === "email") {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testContact.trim())) {
-        toast.error("Enter a valid email address");
-        return;
-      }
-    } else {
-      if (!/^\+?\d[\d\s-]{7,}$/.test(testContact.trim())) {
-        toast.error("Enter a valid mobile number with country code");
-        return;
-      }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testContact.trim())) {
+      toast.error("Enter a valid email address");
+      return;
     }
-    const result = await sendTestMessage(form, testChannel, testContact);
+    const result = await sendTestMessage(form, "email", testContact);
     if (result.success) toast.success("Test message sent");
     else toast.error(`Test failed: ${(result.response as any)?.error || "Unknown"}`);
     setTestOpen(false);
   };
 
-  const previewMessage = resolveVariables(form.wa_message_body || "", DUMMY_PREVIEW_CTX);
   const previewSubject = resolveVariables(form.email_subject || "", DUMMY_PREVIEW_CTX);
   const previewBody = resolveVariables(form.email_body || "", DUMMY_PREVIEW_CTX);
   const previewHeroTitle = form.email_hero_title
@@ -202,8 +188,8 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
     heroSubtitle: previewHeroSubtitle,
     bodyHtml: previewBody,
     agentName: (DUMMY_PREVIEW_CTX.agent as any)?.name,
-    ctaUrl: form.email_cta_url || "https://wa.me/919930400694",
-    ctaLabel: form.email_cta_label || "Message us on WhatsApp →",
+    ctaUrl: form.email_cta_url || "https://adventourist.in/contact",
+    ctaLabel: form.email_cta_label || "Plan your trip →",
     accentColor: "blaze",
   });
 
@@ -292,35 +278,6 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
             </div>
           </Section>
 
-          {/* WhatsApp action */}
-          <Section title="WhatsApp action">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Send WhatsApp message</Label>
-              <Switch checked={form.wa_enabled} onCheckedChange={(v) => update("wa_enabled", v)} />
-            </div>
-            {form.wa_enabled && (
-              <>
-                <RecipientToggle value={form.wa_recipient} onChange={(v) => update("wa_recipient", v)} />
-                <div>
-                  <Label className="text-xs">AiSensy template name</Label>
-                  <Input value={form.wa_template_name || ""} onChange={(e) => update("wa_template_name", e.target.value)} placeholder="e.g. trip_confirmed" className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Message body</Label>
-                  <Textarea ref={waRef} rows={6} value={form.wa_message_body || ""} onChange={(e) => update("wa_message_body", e.target.value)} className="mt-1 font-mono text-xs" />
-                  <p className="text-[10px] text-muted-foreground mt-1">Click a variable to insert at cursor:</p>
-                  <VariableChips onInsert={(t) => insertAt("wa_message_body", t)} />
-                </div>
-                {form.wa_message_body && (
-                  <div className="border rounded-md p-3 bg-muted/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Live preview</p>
-                    <p className="text-xs whitespace-pre-wrap">{previewMessage}</p>
-                  </div>
-                )}
-              </>
-            )}
-          </Section>
-
           {/* Email action */}
           <Section title="Email action">
             <div className="flex items-center justify-between">
@@ -369,11 +326,11 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
                       </div>
                       <div>
                         <Label className="text-xs">CTA URL</Label>
-                        <Input value={form.email_cta_url || ""} onChange={(e) => update("email_cta_url", e.target.value)} placeholder="https://wa.me/919930400694" className="mt-1" />
+                        <Input value={form.email_cta_url || ""} onChange={(e) => update("email_cta_url", e.target.value)} placeholder="https://adventourist.in/contact" className="mt-1" />
                       </div>
                       <div>
                         <Label className="text-xs">CTA label</Label>
-                        <Input value={form.email_cta_label || ""} onChange={(e) => update("email_cta_label", e.target.value)} placeholder="Message us on WhatsApp →" className="mt-1" />
+                        <Input value={form.email_cta_label || ""} onChange={(e) => update("email_cta_label", e.target.value)} placeholder="Plan your trip →" className="mt-1" />
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -395,16 +352,11 @@ export default function RuleEditor({ open, onClose, rule }: Props) {
     {/* Test modal */}
     <Dialog open={testOpen} onOpenChange={setTestOpen}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Send test</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Send test email</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div className="flex border rounded-md overflow-hidden w-fit">
-            {(["whatsapp", "email"] as const).map((c) => (
-              <button key={c} type="button" onClick={() => setTestChannel(c)} className={`px-3 py-1 text-xs ${testChannel === c ? "bg-primary text-primary-foreground" : "bg-background"}`}>{c}</button>
-            ))}
-          </div>
           <div>
-            <Label className="text-xs">{testChannel === "whatsapp" ? "Mobile (with country code)" : "Email"}</Label>
-            <Input value={testContact} onChange={(e) => setTestContact(e.target.value)} placeholder={testChannel === "whatsapp" ? "+919876543210" : "test@example.com"} className="mt-1" />
+            <Label className="text-xs">Email</Label>
+            <Input value={testContact} onChange={(e) => setTestContact(e.target.value)} placeholder="test@example.com" className="mt-1" />
           </div>
           <Button onClick={handleTest}>Send</Button>
         </div>
