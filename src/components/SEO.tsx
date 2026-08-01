@@ -53,7 +53,16 @@ const SEO = ({
       .forEach((el) => {
         if (!el.hasAttribute("data-rh") && !el.id) el.remove();
       });
-  }, []);
+    if (noIndex) {
+      document.head
+        .querySelectorAll<HTMLMetaElement>(
+          'meta[name="robots"], meta[name="googlebot"], meta[name="bingbot"]',
+        )
+        .forEach((el) => {
+          if (!el.hasAttribute("data-rh") && !el.id) el.remove();
+        });
+    }
+  }, [noIndex]);
 
   return (
     <Helmet>
