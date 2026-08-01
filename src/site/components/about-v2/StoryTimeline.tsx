@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import img1 from "@/assets/about-story-1.jpg";
-import img2 from "@/assets/about-story-2.jpg";
-import img3 from "@/assets/about-story-3.jpg";
-import img4 from "@/assets/about-story-4.jpg";
+import img1 from "@/assets/about-story-1.webp";
+import img2 from "@/assets/about-story-2.webp";
+import img3 from "@/assets/about-story-3.webp";
+import img4 from "@/assets/about-story-4.webp";
 
 const STEPS = [
   {

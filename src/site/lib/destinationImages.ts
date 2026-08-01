@@ -5,26 +5,26 @@
  */
 export const DESTINATION_IMAGES: Record<string, string> = {
   // International
-  "bali":           "/site-images/bali.jpg",
-  "thailand":       "/site-images/thailand.jpg",
-  "vietnam":        "/site-images/vietnam.jpg",
-  "singapore":      "/site-images/singapore-night.jpg",
-  "malaysia":       "/site-images/malaysia.jpg",
-  "seychelles":     "/site-images/seychelles.jpg",
-  "maldives":       "/site-images/maldives.jpg",
-  "sri lanka":      "/site-images/sri-lanka.jpg",
-  "dubai":          "/site-images/dubai.jpg",
+  "bali":           "/site-images/bali.webp",
+  "thailand":       "/site-images/thailand.webp",
+  "vietnam":        "/site-images/vietnam.webp",
+  "singapore":      "/site-images/singapore-night.webp",
+  "malaysia":       "/site-images/malaysia.webp",
+  "seychelles":     "/site-images/seychelles.webp",
+  "maldives":       "/site-images/maldives.webp",
+  "sri lanka":      "/site-images/sri-lanka.webp",
+  "dubai":          "/site-images/dubai.webp",
 
   // India
-  "leh ladakh":     "/site-images/ladakh.jpg",
-  "ladakh":         "/site-images/ladakh.jpg",
-  "kashmir":        "/site-images/kashmir.jpg",
-  "kerala":         "/site-images/kerala.jpg",
-  "goa":            "/site-images/goa.jpg",
-  "rajasthan":      "/site-images/rajasthan.jpg",
+  "leh ladakh":     "/site-images/ladakh.webp",
+  "ladakh":         "/site-images/ladakh.webp",
+  "kashmir":        "/site-images/kashmir.webp",
+  "kerala":         "/site-images/kerala.webp",
+  "goa":            "/site-images/goa.webp",
+  "rajasthan":      "/site-images/rajasthan.webp",
 
   // Fallback — never a wrong-country image
-  "default":        "/site-images/bg-home-page.jpg",
+  "default":        "/site-images/bg-home-page.webp",
 };
 
 export function getDestinationImage(

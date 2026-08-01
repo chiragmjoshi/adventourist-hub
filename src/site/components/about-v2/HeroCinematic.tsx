@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import heroImg from "@/assets/about-hero.jpg";
+import heroImg from "@/assets/about-hero.webp";
 
 const HEADLINE = "We don't just plan trips. We design journeys.";
 

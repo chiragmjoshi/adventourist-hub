@@ -36,7 +36,7 @@ export function getCMSImageUrl(
   bucketOrOptions: string | CMSImageOptions = DEFAULT_BUCKET,
   maybeOptions?: CMSImageOptions
 ): string {
-  if (!p) return "/site-images/bali.jpg";
+  if (!p) return "/site-images/bali.webp";
   // Local public assets (already SEO-optimised images shipped with the site) — return as-is.
   if (p.startsWith("/site-images/") || p.startsWith("/assets/")) return p;
   const bucket = typeof bucketOrOptions === "string" ? bucketOrOptions : DEFAULT_BUCKET;

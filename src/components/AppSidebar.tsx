@@ -16,8 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRBAC } from "@/hooks/useRBAC";
 import { useAuth } from "@/contexts/AuthContext";
-import logoHorizontal from "@/assets/logo-horizontal.png";
-import logoMain from "@/assets/logo-main.png";
+import logoHorizontal from "@/assets/logo-horizontal.webp";
+import logoMain from "@/assets/logo-main.webp";
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-abyss text-white",
