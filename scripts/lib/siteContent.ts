@@ -128,7 +128,7 @@ export const staticRoutes: RouteEntry[] = [
     priority: "1.0",
     title: "Custom Travel Planner in Mumbai | Adventourist",
     description:
-      "Mumbai-based custom travel planner. Personalised family holidays, honeymoons and experiential trips — real experts, zero booking fees.",
+      "Plan personalised family holidays, honeymoons and experiential trips with Adventourist — a Mumbai-based custom travel planner. Zero booking fees.",
     h1: "Custom Travel Planner in Mumbai",
     intro:
       "Adventourist plans personalised family holidays, honeymoons and experiential trips from Mumbai. No fixed packages — real experts, zero booking fees.",
