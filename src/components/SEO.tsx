@@ -53,15 +53,18 @@ const SEO = ({
       .forEach((el) => {
         if (!el.hasAttribute("data-rh") && !el.id) el.remove();
       });
-    if (noIndex) {
-      document.head
-        .querySelectorAll<HTMLMetaElement>(
-          'meta[name="robots"], meta[name="googlebot"], meta[name="bingbot"]',
-        )
-        .forEach((el) => {
-          if (!el.hasAttribute("data-rh") && !el.id) el.remove();
-        });
-    }
+    // Never leave the static index.html robots tag saying "index" on a page that
+    // asked for noIndex — rewrite it in place instead of deleting it, so
+    // indexable pages keep their max-image-preview / max-snippet directives.
+    document.head
+      .querySelectorAll<HTMLMetaElement>(
+        'meta[name="robots"], meta[name="googlebot"], meta[name="bingbot"]',
+      )
+      .forEach((el) => {
+        if (el.hasAttribute("data-rh") || el.id) return;
+        if (!el.dataset.defaultContent) el.dataset.defaultContent = el.content;
+        el.content = noIndex ? "noindex, nofollow" : el.dataset.defaultContent;
+      });
   }, [noIndex]);
 
   return (
