@@ -36,7 +36,7 @@ export function getCMSImageUrl(
   bucketOrOptions: string | CMSImageOptions = DEFAULT_BUCKET,
   maybeOptions?: CMSImageOptions
 ): string {
-  if (!p) return "/site-images/bali.jpg";
+  if (!p) return "/site-images/bali.webp";
   // Local public assets (already SEO-optimised images shipped with the site) — return as-is.
   if (p.startsWith("/site-images/") || p.startsWith("/assets/")) return p;
   const bucket = typeof bucketOrOptions === "string" ? bucketOrOptions : DEFAULT_BUCKET;
@@ -60,6 +60,20 @@ export const formatINRPrice = (n?: number | null): string => {
   if (!n || isNaN(n)) return "On Request";
   return "₹" + n.toLocaleString("en-IN");
 };
+
+/**
+ * Human-readable title derived from a URL slug. Used for the pre-fetch
+ * render so a crawler never sees a literal "Loading…" title while the
+ * real record is still in flight.
+ */
+export function slugToTitle(slug?: string | null): string {
+  if (!slug) return "";
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((w) => (w.length > 2 ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
 
 // ── Mappers: Supabase row → legacy CMSItinerary shape ─────────────────────────
 function mapItinerary(row: any): CMSItinerary {

@@ -1,8 +1,8 @@
 import { useRef, useState, MouseEvent } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import minalImg from "@/assets/team-minal.jpg";
-import pinkyImg from "@/assets/team-pinky.jpg";
-import viyaImg from "@/assets/team-viya.jpg";
+import minalImg from "@/assets/team-minal.webp";
+import pinkyImg from "@/assets/team-pinky.webp";
+import viyaImg from "@/assets/team-viya.webp";
 
 const TEAM = [
   {

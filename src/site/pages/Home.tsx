@@ -77,7 +77,7 @@ export default function Home() {
     >
       <SEO
         title="Custom Travel Planner in Mumbai | Adventourist"
-        description="Plan personalised family holidays, honeymoons and experiential trips with Adventourist — a Mumbai-based custom travel planner. No fixed packages. Real experts. WhatsApp support."
+        description="Plan personalised family holidays, honeymoons and experiential trips with Adventourist — a Mumbai-based custom travel planner. Zero booking fees."
         canonical="/"
         schema={HOME_JSONLD}
         keywords="travel agency in Mumbai, custom travel planner Mumbai, family holiday planner Mumbai, honeymoon planner Mumbai, luxury travel planner Mumbai, international tour planner Mumbai, personalised travel packages from Mumbai"

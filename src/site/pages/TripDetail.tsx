@@ -4,7 +4,7 @@ import SiteLayout from "@/site/SiteLayout";
 import SEO from "@/components/SEO";
 import TripImage from "@/site/ui/TripImage";
 import TripLeadForm from "@/site/components/trip/TripLeadForm";
-import { getItineraryBySlug, getItineraries, getCMSImageUrl, formatINRPrice, type CMSItinerary } from "@/site/lib/api";
+import { getItineraryBySlug, getItineraries, getCMSImageUrl, formatINRPrice, slugToTitle, type CMSItinerary } from "@/site/lib/api";
 import { waLink } from "@/site/lib/utils";
 
 const SITE = "https://adventourist.in";
@@ -77,9 +77,16 @@ export default function TripDetail() {
   );
 
   if (loading) {
+    const provisional = slugToTitle(slug);
     return (
-      <SiteLayout title="Loading… | Adventourist">
-        <SEO title="Loading… — Adventourist" description="Loading itinerary…" canonical={`/trips/${slug}`} noIndex />
+      <SiteLayout title={`${provisional} | Adventourist`}>
+        {/* Never expose a literal "Loading…" title/description to a crawler —
+            fall back to the slug-derived name until the record resolves. */}
+        <SEO
+          title={`${provisional} — Adventourist`}
+          description={`${provisional} — a custom itinerary planned by Adventourist, Mumbai. Fully personalisable, zero booking fees.`}
+          canonical={`/trips/${slug}`}
+        />
         <div className="max-w-4xl mx-auto px-4 py-32 text-center font-body text-ink/50">Loading itinerary…</div>
       </SiteLayout>
     );

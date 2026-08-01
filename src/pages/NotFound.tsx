@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
+import SEO from "@/components/SEO";
 
 const NotFound = () => {
   const { pathname } = useLocation();
@@ -12,9 +13,16 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-drift/40 px-4">
+      {/* Routes through <SEO /> so the static index.html "index, follow" robots
+          tag is rewritten to noindex — otherwise this 200-status page reads as
+          an indexable soft-404. */}
+      <SEO
+        title="404 — Page Not Found"
+        description="The page you're looking for doesn't exist."
+        canonical={pathname}
+        noIndex
+      />
       <Helmet>
-        <title>404 — Page Not Found | Adventourist</title>
-        <meta name="robots" content="noindex, nofollow" />
         <meta name="prerender-status-code" content="404" />
         <meta httpEquiv="Status" content="404 Not Found" />
       </Helmet>

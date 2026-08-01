@@ -9,6 +9,7 @@ import {
   getPublicDestinations,
   getCMSImageUrl,
   formatINRPrice,
+  slugToTitle,
   type CMSDestinationFull,
   type CMSItinerary,
 } from "@/site/lib/api";
@@ -55,7 +56,12 @@ export default function DestinationDetail() {
   if (loading) {
     return (
       <SiteLayout>
-        <SEO title="Loading…" description="Loading destination…" canonical={`/destinations/${slug}`} noIndex />
+        {/* Slug-derived provisional metadata — never a literal "Loading…" title. */}
+        <SEO
+          title={`${slugToTitle(slug)} Travel Guide & Trips from Mumbai`}
+          description={`Plan a custom ${slugToTitle(slug)} trip from Mumbai with Adventourist. Curated itineraries, fully personalisable. Zero booking fees.`}
+          canonical={`/destinations/${slug}`}
+        />
         <div className="max-w-4xl mx-auto px-4 py-32 text-center font-body text-ink/50">Loading…</div>
       </SiteLayout>
     );

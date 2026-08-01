@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import logoMain from "@/assets/logo-main.png";
+import logoMain from "@/assets/logo-main.webp";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
