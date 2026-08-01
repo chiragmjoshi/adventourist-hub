@@ -8,8 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   getTravelStoryBySlug,
   getRelatedTravelStories,
+  getPublicDestinations,
   travelStoryImage,
   type TravelStory,
+  type CMSDestinationFull,
 } from "@/site/lib/api";
 import { WHATSAPP_URL } from "@/site/lib/constants";
 
@@ -75,6 +77,11 @@ export default function StoryDetail() {
   const { toast } = useToast();
   const [story, setStory] = useState<TravelStory | null | undefined>(undefined);
   const [related, setRelated] = useState<TravelStory[]>([]);
+  const [destinations, setDestinations] = useState<CMSDestinationFull[]>([]);
+
+  useEffect(() => {
+    getPublicDestinations().then(setDestinations);
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -92,6 +99,18 @@ export default function StoryDetail() {
     () => (story?.content_html ? DOMPurify.sanitize(story.content_html) : ""),
     [story?.content_html],
   );
+
+  // Destinations mentioned in this story's title / tags — gives every story page
+  // an outbound internal link to the matching destination guide.
+  const linkedDestinations = useMemo(() => {
+    if (!story || destinations.length === 0) return [];
+    const haystack = [story.title, story.focus_keyword ?? "", ...(story.tags ?? [])]
+      .join(" ")
+      .toLowerCase();
+    return destinations
+      .filter((d) => d.slug && d.name && haystack.includes(d.name.toLowerCase()))
+      .slice(0, 4);
+  }, [story, destinations]);
 
   if (story === undefined) {
     return (

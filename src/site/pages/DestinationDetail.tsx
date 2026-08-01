@@ -263,6 +263,41 @@ export default function DestinationDetail() {
           )}
         </div>
       </section>
+
+      {/* Explore other destinations — internal linking so every destination page
+          is reachable within one hop from any other. */}
+      {others.length > 1 && (
+        <section className="bg-white py-12 lg:py-16 border-t border-abyss/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="font-display font-black text-2xl text-abyss mb-2">Explore other destinations</h2>
+            <p className="font-body text-ink/65 mb-6">
+              Not sure about {dest.name} yet? Browse the rest of our destination guides.
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {others
+                .filter((d) => d.slug && d.slug !== dest.slug)
+                .map((d) => (
+                  <li key={d.id}>
+                    <Link
+                      to={`/destinations/${d.slug}`}
+                      className="inline-block bg-drift/70 hover:bg-blaze hover:text-white text-abyss font-body text-sm px-4 py-2 rounded-full transition-colors"
+                    >
+                      {d.name}
+                    </Link>
+                  </li>
+                ))}
+              <li>
+                <Link
+                  to="/travel-stories"
+                  className="inline-block border border-abyss/15 hover:border-blaze text-abyss font-body text-sm px-4 py-2 rounded-full transition-colors"
+                >
+                  Travel stories
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </section>
+      )}
     </SiteLayout>
   );
 }
