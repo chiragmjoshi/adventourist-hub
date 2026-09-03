@@ -349,7 +349,7 @@ function PolicyPage(props: PolicyProps) {
                 </div>
               </div>
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi! I have a question about your ${title.toLowerCase()}. [src:policy_${slug(title)}]`)}`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi! I have a question about your ${title.toLowerCase()}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-blaze hover:bg-blaze/90 text-white font-display font-bold text-[14px] px-5 py-3 rounded-full transition-colors"

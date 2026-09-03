@@ -92,7 +92,7 @@ export interface WALinkOptions {
   trip?: string;
   /** Trip slug, used in the source token only. */
   slug?: string;
-  /** Source tag — gets embedded as [src:xxx] so inbound WA messages are traceable. */
+  /** Source tag — gets embedded as so inbound WA messages are traceable. */
   source?: string;
   /** Override the entire prompt body (still gets the source token appended). */
   message?: string;

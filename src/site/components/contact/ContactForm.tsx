@@ -33,7 +33,7 @@ function buildWAMessage(d: { name: string; destinations: string[]; groupSize: st
   if (d.dates) parts.push(`around ${d.dates}`);
   if (d.budget) parts.push(`with a budget of ${d.budget} per person`);
   if (d.message) parts.push(`\n\nNotes: ${d.message}`);
-  parts.push(`\n\nCan you help me plan this? [src:contact_page]`);
+  parts.push(`\n\nCan you help me plan this?`);
   return parts.join(" ");
 }
 

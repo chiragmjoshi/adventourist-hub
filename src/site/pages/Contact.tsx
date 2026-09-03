@@ -76,7 +76,7 @@ export default function Contact() {
     if (!/^[6-9]\d{9}$/.test(phone)) { setWaErr("Enter a valid 10-digit Indian mobile"); return; }
     setWaBusy(true);
     const firstName = waModal.name.split(" ")[0];
-    const message = `Hi ${firstName}! I'm ${waForm.name.trim()}. I'd like help planning a trip. [src:${waModal.waSource}]`;
+    const message = `Hi ${firstName}! I'm ${waForm.name.trim()}. I'd like help planning a trip.`;
     // 1) Open WhatsApp first so lead is never lost.
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
     // 2) Capture in CMS (fire-and-forget).

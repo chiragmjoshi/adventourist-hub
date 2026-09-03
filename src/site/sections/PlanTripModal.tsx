@@ -49,7 +49,7 @@ export default function PlanTripModal({ isOpen, onClose }: PlanTripModalProps) {
     setError("");
 
     // 1) Open WhatsApp immediately — fire-first so no lead is ever lost.
-    const waMsg = `Hi! I'm ${form.name}. I just submitted a trip inquiry${form.destination ? ` for ${form.destination}` : ""}. [src:homepage_modal]`;
+    const waMsg = `Hi! I'm ${form.name}. I just submitted a trip inquiry${form.destination ? ` for ${form.destination}` : ""}.`;
     try {
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`, "_blank");
     } catch { /* ignore popup blockers */ }
