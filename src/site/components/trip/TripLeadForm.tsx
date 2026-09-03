@@ -41,7 +41,6 @@ export default function TripLeadForm({ tripTitle, tripSlug, destination, pricePe
       form.budget ? `with budget ${form.budget}` : "",
       form.message ? `\n\nNotes: ${form.message}` : "",
       `\n\nCan you share details?`,
-      ` [src:trip_detail|trip:${tripSlug}]`,
     ].filter(Boolean).join(" ");
     return parts;
   };

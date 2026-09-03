@@ -28,7 +28,7 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
     // 1) Open WhatsApp immediately — synchronous, no await
     const destName = page.destinations?.name || "";
     const paxLabel = form.pax === "10+" ? "10+ people" : `${form.pax} ${form.pax === "1" ? "person" : "people"}`;
-    const waMsg = `Hi! My name is ${form.name}. I'm interested in ${page.hero_headline || page.name || "your trip"}${destName ? ` (${destName})` : ""}. We are ${paxLabel} travelling. Please share more details! [src:landing_${page.slug}]`;
+    const waMsg = `Hi! My name is ${form.name}. I'm interested in ${page.hero_headline || page.name || "your trip"}${destName ? ` (${destName})` : ""}. We are ${paxLabel} travelling. Please share more details!`;
     try {
       window.open(waLink(waMsg), "_blank");
     } catch {

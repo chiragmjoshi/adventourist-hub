@@ -235,7 +235,7 @@ export default function FAQs() {
             <p className="font-body text-[16px] sm:text-[17px] text-ink/65 leading-[1.7] max-w-xl mt-6">
               Everything you need to know about planning your trip with Adventourist. Can't find what you're looking for? Just{" "}
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi! I have a question that's not in your FAQs. [src:faqs_page]")}`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi! I have a question that's not in your FAQs.")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blaze underline underline-offset-2 hover:text-blaze/80"
@@ -293,7 +293,7 @@ export default function FAQs() {
             <div className="text-center py-16">
               <p className="font-body text-ink/60 text-[15px] mb-4">No questions match "{query}".</p>
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi! I couldn't find an answer to: ${query}. [src:faqs_no_match]`)}`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi! I couldn't find an answer to: ${query}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-blaze hover:bg-blaze/90 text-white font-display font-bold px-5 py-3 rounded-full text-[14px]"
@@ -330,7 +330,7 @@ export default function FAQs() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi! I have a question for the team. [src:faqs_cta]")}`}
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi! I have a question for the team.")}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-blaze hover:bg-blaze/90 text-white font-display font-bold px-7 py-4 rounded-full text-[15px] transition-colors"
