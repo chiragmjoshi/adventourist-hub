@@ -111,9 +111,7 @@ export function waLink(opts: string | WALinkOptions = {}): string {
       : o.trip
         ? `Hi! I'm interested in the "${o.trip}" trip. Can you help me plan it?`
         : "Hi! I'm interested in planning a trip with Adventourist.";
-  const tokenParts: string[] = [];
-  if (o.source) tokenParts.push(`src:${o.source}`);
-  if (o.slug)   tokenParts.push(`trip:${o.slug}`);
-  const token = tokenParts.length ? ` [${tokenParts.join("|")}]` : "";
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(base + token)}`;
+  // Tracking tokens are kept out of the message body — the customer should only
+  // ever see a clean, human-readable prompt in WhatsApp.
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(base)}`;
 }
