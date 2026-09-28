@@ -61,19 +61,55 @@
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/trips/bali-komodo-island-escape-12-days-of-beaches-culture-island-adventures</loc>
+    <loc>https://www.adventourist.in/trips/sri-lanka-7-nights-8-days</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/scenic-srilanka-5-nights-6-days</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/russia-murmansk-with-northern-lights-7-nights-8-days</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/scenic-sri-lanka-9-nights-10-days</loc>
+    <lastmod>2026-08-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/kedarnath-yatra-3-nights-4-days</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/scenic-sikkim-darjeeling-5-nights-6-days</loc>
+    <lastmod>2026-08-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/kashmir-paradise-9-nights-10-days</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/singapore-with-disney-adventure-cruise-5-nights-6-days</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.adventourist.in/trips/swiss-alpine-escape-6-days-of-scenic-peaks-swiss-wonders</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/croatia-slovenia-explorer-9-nights-10-days</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -86,30 +122,6 @@
   </url>
   <url>
     <loc>https://www.adventourist.in/trips/baku-gabala-in-4-nights-5-days</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/italy-grandeur-10-days-of-rome-florence-venice-milan</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/singapore-with-disney-adventure-cruise-5-nights-6-days</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/phu-quoc-island-escape-7-nights-8-days</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/best-of-vietnam-7-nights-8-days</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -133,6 +145,36 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.adventourist.in/trips/croatia-slovenia-explorer-9-nights-10-days</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/italy-grandeur-10-days-of-rome-florence-venice-milan</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/phu-quoc-island-escape-7-nights-8-days</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/best-of-vietnam-7-nights-8-days</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/bali-komodo-island-escape-12-days-of-beaches-culture-island-adventures</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.adventourist.in/trips/colors-of-rajasthan-in-9-nights-10-days</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -141,54 +183,6 @@
   <url>
     <loc>https://www.adventourist.in/trips/winter-wonderland-scandinavia-7-nights-8-days</loc>
     <lastmod>2026-07-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/manila-the-perfect-getaway-3-nights-4-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/north-east-vacation-in-8-nights-9-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/wildlife-of-rajasthan-in-5-nights-6-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/andaman-nicobar-islands-5-nights-6-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/dazzling-dubai-trip-3-nights-4-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/unmatched-uttarakhand-trip-6-nights-7-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/paradise-on-earth-kashmir-trip-5-nights-6-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.adventourist.in/trips/thai-away-phuket-and-krabi-6-days-5-nights</loc>
-    <lastmod>2026-05-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -475,12 +469,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.adventourist.in/trips/scenic-srilanka-5-nights-6-days</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.adventourist.in/trips/gorgeous-georgia-trip-5-nights-6-days</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>weekly</changefreq>
@@ -548,6 +536,54 @@
   </url>
   <url>
     <loc>https://www.adventourist.in/trips/pilgrim-nepal-3-nights-4-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/manila-the-perfect-getaway-3-nights-4-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/north-east-vacation-in-8-nights-9-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/wildlife-of-rajasthan-in-5-nights-6-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/andaman-nicobar-islands-5-nights-6-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/dazzling-dubai-trip-3-nights-4-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/unmatched-uttarakhand-trip-6-nights-7-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/paradise-on-earth-kashmir-trip-5-nights-6-days</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.adventourist.in/trips/thai-away-phuket-and-krabi-6-days-5-nights</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
