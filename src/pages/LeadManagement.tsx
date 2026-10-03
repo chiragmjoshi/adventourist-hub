@@ -412,20 +412,50 @@ const LeadManagement = () => {
     setCurrentPage(1);
   };
 
-  const handleExport = () => {
-    if (leads.length === 0) { toast.error("No data to export"); return; }
-    const headers = ["Traveller Code", "Name", "Email", "Mobile", "Destination", "Itinerary", "Disposition", "Sales Status", "Date"];
-    const rows = leads.map((l: any) => [
-      l.traveller_code, l.name, l.email || "", l.mobile || "",
-      l.destinations?.name || "", (l as any).itineraries?.headline || "",
-      l.disposition || "", l.sales_status || "",
-      l.created_at ? format(new Date(l.created_at), "dd/MM/yyyy") : "",
-    ]);
-    const csv = [headers, ...rows].map(r => r.map((c: string) => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `leads_${format(new Date(), "yyyyMMdd")}.csv`; a.click();
-    toast.success(`Exported ${leads.length} leads (current page) to CSV`);
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExport = async () => {
+    if (totalCount === 0) { toast.error("No data to export"); return; }
+    setIsExporting(true);
+    const tId = toast.loading(`Exporting ${totalCount.toLocaleString()} leads…`);
+    try {
+      const all: any[] = [];
+      const BATCH = 1000;
+      for (let page = 0; ; page++) {
+        let q = supabase
+          .from("leads")
+          .select("*, destinations(name), itineraries(headline), users!leads_assigned_to_fkey(name)");
+        q = applyBaseFilters(q);
+        if (activeDispositions.size > 0) q = q.in("disposition", [...activeDispositions]);
+        if (activeStatuses.size > 0) q = q.in("sales_status", [...activeStatuses]);
+        const { data, error } = await q
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(page * BATCH, page * BATCH + BATCH - 1);
+        if (error) throw error;
+        const batch = data ?? [];
+        all.push(...batch);
+        if (batch.length < BATCH) break;
+      }
+      const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const headers = ["Traveller Code", "Name", "Email", "Mobile", "Destination", "Itinerary", "Sales Status", "Disposition", "Channel", "Platform", "Campaign", "Ad Group", "Assigned To", "Travel Date", "Pax", "Created Date"];
+      const rows = all.map((l: any) => [
+        l.traveller_code, l.name, l.email, l.mobile,
+        l.destinations?.name, l.itineraries?.headline,
+        l.sales_status, l.disposition, l.channel, l.platform, l.campaign_type, l.ad_group,
+        l.users?.name, l.travel_date, l.pax_count,
+        l.created_at ? format(new Date(l.created_at), "dd/MM/yyyy HH:mm") : "",
+      ]);
+      const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(esc).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = `leads_${format(new Date(), "yyyyMMdd_HHmm")}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${all.length.toLocaleString()} leads to CSV`, { id: tId });
+    } catch (e: any) {
+      toast.error(`Export failed: ${e.message ?? e}`, { id: tId });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const anyFiltersActive =
@@ -467,8 +497,8 @@ const LeadManagement = () => {
           <p className="text-sm text-muted-foreground mt-0.5">{totalCount.toLocaleString()} leads match</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9 rounded-md gap-1.5" onClick={handleExport}>
-            <Download className="h-4 w-4" />Export
+          <Button variant="outline" size="sm" className="h-9 rounded-md gap-1.5" onClick={handleExport} disabled={isExporting}>
+            <Download className="h-4 w-4" />{isExporting ? "Exporting…" : "Export"}
           </Button>
           <Button onClick={() => setSheetOpen(true)} className="rounded-md">
             <Plus className="h-4 w-4 mr-1.5" />Add Lead
