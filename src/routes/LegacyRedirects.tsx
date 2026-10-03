@@ -1,3 +1,4 @@
+import { useRedirectPending } from "@/site/lib/routeSettle";
 import { useEffect, useState } from "react";
 import { Route, Navigate, useParams, useLocation } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
@@ -203,6 +204,8 @@ function BlogPostRedirect() {
       cancelled = true;
     };
   }, [candidate]);
+
+  useRedirectPending(!target);
 
   if (!target) return null;
   return <Navigate to={target} replace state={{ from: location.pathname }} />;
