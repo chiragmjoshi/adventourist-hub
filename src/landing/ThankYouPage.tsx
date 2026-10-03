@@ -17,6 +17,8 @@ export default function ThankYouPage() {
 
   useEffect(() => {
     document.title = "Thank you · Adventourist";
+    // Conversion — ChatGPT Ads pixel event fires on the thank-you (conversion) page.
+    fireOaiqConversion(slug);
     // Prevent search engines from indexing the thank-you / conversion page
     let robots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
     const created = !robots;
