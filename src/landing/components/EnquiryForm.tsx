@@ -1,3 +1,4 @@
+import { trackLeadCreated } from "@/site/lib/pixel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,9 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
           landing_url: window.location.pathname + window.location.search,
           referrer_url: document.referrer || undefined,
         },
+      })
+      .then(({ data, error }) => {
+        if (!error && data && !(data as any).error) trackLeadCreated((data as any).lead_id);
       })
       .catch(() => {
         /* silent — WA already opened, lead capture is best-effort */
