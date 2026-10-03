@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { trackLeadCreated } from "@/site/lib/pixel";
+import { submitLeadRecord } from "@/site/lib/submitLead";
 
 export interface LeadData {
   name: string;
@@ -59,8 +58,7 @@ export function useLeadCapture() {
       if (d.travel_month) notesParts.push(`Travel month: ${d.travel_month}`);
       if (d.message) notesParts.push(`Message:\n${d.message}`);
 
-      const { data, error: invokeErr } = await supabase.functions.invoke("submit-lead", {
-        body: {
+      await submitLeadRecord({
           name: d.name,
           mobile: d.phone,
           email: d.email || undefined,
@@ -74,13 +72,7 @@ export function useLeadCapture() {
           itinerary_slug: d.trip_slug || undefined,
           page_source: d.page_source || undefined,
           ...captureUTMs(),
-        },
       });
-
-      if (invokeErr) throw invokeErr;
-      if (data && (data as any).error) throw new Error((data as any).error);
-      // Conversion — ChatGPT Ads pixel event on successful lead capture.
-      trackLeadCreated((data as any)?.lead_id);
       setSuccess(true);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
