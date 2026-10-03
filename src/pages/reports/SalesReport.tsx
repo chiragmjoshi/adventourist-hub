@@ -54,7 +54,7 @@ const SalesReport = () => {
       prev: prevLeads.filter((l) => statusIs(l, s)).length,
     })),
     {
-      label: "Converted (incl. Query Closed)",
+      label: "Converted",
       value: leads.filter(isClosed).length,
       prev: prevLeads.filter(isClosed).length,
     },

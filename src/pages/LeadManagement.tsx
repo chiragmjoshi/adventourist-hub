@@ -249,6 +249,7 @@ const LeadManagement = () => {
       const toRow = fromRow + PAGE_SIZE - 1;
       const { data, count, error } = await q
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(fromRow, toRow);
       if (error) throw error;
       return { rows: data ?? [], count: count ?? 0 };
@@ -262,13 +263,22 @@ const LeadManagement = () => {
   const { data: chipAgg } = useQuery({
     queryKey: ["leads_chip_counts", fromIso, toIso, filterDestination, filterChannel, filterPlatform, filterCampaign, filterAdGroup, search],
     queryFn: async () => {
-      let q = supabase.from("leads").select("disposition, sales_status");
-      q = applyBaseFilters(q);
-      const { data, error } = await q.limit(20000);
-      if (error) throw error;
+      // Server caps each response at 1000 rows — page through the full set.
+      const BATCH = 1000;
+      const data: any[] = [];
+      for (let page = 0; ; page++) {
+        let q = supabase.from("leads").select("disposition, sales_status");
+        q = applyBaseFilters(q);
+        const { data: batch, error } = await q
+          .order("id", { ascending: true })
+          .range(page * BATCH, page * BATCH + BATCH - 1);
+        if (error) throw error;
+        data.push(...(batch ?? []));
+        if (!batch || batch.length < BATCH) break;
+      }
       const disp: Record<string, number> = {};
       const stat: Record<string, number> = {};
-      (data ?? []).forEach((r: any) => {
+      data.forEach((r: any) => {
         if (r.disposition) disp[r.disposition] = (disp[r.disposition] || 0) + 1;
         if (r.sales_status) stat[r.sales_status] = (stat[r.sales_status] || 0) + 1;
       });
