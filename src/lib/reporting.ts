@@ -52,31 +52,34 @@ export function statusIs(lead: any, ...statuses: string[]): boolean {
   return statuses.some((target) => s === normaliseStatus(target));
 }
 
-/** A lead counts as converted when the file is closed OR the query was closed. */
+/**
+ * A lead counts as converted ONLY when its sales status is File Closed.
+ * "Query Closed" is a disposition and is also used on lost files, so it
+ * must never count as a conversion on its own.
+ */
 export function isClosed(lead: any): boolean {
-  return statusIs(lead, SALES_STATUS.FILE_CLOSED) || lead?.disposition === "Query Closed";
+  return statusIs(lead, SALES_STATUS.FILE_CLOSED);
 }
 
 export function isContacted(lead: any): boolean {
-  return (
-    statusIs(
-      lead,
-      SALES_STATUS.CONTACTED,
-      SALES_STATUS.QUOTE_SENT,
-      SALES_STATUS.FILE_CLOSED,
-      SALES_STATUS.ONGOING,
-      SALES_STATUS.REFUND_ISSUED,
-    ) || isClosed(lead)
+  return statusIs(
+    lead,
+    SALES_STATUS.CONTACTED,
+    SALES_STATUS.QUOTE_SENT,
+    SALES_STATUS.FILE_CLOSED,
+    SALES_STATUS.ONGOING,
+    SALES_STATUS.REFUND_ISSUED,
   );
 }
 
 export function isQuoted(lead: any): boolean {
-  return statusIs(lead, SALES_STATUS.QUOTE_SENT, SALES_STATUS.FILE_CLOSED) || isClosed(lead);
+  return statusIs(lead, SALES_STATUS.QUOTE_SENT, SALES_STATUS.FILE_CLOSED);
 }
 
 export const LOST_DISPOSITIONS = ["Plan Dropped", "Not Interested", "Booked Outside", "Ghosted"];
 
 export function isLost(lead: any): boolean {
+  if (isClosed(lead)) return false;
   return LOST_DISPOSITIONS.includes(lead?.disposition) || statusIs(lead, SALES_STATUS.FILE_LOST);
 }
 
@@ -168,7 +171,12 @@ export async function fetchAll<T = any>(
 ): Promise<T[]> {
   const rows: T[] = [];
   for (let page = 0; ; page++) {
-    const { data, error } = await build().range(page * pageSize, page * pageSize + pageSize - 1);
+    // A unique tie-breaker (id) is required: without it, rows that share the
+    // same sort value (e.g. bulk-imported created_at) can repeat or be skipped
+    // across pages, making counts drift between loads.
+    const { data, error } = await build()
+      .order("id", { ascending: true })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
     if (error) {
       console.error("Report fetch failed", error);
       break;
