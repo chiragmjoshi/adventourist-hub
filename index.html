@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- ChatGPT Ads Pixel (OpenAI) -->
-    <script>!function(w,d,s,u){if(w.oaiq||w.location.pathname.indexOf("/admin")===0)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;var j=d.createElement(s);j.async=1;j.src=u;var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(j,f)}(window,document,"script","https://bzrcdn.openai.com/sdk/oaiq.min.js");oaiq("init",{pixelId:"7KstNiszmKJwJn7UAf4DmN"});</script>
+    <!-- ChatGPT Ads Pixel (OpenAI). Not on /admin. Debug only with ?oaiq_debug=1. -->
+    <script>!function(w,d,s,u,id){var p=w.location.pathname;if(p==="/admin"||p.indexOf("/admin/")===0||w.__oaiqInit)return;try{if(!w.oaiq){var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;var j=d.createElement(s);j.async=1;j.src=u;var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(j,f)}var c={pixelId:id};if(/[?&]oaiq_debug=1(&|$)/.test(w.location.search))c.debug=true;w.oaiq("init",c);w.__oaiqInit=true}catch(e){}}(window,document,"script","https://bzrcdn.openai.com/sdk/oaiq.min.js","VFBWyxgwZThcitBoEaSMCk");</script>
 
     <title>Adventourist — Custom Travel Planner, Mumbai</title>
     <meta name="description" content="Mumbai-based custom travel planner. Personalised trips to Bali, Ladakh, Thailand, Sri Lanka & more. Real experts, zero booking fees, 4.8★ on Google." />

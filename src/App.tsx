@@ -1,4 +1,4 @@
-import PixelPageViews from "@/site/components/PixelPageViews";
+import PixelRouteTracker from "@/site/components/PixelRouteTracker";
 import { useEffect, lazy, Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -148,7 +148,7 @@ const App = () => {
       <Sonner />
       <OfflineBanner />
       <BrowserRouter>
-        <PixelPageViews />
+        <PixelRouteTracker />
         <MaybeAuth>
           {getHostKind() !== "public" && <HealthCheckRunner />}
           <UrlNormaliser />

@@ -1,7 +1,6 @@
-import { trackLeadCreated } from "@/site/lib/pixel";
+import { submitLeadRecord } from "@/site/lib/submitLead";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { LandingPageData, waLink, WHATSAPP_URL } from "../shared";
 
 interface Props {
@@ -36,10 +35,8 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
       /* popup blocked — ignore, lead still saved */
     }
 
-    // 2) Fire-and-forget the CRM insert
-    supabase.functions
-      .invoke("submit-lead", {
-        body: {
+    // 2) Fire-and-forget the CRM insert (shared success path fires the lead conversion)
+    submitLeadRecord({
           name: form.name,
           mobile: form.mobile,
           email: form.email,
@@ -52,10 +49,6 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
           ad_group: page.ad_group || undefined,
           landing_url: window.location.pathname + window.location.search,
           referrer_url: document.referrer || undefined,
-        },
-      })
-      .then(({ data, error }) => {
-        if (!error && data && !(data as any).error) trackLeadCreated((data as any).lead_id);
       })
       .catch(() => {
         /* silent — WA already opened, lead capture is best-effort */
