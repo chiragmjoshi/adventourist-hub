@@ -3,6 +3,7 @@ import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import { fireOaiqConversion } from "@/site/lib/pixel";
 import { WHATSAPP_URL, PHONE_DISPLAY } from "./shared";
 import LandingNavbar from "./components/LandingNavbar";
 import LandingFooter from "./components/LandingFooter";
@@ -16,6 +17,8 @@ export default function ThankYouPage() {
 
   useEffect(() => {
     document.title = "Thank you · Adventourist";
+    // Conversion — ChatGPT Ads pixel event fires on the thank-you (conversion) page.
+    fireOaiqConversion();
     // Prevent search engines from indexing the thank-you / conversion page
     let robots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
     const created = !robots;

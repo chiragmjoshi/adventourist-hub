@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { fireOaiqConversion } from "@/site/lib/pixel";
 
 export interface LeadData {
   name: string;
@@ -78,6 +79,8 @@ export function useLeadCapture() {
 
       if (invokeErr) throw invokeErr;
       if (data && (data as any).error) throw new Error((data as any).error);
+      // Conversion — ChatGPT Ads pixel event on successful lead capture.
+      fireOaiqConversion();
       setSuccess(true);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
