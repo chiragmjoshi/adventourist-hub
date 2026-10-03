@@ -80,7 +80,7 @@ export function useLeadCapture() {
       if (invokeErr) throw invokeErr;
       if (data && (data as any).error) throw new Error((data as any).error);
       // Conversion — ChatGPT Ads pixel event on successful lead capture.
-      fireOaiqConversion(d.trip_slug, d.trip_title);
+      fireOaiqConversion();
       setSuccess(true);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
