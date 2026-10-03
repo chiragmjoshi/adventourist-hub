@@ -1,37 +1,23 @@
-## Goal
+# Make lead and closed-file numbers match everywhere
 
-Add 20 new long-form SEO articles to the public travel stories section. Content-only: no changes to itineraries, landing pages, automations, trip cashflow, or any admin CRUD code.
+## What's wrong (checked against the database)
+- **"Files Closed" is too high.** It counts every lead with status "File Closed" (306) **plus** every lead with disposition "Query Closed". But 1,136 of the "Query Closed" leads are marked **File Lost**. The dashboard shows 1,448 because of this, and conversion is inflated to 24.6%. The real figure is 306 closed files (about 5.2%), and there are 212 trips in Trip Cashflow.
+- **The chip counts in Lead Management are too low.** File Closed 64, File Lost 844 and the other chips add up to far less than the 5,905 leads. The chips only count the first ~1,000 rows loaded, not all the leads that match your filters.
+- **Total leads differ slightly** (5,896 on the dashboard vs 5,905 in Lead Management). The two pages use different date limits and treat leads with no date differently.
 
-## Pre-check result
+## Fix
+1. **One rule for "closed":** sales status = File Closed. "Query Closed" stays a disposition only. A lead marked File Lost is never counted as closed. I'll make this change once in the shared counting code, so the Dashboard, the Sales, Conversion, Team, Platform ROI and Destination reports all pick it up.
+2. **One rule for "lost":** sales status = File Lost, or a disposition of Plan Dropped, Not Interested, Booked Outside or Ghosted, and the lead isn't closed.
+3. **Lead Management chips:** count from the full set of leads that match your filters, not just the first page. The sales status chips will then add up to the "leads match" total, with blank statuses shown as "No status".
+4. **Same "All Time" window everywhere:** the dashboard, reports and Lead Management will use the same start and end dates, so total leads match.
+5. **Revenue:** I'll check that the dashboard revenue, Revenue Report and Trip Cashflow totals use the same trips and the same date (booking date, then travel date) and give the same amount.
 
-I queried the database for all 20 target slugs — **zero collisions**. All 20 can be inserted. (Near-name existing rows like `festivals-in-rajasthan`, `hemis-festival`, and `all-about-magnetic-hill-in-leh` exist but use different slugs, so the new articles won't clash.) I'll re-check per-slug at insert time anyway and report any that appear.
+## End-to-end check
+- I'll get the true numbers straight from the database for All Time, This Month, Last FY and one custom range: total leads, closed, lost, by status, revenue and trip count.
+- Then I'll open the Dashboard, Lead Management and every report page in a browser for each of those ranges. Every number shown must match the database. I'll send you a comparison table, and anything that doesn't match gets fixed before I finish.
 
-## Content spec (applied to every article)
-
-- 1,200–1,800 words of real `content_html`: `<h2>`/`<h3>`, `<p>`, `<ul>/<li>` only. No `<h1>` — the template renders the title as h1.
-- Opens with a direct 2–3 sentence answer to the search intent (snippet/AI-answer bait) before any scene-setting.
-- Focus keyword used naturally in the first 100 words, in one H2, and 2–3 more times in the body.
-- Closes with an H2 "Frequently Asked Questions" holding 3–5 H3 question + P answer pairs.
-- One contextual internal link matched to the destination cluster, using the site's existing pattern: `<a href="/trips?destination=Rajasthan">plan your Rajasthan trip</a>` (spaces encoded as `+`).
-- No fabricated customer quotes, reviews, or named traveller stories.
-- Kailash Mansarovar articles (#13, #14): no invented fees, dates, or medical/fitness thresholds — general guidance language plus the required closing note line.
-
-## Row fields per article
-
-- `author`, `category`, `focus_keyword`, `title`, `slug` exactly as specified in the list.
-- `tags`: 2–3 relevant tags.
-- `read_time_minutes`: word count ÷ 200, rounded up.
-- `seo_title` ≤60 chars containing the focus keyword; `seo_description` ≤155 chars containing the focus keyword.
-- `status`: `published`; `published_at`: `now()`; `thumbnail_url`: NULL so `travelStoryImage()` auto-assigns from the focus keyword.
-
-## Process
-
-Article-by-article: write the HTML, verify slug is free, insert that single row, move to the next. No batch generation of all 20 up front.
-
-## Verification
-
-After the last insert:
-- Count published rows among the 20 new slugs and confirm it is 20.
-- Spot-check a few rendered story pages in the browser for correct headings, working internal link, and an auto-assigned thumbnail.
-- Regenerate the sitemap so the 20 new story URLs are included.
-- Report the final published count and any skipped slugs.
+## Technical notes
+- `src/lib/reporting.ts`: `isClosed` = File Closed status only. `isLost` excludes closed leads. Add a shared `countByStatus` helper.
+- `LeadManagement.tsx`: work out the chip counts with paged queries over the full filtered set (`fetchAll`, or head-count queries per status).
+- Line up the default date range and the handling of missing `created_at` in Dashboard and the reports.
+- Nothing is changed in the database itself. This only changes how the numbers are counted.
