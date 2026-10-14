@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { resolve } from "path";
 /**
  * Single source of truth for the public route list + per-route metadata.
  *
@@ -44,6 +46,7 @@ export interface RouteEntry {
 
 export function escHtml(s: unknown): string {
   return String(s ?? "")
+    .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
@@ -359,6 +362,9 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
       season ? `Best time to go: ${season}.` : "",
       t.price_per_person ? `Prices start from ${inr(t.price_per_person)} per person.` : "",
     ].filter(Boolean).join(" ");
+    const ownFaqs = faqs.map((f: any) => ({ q: String(f.q ?? f.question), a: stripHtml(f.a ?? f.answer) }));
+    const genFaqs = tripFaqs(t, dest, duration, season);
+    const allFaqs = [...ownFaqs, ...genFaqs.filter((g) => !ownFaqs.some((o) => o.q.toLowerCase() === g.q.toLowerCase()))].slice(0, Math.max(6, ownFaqs.length));
     const related = (dest ? tripsByDest.get(dest.id) ?? [] : []).filter((x) => x.slug !== t.slug).slice(0, 3);
     const body = wrapBody([
       `<article>`,
@@ -372,7 +378,7 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
       richOrList(t.exclusions) ? `<h2>Exclusions</h2>${richOrList(t.exclusions)}` : "",
       suits ? `<h2>Who this trip suits</h2><p>${escHtml(suits)}</p>` : "",
       `<h2>How we customise this trip</h2><p>Every Adventourist itinerary is a starting point. Our Mumbai-based travel experts adjust dates, hotels, pace, activities and budget to suit your group, and you only pay for what you choose — with zero booking fees.</p>`,
-      faqs.length ? `<h2>Frequently asked questions</h2>${faqs.map((f) => `<h3>${escHtml(f.q ?? f.question)}</h3><p>${escHtml(stripHtml(f.a ?? f.answer))}</p>`).join("")}` : "",
+      `<h2>Frequently asked questions</h2>${allFaqs.map((f) => `<h3>${escHtml(f.q)}</h3><p>${escHtml(f.a)}</p>`).join("")}`,
       dest ? `<h2>More about ${escHtml(dest.name)}</h2><p><a href="/destinations/${dest.slug}">${escHtml(dest.name)} travel guide</a></p>` : "",
       related.length ? `<h2>Related trips</h2>${tripLinks(related)}` : "",
       `<p><a href="/contact">Plan this trip with an Adventourist expert</a></p>`,
@@ -388,7 +394,6 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
       description:
         t.seo_description || about.slice(0, 155) || `Curated itinerary by Adventourist.`,
       ogImage: img,
-      ogType: "article" as const,
       h1: t.headline,
       intro: about.slice(0, 320),
       schema: [
@@ -416,6 +421,7 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
             : {}),
           provider: { "@type": "TravelAgency", "@id": `${BASE_URL}/#org`, name: "Adventourist", url: BASE_URL },
         },
+        faqSchema(allFaqs),
         crumbs([
           { name: "Home", path: "/" },
           { name: "Trips", path: "/trips" },
@@ -517,16 +523,118 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
     };
   });
 
-  return [...tripEntries, ...destEntries, ...storyEntries];
+  const pageEntries = buildCorePages(liveTrips, dests.filter((d) => isValidSlug(d.slug)), stories.filter((s) => isValidSlug(s.slug)));
+  return [...pageEntries, ...tripEntries, ...destEntries, ...storyEntries];
 }
 
 /** Static + dynamic, de-duplicated by path. */
 export async function fetchAllRoutes(): Promise<RouteEntry[]> {
   const dynamic = await fetchDynamicRoutes();
   const seen = new Set<string>();
-  return [...staticRoutes, ...dynamic].filter((e) => {
+  return [...dynamic, ...staticRoutes].filter((e) => {
     if (seen.has(e.path)) return false;
     seen.add(e.path);
     return true;
   });
+}
+
+/* ── FAQ + core page helpers ─────────────────────────────────────────── */
+
+type QA = { q: string; a: string };
+
+export function faqSchema(faqs: QA[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  };
+}
+
+const HIGH_ALTITUDE = /ladakh|leh|spiti|kailash|mansarovar|sikkim|bhutan|nepal|kashmir|himachal|uttarakhand|tibet/i;
+
+/** Trip-specific FAQs built from the itinerary's own data. */
+export function tripFaqs(t: any, dest: any, duration: string, season: string): QA[] {
+  const place = dest?.name ?? t.headline;
+  const ex = stripHtml(Array.isArray(t.exclusions) ? t.exclusions.join(", ") : t.exclusions);
+  const high = HIGH_ALTITUDE.test(`${place} ${t.headline}`);
+  return [
+    { q: `What is the best time to do the ${t.headline} trip?`, a: season ? `The best months for this ${place} itinerary are ${season}. Our team can advise on weather, crowds and prices for your exact dates.` : `${place} can be visited across several seasons; our travel experts will recommend the best window for your dates, budget and interests.` },
+    { q: `How difficult is this trip?`, a: high ? `This is a high-altitude itinerary, so the pace includes time to acclimatise. It suits most healthy travellers; anyone with heart, lung or blood-pressure conditions should consult a doctor before travelling.` : `This is an easy-paced ${duration || "custom"} trip suitable for most travellers, including families. We can slow the pace or add rest days on request.` },
+    { q: `What is not included in the ${t.headline} package?`, a: ex ? clamp(`Not included: ${ex}.`, 400) : `Flights, visas, travel insurance, personal expenses and anything not listed under inclusions are quoted separately.` },
+    { q: `Can I customise this itinerary?`, a: `Yes. Every Adventourist itinerary is a starting point — we change dates, hotels, activities, duration and budget to suit your group, with zero booking fees.` },
+    { q: `What are the payment and cancellation terms?`, a: `A booking amount confirms your trip and the balance is due before departure. Cancellation charges depend on supplier terms and how close to travel you cancel; see ${BASE_URL}/refund-and-cancellation-policy and ${BASE_URL}/payment-policy for details.` },
+    ...(t.price_per_person ? [{ q: `How much does the ${t.headline} trip cost?`, a: `Prices start from ${inr(t.price_per_person)} per person. The final price depends on dates, hotel category and group size.` }] : []),
+  ];
+}
+
+const PILLARS: QA[] = [
+  { q: "Personalised", a: "Every trip is built around your travel style, budget, and the people you're going with. No copy-paste itineraries." },
+  { q: "Expert", a: "Talk directly to Minal, Pinky, or our team — people who have actually been where you want to go." },
+  { q: "Transparent", a: "Zero booking fees. No hidden charges. No upsells. Just a fair price for a trip planned right." },
+  { q: "With You", a: "Real humans on WhatsApp before, during, and after your journey. Not bots. Not scripts." },
+];
+const STEPS: QA[] = [
+  { q: "Tell us what you're looking for", a: "Share your destination, travel dates, group size, and budget. Even if you're not sure — we'll help you figure it out." },
+  { q: "We build your custom plan", a: "Your dedicated travel expert designs a day-by-day itinerary — handpicked stays, real local insights, and everything tailored to your group." },
+  { q: "You show up. We handle everything.", a: "We book it all — stays, transfers, guides. And we're on WhatsApp throughout your trip if you need anything." },
+];
+const TESTIMONIALS: QA[] = [
+  { q: "Lata Valera — Thailand", a: "Exceptional experience with Adventourist Travel Co. Everything was managed really well. From hotels to activities — all seamless. I highly recommend them if you're planning any vacation." },
+  { q: "Joiston & Priya — Bali honeymoon", a: "Minal and the team are absolutely amazing. They were extremely patient, kind and attentive. From hotel bookings to planning, to making changes while in Bali — Adventourist were right by our side." },
+  { q: "Pranit Jaiswal — Leh Ladakh", a: "The Ladakh trip was beyond expectations. Every detail was taken care of — permits, hotels in remote areas, the whole route was perfect. Will definitely book again." },
+];
+export const GOOGLE_PROFILE = "https://share.google/g1ahZlUqFBAPo2DAG";
+
+function siteFaqs(): QA[] {
+  try {
+    const src = readFileSync(resolve("src/site/pages/FAQs.tsx"), "utf8");
+    return [...src.matchAll(/q:\s*"((?:[^"\\]|\\.)*)",\s*a:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => ({ q: m[1].replace(/\\"/g, '"'), a: m[2].replace(/\\"/g, '"') }));
+  } catch { return []; }
+}
+
+function buildCorePages(trips: any[], dests: any[], stories: any[]): RouteEntry[] {
+  const home = staticRoutes.find((r) => r.path === "/")!;
+  const about = staticRoutes.find((r) => r.path === "/about-us")!;
+  const faqPage = staticRoutes.find((r) => r.path === "/faqs")!;
+  const featured = trips.filter((t) => t.price_per_person).slice(0, 8);
+
+  const homeBody = wrapBody([
+    `<section><h1>${escHtml(home.h1)}</h1><p>${escHtml(home.intro ?? "")}</p><p>Travel designed for you — crafting personalised journeys since 2018 from Vile Parle West, Mumbai.</p><p><a href="/contact">Plan my trip</a> · <a href="/trips">Browse trips</a></p></section>`,
+    `<section><h2>Why families choose us</h2>${PILLARS.map((p) => `<h3>${p.q}</h3><p>${escHtml(p.a)}</p>`).join("")}</section>`,
+    `<section><h2>Destinations we plan</h2><ul>${dests.map((d) => `<li><a href="/destinations/${d.slug}">${escHtml(d.name)}</a></li>`).join("")}</ul></section>`,
+    `<section><h2>How it works</h2><ol>${STEPS.map((s) => `<li><h3>${escHtml(s.q)}</h3><p>${escHtml(s.a)}</p></li>`).join("")}</ol></section>`,
+    featured.length ? `<section><h2>Featured trips</h2><ul>${featured.map((t) => `<li><a href="/trips/${t.slug}">${escHtml(t.headline)}</a> — from ${inr(t.price_per_person)} per person</li>`).join("")}</ul></section>` : "",
+    `<section><h2>What our travellers say</h2>${TESTIMONIALS.map((r) => `<blockquote><p>${escHtml(r.a)}</p><footer>${escHtml(r.q)}</footer></blockquote>`).join("")}<p><a href="${GOOGLE_PROFILE}">Read our Google reviews</a></p></section>`,
+    stories.length ? `<section><h2>Travel stories</h2><ul>${stories.slice(0, 6).map((s) => `<li><a href="/travel-stories/${s.slug}">${escHtml(s.title)}</a></li>`).join("")}</ul></section>` : "",
+  ].join(""));
+
+  const aboutBody = wrapBody([
+    `<article><h1>${escHtml(about.h1)}</h1>`,
+    `<p>Adventourist is a boutique, Mumbai-based travel planning company founded in 2018 by Minal Joshi. From our office in Vile Parle West, Mumbai 400056, we design personalised holidays for families, couples, honeymooners, friend groups and solo travellers across India and around the world — from Ladakh, Kashmir, Kerala and Rajasthan to Bali, Thailand, Sri Lanka, Europe, Georgia and beyond.</p>`,
+    `<p>We started Adventourist because most travel packages felt the same: fixed hotels, rushed days and a sales team that disappeared once the booking was paid. We wanted to plan trips the way a well-travelled friend would — honestly, carefully and around the people who are actually travelling.</p>`,
+    `<h2>Our founder</h2><h3>Minal Joshi — Founder &amp; Trip Designer</h3><p>Minal founded Adventourist in 2018 and personally designs and reviews itineraries for our travellers. She speaks with clients directly, checks hotels and routes against real on-ground experience, and stays reachable on WhatsApp while guests are travelling. <a href="https://www.linkedin.com/in/minaljoshi1401/">Minal Joshi on LinkedIn</a>.</p>`,
+    `<h3>Pinky Prajapati — Operations</h3><p>Pinky leads operations: confirming hotels, transfers, permits and guides, and making sure every booking on the itinerary is in place before departure.</p>`,
+    `<h2>How we plan a trip</h2><ol>${STEPS.map((s) => `<li><strong>${escHtml(s.q)}.</strong> ${escHtml(s.a)}</li>`).join("")}</ol><p>Each plan is a day-by-day itinerary with handpicked stays, transfers, sightseeing and local experiences. You can change anything — dates, hotel category, pace, activities or budget — until it feels right, and you only pay for what you choose.</p>`,
+    `<h2>Why we charge zero booking fees</h2><p>We never add a booking or service fee on top of your trip. Our margin is built into the rates we negotiate directly with hotels, transport partners and local suppliers, so the price you see is the price you pay. That keeps our advice honest: we recommend what suits your trip, not what earns the highest commission.</p>`,
+    `<h2>What we believe</h2>${PILLARS.map((p) => `<h3>${p.q}</h3><p>${escHtml(p.a)}</p>`).join("")}`,
+    `<h2>Registration</h2><p>Adventourist is a registered business in Maharashtra, India (GSTIN 27ABMFA3990N1ZQ).</p>`,
+    `<h2>Reviews</h2><p>Our travellers rate us on Google. <a href="${GOOGLE_PROFILE}">Read Adventourist reviews on Google</a>.</p>`,
+    `<h2>Visit or contact us</h2><p>Adventourist, Vile Parle West, Mumbai, Maharashtra 400056. Phone +91 99304 00694, email support@adventourist.in. Open Monday to Saturday, 9:00 to 21:00 IST. <a href="/contact">Start planning your trip</a>.</p></article>`,
+  ].join(""));
+
+  const fq = siteFaqs();
+  const faqBody = wrapBody(`<article><h1>${escHtml(faqPage.h1)}</h1>${fq.map((f) => `<h2>${escHtml(f.q)}</h2><p>${escHtml(f.a)}</p>`).join("")}</article>`);
+
+  return [
+    { ...home, body: homeBody },
+    {
+      ...about,
+      body: aboutBody,
+      schema: [
+        { "@context": "https://schema.org", "@type": "Person", name: "Minal Joshi", jobTitle: "Founder & Trip Designer", worksFor: { "@id": `${BASE_URL}/#org` }, sameAs: ["https://www.linkedin.com/in/minaljoshi1401/"] },
+        crumbs([{ name: "Home", path: "/" }, { name: "About Us", path: "/about-us" }]),
+      ],
+    },
+    { ...faqPage, body: faqBody, schema: [...(fq.length ? [faqSchema(fq)] : []), crumbs([{ name: "Home", path: "/" }, { name: "FAQs", path: "/faqs" }])] },
+  ];
 }
