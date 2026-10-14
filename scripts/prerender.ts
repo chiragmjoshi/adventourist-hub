@@ -36,7 +36,7 @@ function esc(s: string): string {
 /** Mirrors the <SEO /> component's title rule. */
 function fullTitle(title: string): string {
   const t = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
-  return t.length > 60 && title.length <= 60 ? title : clamp(t, 60);
+  return t.length > 60 ? title : t;
 }
 
 /** Remove a head tag the route is about to redefine. */
@@ -160,6 +160,23 @@ async function main() {
     problems.slice(0, 40).forEach((p) => console.error(`  - ${p}`));
     throw new Error(`[prerender] ${problems.length} metadata problem(s)`);
   }
+
+  // llms-full.txt — one section per destination / trip / story, canonical links.
+  const sec = (label: string, prefix: string) =>
+    [`## ${label}`, ...all.filter((e) => e.path.startsWith(prefix)).map((e) => `- [${e.h1}](${BASE_URL}${e.path}): ${clamp(e.description, 200)}`), ""].join("\n");
+  writeFileSync(
+    resolve(DIST, "llms-full.txt"),
+    [
+      "# Adventourist — full site index",
+      "",
+      "> Mumbai-based custom travel planner founded in 2018 by Minal Joshi. Vile Parle West, Mumbai 400056 · +91 99304 00694 · support@adventourist.in · Mon–Sat 9:00–21:00. Zero booking fees.",
+      "",
+      sec("Destinations", "/destinations/"),
+      sec("Trips", "/trips/"),
+      sec("Travel stories", "/travel-stories/"),
+      "## Company pages", ...all.filter((e) => !/^\/(trips|destinations|travel-stories)\//.test(e.path)).map((e) => `- [${e.h1}](${BASE_URL}${e.path})`),
+    ].join("\n"),
+  );
 
   console.log(`[prerender] wrote ${routes.length} static HTML pages into dist/`);
 }
