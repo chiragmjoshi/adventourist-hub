@@ -334,11 +334,52 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
   warnDropped("story", stories);
   warnDropped("destination", dests);
 
+  const destById = new Map(dests.filter((d) => isValidSlug(d.slug)).map((d) => [d.id, d]));
+  const liveTrips = trips.filter((t) => isValidSlug(t.slug));
+  const tripsByDest = new Map<string, any[]>();
+  for (const t of liveTrips) {
+    if (!t.destination_id) continue;
+    tripsByDest.set(t.destination_id, [...(tripsByDest.get(t.destination_id) ?? []), t]);
+  }
+  const tripLinks = (arr: any[]) =>
+    arr.length ? `<ul>${arr.map((t) => `<li><a href="/trips/${t.slug}">${escHtml(t.headline)}</a>${t.price_per_person ? ` — from ${inr(t.price_per_person)} per person` : ""}</li>`).join("")}</ul>` : "";
+
   const tripEntries: RouteEntry[] = trips.filter((t) => isValidSlug(t.slug)).map((t) => {
     const url = `${BASE_URL}/trips/${t.slug}`;
     const about = stripHtml(t.about);
     const img = imageUrl(t.hero_image);
+    const dest = destById.get(t.destination_id);
+    const days: any[] = Array.isArray(t.itinerary_days) ? t.itinerary_days : [];
+    const faqs: any[] = (Array.isArray(t.faqs) ? t.faqs : []).filter((f: any) => (f?.q || f?.question) && (f?.a || f?.answer));
+    const duration = t.nights && t.days ? `${t.nights} nights / ${t.days} days` : "";
+    const suits = (t.suitable_for ?? []).join(", ");
+    const season = (t.best_months ?? []).join(", ");
+    const summary = [
+      `${t.headline} is a ${duration || "custom"} itinerary${dest ? ` in ${dest.name}` : ""}${suits ? `, ideal for ${suits.toLowerCase()}` : ""}.`,
+      season ? `Best time to go: ${season}.` : "",
+      t.price_per_person ? `Prices start from ${inr(t.price_per_person)} per person.` : "",
+    ].filter(Boolean).join(" ");
+    const related = (dest ? tripsByDest.get(dest.id) ?? [] : []).filter((x) => x.slug !== t.slug).slice(0, 3);
+    const body = wrapBody([
+      `<article>`,
+      `<h1>${escHtml(t.headline)}</h1>`,
+      `<p>${escHtml(summary)}</p>`,
+      `<p>Last updated: ${day(t.updated_at) ?? ""}</p>`,
+      about ? `<h2>About this trip</h2>${cleanRichHtml(t.about)}` : "",
+      list(t.highlights) ? `<h2>Highlights</h2>${list(t.highlights)}` : "",
+      days.length ? `<h2>Day-by-day itinerary</h2><ol>${days.map((d, i) => `<li><h3>Day ${i + 1}: ${escHtml(d?.title ?? "")}</h3><p>${escHtml(stripHtml(d?.detail ?? ""))}</p></li>`).join("")}</ol>` : "",
+      richOrList(t.inclusions) ? `<h2>Inclusions</h2>${richOrList(t.inclusions)}` : "",
+      richOrList(t.exclusions) ? `<h2>Exclusions</h2>${richOrList(t.exclusions)}` : "",
+      suits ? `<h2>Who this trip suits</h2><p>${escHtml(suits)}</p>` : "",
+      `<h2>How we customise this trip</h2><p>Every Adventourist itinerary is a starting point. Our Mumbai-based travel experts adjust dates, hotels, pace, activities and budget to suit your group, and you only pay for what you choose — with zero booking fees.</p>`,
+      faqs.length ? `<h2>Frequently asked questions</h2>${faqs.map((f) => `<h3>${escHtml(f.q ?? f.question)}</h3><p>${escHtml(stripHtml(f.a ?? f.answer))}</p>`).join("")}` : "",
+      dest ? `<h2>More about ${escHtml(dest.name)}</h2><p><a href="/destinations/${dest.slug}">${escHtml(dest.name)} travel guide</a></p>` : "",
+      related.length ? `<h2>Related trips</h2>${tripLinks(related)}` : "",
+      `<p><a href="/contact">Plan this trip with an Adventourist expert</a></p>`,
+      `</article>`,
+    ].join(""));
     return {
+      body,
       path: `/trips/${t.slug}`,
       lastmod: day(t.updated_at),
       changefreq: "weekly" as const,
@@ -358,6 +399,10 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
           description: about.slice(0, 300),
           image: img,
           url,
+          ...(suits ? { touristType: t.suitable_for } : {}),
+          ...(days.length
+            ? { itinerary: { "@type": "ItemList", numberOfItems: days.length, itemListElement: days.map((d, i) => ({ "@type": "ListItem", position: i + 1, name: `Day ${i + 1}: ${d?.title ?? ""}`, description: clamp(stripHtml(d?.detail ?? ""), 300) })) } }
+            : {}),
           ...(t.price_per_person
             ? {
                 offers: {
@@ -369,7 +414,7 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
                 },
               }
             : {}),
-          provider: { "@type": "TravelAgency", name: "Adventourist", url: BASE_URL },
+          provider: { "@type": "TravelAgency", "@id": `${BASE_URL}/#org`, name: "Adventourist", url: BASE_URL },
         },
         crumbs([
           { name: "Home", path: "/" },
@@ -386,7 +431,18 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
     const desc =
       d.seo_description ||
       `Plan a custom ${d.name} trip from Mumbai with Adventourist. Curated itineraries, fully personalisable. Zero booking fees · 4.8★ rated.`;
+    const dTrips = tripsByDest.get(d.id) ?? [];
+    const body = wrapBody([
+      `<article><h1>${escHtml(d.name)} Travel Guide</h1>`,
+      d.about ? cleanRichHtml(d.about) : `<p>${escHtml(desc)}</p>`,
+      (d.best_months ?? []).length ? `<h2>Best time to visit ${escHtml(d.name)}</h2><p>${escHtml(d.best_months.join(", "))}</p>` : "",
+      (d.themes ?? []).length ? `<h2>Trip themes</h2><p>${escHtml(d.themes.join(", "))}</p>` : "",
+      (d.suitable_for ?? []).length ? `<h2>Who ${escHtml(d.name)} suits</h2><p>${escHtml(d.suitable_for.join(", "))}</p>` : "",
+      dTrips.length ? `<h2>${escHtml(d.name)} trips</h2>${tripLinks(dTrips)}` : "",
+      `<p><a href="/trips?destination=${encodeURIComponent(d.name)}">See all ${escHtml(d.name)} trips</a> · <a href="/contact">Plan a custom ${escHtml(d.name)} trip</a></p></article>`,
+    ].join(""));
     return {
+      body,
       path: `/destinations/${d.slug}`,
       lastmod: day(d.updated_at),
       changefreq: "weekly" as const,
@@ -417,7 +473,16 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
   const storyEntries: RouteEntry[] = stories.filter((s) => isValidSlug(s.slug)).map((s) => {
     const url = `${BASE_URL}/travel-stories/${s.slug}`;
     const img = imageUrl(s.thumbnail_url);
+    const author = s.author || "Adventourist Team";
+    const body = wrapBody([
+      `<article><h1>${escHtml(s.title)}</h1>`,
+      `<p>By ${escHtml(author)} · Published ${day(s.published_at) ?? ""} · Last updated ${day(s.updated_at) ?? ""}</p>`,
+      s.excerpt ? `<p>${escHtml(s.excerpt)}</p>` : "",
+      cleanRichHtml(s.content_html),
+      `<p><a href="/travel-stories">More travel stories</a> · <a href="/trips">Browse trips</a></p></article>`,
+    ].join(""));
     return {
+      body,
       path: `/travel-stories/${s.slug}`,
       lastmod: day(s.updated_at),
       changefreq: "monthly" as const,
@@ -432,15 +497,15 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
       schema: [
         {
           "@context": "https://schema.org",
-          "@type": "BlogPosting",
+          "@type": "Article",
           headline: s.title,
           description: s.excerpt ?? undefined,
           image: img,
           url,
           datePublished: s.published_at ?? undefined,
           dateModified: s.updated_at ?? undefined,
-          author: { "@type": s.author ? "Person" : "Organization", name: s.author || "Adventourist" },
-          publisher: { "@type": "Organization", name: "Adventourist", url: BASE_URL },
+          author: s.author ? { "@type": "Person", name: s.author } : { "@type": "Organization", name: "Adventourist", url: BASE_URL },
+          publisher: { "@type": "Organization", "@id": `${BASE_URL}/#org`, name: "Adventourist", url: BASE_URL, logo: { "@type": "ImageObject", url: `${BASE_URL}/logo/logo-square-color.svg` } },
           mainEntityOfPage: url,
         },
         crumbs([

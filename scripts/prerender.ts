@@ -13,7 +13,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
-import { BASE_URL, fetchAllRoutes, type RouteEntry } from "./lib/siteContent";
+import { BASE_URL, fetchAllRoutes, clamp, wrapBody, type RouteEntry } from "./lib/siteContent";
 
 const DIST = resolve("dist");
 const SITE_NAME = "Adventourist";
@@ -35,7 +35,8 @@ function esc(s: string): string {
 
 /** Mirrors the <SEO /> component's title rule. */
 function fullTitle(title: string): string {
-  return title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
+  const t = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
+  return t.length > 60 && title.length <= 60 ? title : clamp(t, 60);
 }
 
 /** Remove a head tag the route is about to redefine. */
@@ -45,6 +46,7 @@ function dropTag(html: string, pattern: RegExp): string {
 
 function buildHead(entry: RouteEntry): string {
   const title = fullTitle(entry.title);
+  entry = { ...entry, description: clamp(entry.description, 160) };
   const url = `${BASE_URL}${entry.path}`;
   const image = entry.ogImage || `${BASE_URL}/site-images/bg-home-page.jpg`;
   const parts = [
@@ -56,6 +58,8 @@ function buildHead(entry: RouteEntry): string {
     `<meta property="og:url" content="${esc(url)}" />`,
     `<meta property="og:image" content="${esc(image)}" />`,
     `<meta property="og:type" content="${entry.ogType ?? "website"}" />`,
+    `<meta name="robots" content="index, follow, max-image-preview:large" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${esc(title)}" />`,
     `<meta name="twitter:description" content="${esc(entry.description)}" />`,
     `<meta name="twitter:image" content="${esc(image)}" />`,
@@ -73,11 +77,11 @@ function buildHead(entry: RouteEntry): string {
  * needs to carry the page's H1 and a short summary — not the whole UI.
  */
 function buildBody(entry: RouteEntry): string {
+  if (entry.body) return `<div data-prerendered="true">${entry.body}</div>`;
   const intro = entry.intro?.trim() || entry.description;
   return [
     `<div data-prerendered="true">`,
-    `<h1>${esc(entry.h1)}</h1>`,
-    `<p>${esc(intro)}</p>`,
+    wrapBody(`<h1>${esc(entry.h1)}</h1><p>${esc(intro)}</p>`),
     `</div>`,
   ].join("");
 }
@@ -90,6 +94,8 @@ function renderPage(template: string, entry: RouteEntry): string {
   html = dropTag(html, /\s*<meta\s+property="og:(title|description|url|image|type)"[^>]*>/g);
   html = dropTag(html, /\s*<meta\s+name="twitter:(title|description|image)"[^>]*>/g);
   html = dropTag(html, /\s*<link\s+rel="canonical"[^>]*>/g);
+  html = dropTag(html, /\s*<meta\s+name="(robots|twitter:card)"[^>]*>/g);
+  html = html.replace(/<!--(?!\[if)[\s\S]*?-->/g, "");
 
   html = html.replace("</head>", `  ${buildHead(entry)}\n  </head>`);
   html = html.replace(
@@ -118,7 +124,10 @@ function verify(html: string, entry: RouteEntry): string[] {
   const descriptions = html.match(/<meta\s+name="description"/g)?.length ?? 0;
   if (descriptions !== 1) problems.push(`${descriptions} description tags`);
 
-  if (!html.includes(`<h1>`)) problems.push("missing <h1>");
+  const h1s = html.match(/<h1>/g)?.length ?? 0;
+  if (h1s !== 1) problems.push(`${h1s} <h1> tags`);
+  for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) { try { JSON.parse(m[1]); } catch { problems.push("invalid JSON-LD"); } }
+  if (false) problems.push("missing <h1>");
   return problems.map((p) => `${entry.path}: ${p}`);
 }
 
