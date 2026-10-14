@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { GUIDES, monthGrid, MONTH_NAMES } from "./destinationGuides";
 /**
  * Single source of truth for the public route list + per-route metadata.
  *
@@ -33,6 +34,11 @@ export interface RouteEntry {
   title: string;
   description: string;
   ogImage?: string;
+  /** Social title, distinct from <title>. */
+  ogTitle?: string;
+  ogImageAlt?: string;
+  /** Markdown block for llms-full.txt. */
+  llms?: string;
   ogType?: "website" | "article";
   schema?: Record<string, unknown>[];
   /** Visible H1 + intro written into the prerendered body. */
@@ -384,15 +390,28 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
       `<p><a href="/contact">Plan this trip with an Adventourist expert</a></p>`,
       `</article>`,
     ].join(""));
+    const route = [...new Set(days.slice(1, -1).map((d) => String(d?.title ?? "").replace(/^(arrive|arrival|departure|day\s*\d+)[:\s-]*/i, "").split(/[–|,(]/)[0].trim()).filter((x) => x.length > 2 && x.length < 40))].slice(0, 2);
+    const short = t.nights && t.days ? `${t.nights}N/${t.days}D` : "";
+    const metaDesc = clamp(
+      `${dest ? dest.name + " " : ""}${short} trip${t.price_per_person ? ` from ${inr(t.price_per_person)} per person` : ""}${route.length ? `: ${route.join(" & ")}` : ""}. Customised by Adventourist's Mumbai experts, zero booking fees.`,
+      160,
+    );
+    const llmsSummary = [
+      summary,
+      about ? clamp(about, 220) : "",
+      "Fully customisable by Adventourist's Mumbai team with zero booking fees.",
+    ].filter(Boolean).join(" ");
     return {
       body,
+      description: metaDesc,
+      ogTitle: `${t.headline}${t.price_per_person ? ` · from ${inr(t.price_per_person)}` : ""}${dest ? ` | ${dest.name} trip` : ""}`,
+      ogImageAlt: `Scenic view from the ${t.headline} itinerary${dest ? ` in ${dest.name}` : ""}`,
+      llms: `### [${t.headline}](${url})\n- Duration: ${duration || "flexible"}\n- Starting price: ${t.price_per_person ? `${inr(t.price_per_person)} per person` : "on request"}\n- ${llmsSummary}`,
       path: `/trips/${t.slug}`,
       lastmod: day(t.updated_at),
       changefreq: "weekly" as const,
       priority: "0.8",
       title: `${t.headline} — Adventourist`,
-      description:
-        t.seo_description || about.slice(0, 155) || `Curated itinerary by Adventourist.`,
       ogImage: img,
       h1: t.headline,
       intro: about.slice(0, 320),
@@ -431,50 +450,8 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
     };
   });
 
-  const destEntries: RouteEntry[] = dests.filter((d) => isValidSlug(d.slug)).map((d) => {
-    const url = `${BASE_URL}/destinations/${d.slug}`;
-    const img = imageUrl(d.hero_image);
-    const desc =
-      d.seo_description ||
-      `Plan a custom ${d.name} trip from Mumbai with Adventourist. Curated itineraries, fully personalisable. Zero booking fees · 4.8★ rated.`;
-    const dTrips = tripsByDest.get(d.id) ?? [];
-    const body = wrapBody([
-      `<article><h1>${escHtml(d.name)} Travel Guide</h1>`,
-      d.about ? cleanRichHtml(d.about) : `<p>${escHtml(desc)}</p>`,
-      (d.best_months ?? []).length ? `<h2>Best time to visit ${escHtml(d.name)}</h2><p>${escHtml(d.best_months.join(", "))}</p>` : "",
-      (d.themes ?? []).length ? `<h2>Trip themes</h2><p>${escHtml(d.themes.join(", "))}</p>` : "",
-      (d.suitable_for ?? []).length ? `<h2>Who ${escHtml(d.name)} suits</h2><p>${escHtml(d.suitable_for.join(", "))}</p>` : "",
-      dTrips.length ? `<h2>${escHtml(d.name)} trips</h2>${tripLinks(dTrips)}` : "",
-      `<p><a href="/trips?destination=${encodeURIComponent(d.name)}">See all ${escHtml(d.name)} trips</a> · <a href="/contact">Plan a custom ${escHtml(d.name)} trip</a></p></article>`,
-    ].join(""));
-    return {
-      body,
-      path: `/destinations/${d.slug}`,
-      lastmod: day(d.updated_at),
-      changefreq: "weekly" as const,
-      priority: "0.75",
-      title: d.seo_title || `${d.name} Travel Guide & Trips from Mumbai`,
-      description: desc,
-      ogImage: img,
-      h1: `${d.name} Travel Guide`,
-      intro: stripHtml(d.about).slice(0, 320) || desc,
-      schema: [
-        {
-          "@context": "https://schema.org",
-          "@type": "TouristDestination",
-          name: d.name,
-          description: (stripHtml(d.about) || desc).slice(0, 300),
-          url,
-          image: img,
-        },
-        crumbs([
-          { name: "Home", path: "/" },
-          { name: "Destinations", path: "/destinations" },
-          { name: d.name, path: `/destinations/${d.slug}` },
-        ]),
-      ],
-    };
-  });
+  const liveStories = stories.filter((s) => isValidSlug(s.slug));
+  const destEntries: RouteEntry[] = dests.filter((d) => isValidSlug(d.slug)).map((d) => buildDestination(d, tripsByDest.get(d.id) ?? [], liveStories));
 
   const storyEntries: RouteEntry[] = stories.filter((s) => isValidSlug(s.slug)).map((s) => {
     const url = `${BASE_URL}/travel-stories/${s.slug}`;
@@ -637,4 +614,107 @@ function buildCorePages(trips: any[], dests: any[], stories: any[]): RouteEntry[
     },
     { ...faqPage, body: faqBody, schema: [...(fq.length ? [faqSchema(fq)] : []), crumbs([{ name: "Home", path: "/" }, { name: "FAQs", path: "/faqs" }])] },
   ];
+}
+
+
+/* ── destination guide ───────────────────────────────────────────────── */
+
+const lakh = (n: number) => (n >= 100000 ? `₹${(n / 100000).toFixed(n % 100000 ? 1 : 0)} lakh` : `₹${n.toLocaleString("en-IN")}`);
+
+function monthRanges(grid: { rating: string }[], rating: string): string {
+  const out: string[] = [];
+  let start = -1;
+  for (let i = 0; i <= 12; i++) {
+    const hit = i < 12 && grid[i].rating === rating;
+    if (hit && start < 0) start = i;
+    if (!hit && start >= 0) { out.push(start === i - 1 ? MONTH_NAMES[start] : `${MONTH_NAMES[start]} to ${MONTH_NAMES[i - 1]}`); start = -1; }
+  }
+  return out.join(", ");
+}
+
+function buildDestination(d: any, dTrips: any[], stories: any[]): RouteEntry {
+  const url = `${BASE_URL}/destinations/${d.slug}`;
+  const img = imageUrl(d.hero_image);
+  const g = GUIDES[d.slug];
+  const grid = monthGrid(g, d.best_months ?? []);
+  const suits = (d.suitable_for ?? []).map((x: string) => x.toLowerCase());
+  const themes: string[] = d.themes ?? [];
+  const best = monthRanges(grid, "Best");
+  const good = monthRanges(grid, "Good");
+  const avoid = monthRanges(grid, "Avoid");
+  const budget = g ? `${lakh(g.budget[0])}–${lakh(g.budget[1])}` : "";
+  const prices = dTrips.map((t) => t.price_per_person).filter(Boolean);
+  const from = prices.length ? Math.min(...prices) : 0;
+  const kw = g?.kw ?? [d.name.toLowerCase()];
+  const related = stories.filter((s) => kw.some((k) => `${s.slug} ${s.title}`.toLowerCase().includes(k.replace(/\s+/g, k.includes(" ") ? " " : "")))).slice(0, 3);
+
+  const summary = [
+    `${d.name} suits ${suits.length ? suits.slice(0, 4).join(", ") : "couples, families and friend groups"}${themes.length ? ` looking for ${themes.slice(0, 3).join(", ").toLowerCase()} experiences` : ""}.`,
+    `An ideal trip is ${g?.nights ?? "5–7 nights"}${best ? `, best planned for ${best}` : ""}.`,
+    budget ? `Budget roughly ${budget} per person from Mumbai, including return flights and mid-range hotels${from ? ` (land packages from ${inr(from)})` : ""}.` : from ? `Land packages start from ${inr(from)} per person.` : "",
+  ].filter(Boolean).join(" ");
+  const desc = clamp(d.seo_description || `${d.name} trips from Mumbai: ${g?.nights ?? "custom"} itineraries, best time ${best || "year-round"}${budget ? `, about ${budget} per person` : ""}. Visa tips and zero booking fees.`, 160);
+
+  const faqs: QA[] = [
+    { q: `What is the best time to visit ${d.name}?`, a: `${best ? `The best months are ${best}: ${g?.notes.B ?? "the most reliable weather"}.` : ""}${good ? ` ${good} ${good.includes(" to ") || good.includes(",") ? "are" : "is"} also good: ${g?.notes.G ?? "shoulder season"}.` : ""}${avoid ? ` Avoid ${avoid} if you can: ${g?.notes.A ?? "off season"}.` : ""}`.trim() },
+    { q: `How many days are enough for ${d.name}?`, a: `Most travellers spend ${g?.nights ?? "5–7 nights"} in ${d.name}. That covers the main highlights at a relaxed pace; add 2–3 nights to include offbeat places or slower days.` },
+    { q: `How much does a ${d.name} trip cost from Mumbai?`, a: budget ? `Expect roughly ${budget} per person including return flights from Mumbai, mid-range hotels, transfers and sightseeing. Luxury stays, peak dates and private tours cost more.${from ? ` Our land packages start from ${inr(from)} per person.` : ""}` : `Costs depend on dates, hotels and group size. ${from ? `Our packages start from ${inr(from)} per person.` : "Ask us for a free custom quote."}` },
+    { q: `Do Indians need a visa or permit for ${d.name}?`, a: g?.visa ?? `Our team will confirm the latest visa and permit rules for your passport before you book.` },
+    { q: `How long is the flight from Mumbai to ${d.name}?`, a: g ? `${g.flight}. We plan connections and transfers so you don't lose a day.` : `Flight times vary by route; we will suggest the best connection from Mumbai.` },
+  ];
+
+  const table = `<table><thead><tr><th>Month</th><th>Rating</th><th>What to expect</th></tr></thead><tbody>${grid.map((m) => `<tr><td>${m.month}</td><td>${m.rating}</td><td>${escHtml(m.note)}</td></tr>`).join("")}</tbody></table>`;
+  const tripList = dTrips.length
+    ? `<ul>${dTrips.map((t) => `<li><a href="/trips/${t.slug}">${escHtml(t.headline)}</a>${t.nights && t.days ? ` — ${t.nights} nights / ${t.days} days` : ""}${t.price_per_person ? `, from ${inr(t.price_per_person)} per person` : ""}</li>`).join("")}</ul>`
+    : `<p>We don't have a ready-made ${escHtml(d.name)} itinerary listed yet, but we plan custom ${escHtml(d.name)} trips every month.</p>`;
+
+  const body = wrapBody([
+    `<article><h1>${escHtml(d.name)} Travel Guide</h1>`,
+    `<p>${escHtml(summary)}</p>`,
+    d.about ? `<h2>About ${escHtml(d.name)}</h2>${cleanRichHtml(d.about)}` : "",
+    `<h2>Best time to visit ${escHtml(d.name)}</h2>`,
+    `<p>${escHtml(faqs[0].a)} Prices and crowds peak in the best months, so book 6–10 weeks ahead for those dates.</p>`,
+    table,
+    `<h2>Visa, permits and flights from Mumbai</h2>`,
+    `<p><strong>Visa and permits:</strong> ${escHtml(g?.visa ?? "Our team confirms the latest entry rules for your passport before you book.")}</p>`,
+    `<p><strong>Flight time from Mumbai:</strong> ${escHtml(g?.flight ?? "Varies by route.")}. Adventourist books flights, transfers and connections as part of your plan, or works around tickets you already hold.</p>`,
+    g ? `<h2>Top experiences in ${escHtml(d.name)}</h2><ul>${g.exp.map((e) => `<li>${escHtml(e)}</li>`).join("")}</ul>` : "",
+    themes.length || suits.length ? `<h2>Trip themes and who ${escHtml(d.name)} suits</h2><p>${themes.length ? `Popular themes: ${escHtml(themes.join(", "))}. ` : ""}${suits.length ? `Best for ${escHtml(suits.join(", "))}.` : ""} Every itinerary can be adjusted for pace, hotel category and budget.</p>` : "",
+    `<h2>${escHtml(d.name)} trips and itineraries</h2>${tripList}`,
+    related.length ? `<h2>${escHtml(d.name)} travel stories</h2><ul>${related.map((s) => `<li><a href="/travel-stories/${s.slug}">${escHtml(s.title)}</a></li>`).join("")}</ul>` : "",
+    `<h2>${escHtml(d.name)} FAQs</h2>${faqs.map((f) => `<h3>${escHtml(f.q)}</h3><p>${escHtml(f.a)}</p>`).join("")}`,
+    `<p><a href="/trips?destination=${encodeURIComponent(d.name)}">See all ${escHtml(d.name)} trips</a> · <a href="/contact">Plan a custom ${escHtml(d.name)} trip</a></p></article>`,
+  ].join(""));
+
+  const llms = [
+    `### [${d.name}](${url})`,
+    `- Summary: ${summary}`,
+    `- Best time: ${best || "year-round"}${avoid ? `; avoid ${avoid}` : ""}`,
+    `- Budget: ${budget ? `${budget} per person from Mumbai incl. flights (approx.)` : "on request"}`,
+    `- Visa/permits: ${g?.visa ?? "confirmed per passport on request"}`,
+    `- Flight from Mumbai: ${g?.flight ?? "varies"}`,
+    `- Trips:`,
+    ...(dTrips.length ? dTrips.map((t) => `  - [${t.headline}](${BASE_URL}/trips/${t.slug}) — ${t.nights && t.days ? `${t.nights}N/${t.days}D` : "flexible"}, ${t.price_per_person ? `from ${inr(t.price_per_person)} pp` : "price on request"}`) : ["  - Custom itineraries on request"]),
+  ].join("\n");
+
+  return {
+    body,
+    llms,
+    path: `/destinations/${d.slug}`,
+    lastmod: day(d.updated_at),
+    changefreq: "weekly",
+    priority: "0.75",
+    title: d.seo_title || `${d.name} Travel Guide & Trips from Mumbai`,
+    ogTitle: `${d.name} Travel Guide: Best Time, Budget & Trips`,
+    ogImageAlt: `${d.name} landscape — Adventourist travel guide cover`,
+    description: desc,
+    ogImage: img,
+    h1: `${d.name} Travel Guide`,
+    intro: summary,
+    schema: [
+      { "@context": "https://schema.org", "@type": "TouristDestination", name: d.name, description: clamp(stripHtml(d.about) || summary, 300), url, image: img, ...(g ? { includesAttraction: g.exp.map((e) => ({ "@type": "TouristAttraction", name: e })) } : {}) },
+      faqSchema(faqs),
+      crumbs([{ name: "Home", path: "/" }, { name: "Destinations", path: "/destinations" }, { name: d.name, path: `/destinations/${d.slug}` }]),
+    ],
+  };
 }
