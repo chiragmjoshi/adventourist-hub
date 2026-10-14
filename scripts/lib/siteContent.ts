@@ -36,6 +36,66 @@ export interface RouteEntry {
   /** Visible H1 + intro written into the prerendered body. */
   h1: string;
   intro?: string;
+  /** Full crawler-visible body HTML (already escaped / sanitised). */
+  body?: string;
+}
+
+/* ── body HTML helpers ───────────────────────────────────────────────── */
+
+export function escHtml(s: unknown): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/** Keep only safe structural tags from CMS rich text; drop editor junk. */
+export function cleanRichHtml(html?: string | null): string {
+  if (!html) return "";
+  return html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style|iframe)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<span class="ql-ui"[^>]*><\/span>/g, "")
+    .replace(/<(\/?)(h[1-6]|p|ul|ol|li|strong|em|b|i|a|br|blockquote|table|thead|tbody|tr|td|th)(\s[^>]*)?>/gi, (_m, sl, tag, attrs) => {
+      tag = tag.toLowerCase();
+      if (tag === "h1") tag = "h2";
+      if (sl) return `</${tag}>`;
+      if (tag === "a") {
+        const href = /href="([^"]*)"/i.exec(attrs || "")?.[1];
+        return href && !/^javascript:/i.test(href) ? `<a href="${href}">` : "<a>";
+      }
+      return `<${tag}>`;
+    })
+    .replace(/<(?!\/?(h[1-6]|p|ul|ol|li|strong|em|b|i|a|br|blockquote|table|thead|tbody|tr|td|th)\b)[^>]+>/gi, "")
+    .replace(/<p>\s*(<br>)?\s*<\/p>/g, "")
+    .trim();
+}
+
+function list(items: unknown): string {
+  const arr = Array.isArray(items) ? items : [];
+  const li = arr.map((x) => (typeof x === "string" ? x : (x as any)?.title || (x as any)?.text || "")).filter(Boolean);
+  return li.length ? `<ul>${li.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul>` : "";
+}
+
+function richOrList(v: unknown): string {
+  if (typeof v === "string") return cleanRichHtml(v);
+  return list(v);
+}
+
+function inr(n?: number | null): string {
+  return n ? `₹${Number(n).toLocaleString("en-IN")}` : "";
+}
+
+/** Clamp to a max length at a word boundary. */
+export function clamp(s: string, max: number): string {
+  const t = s.replace(/\s+/g, " ").trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  return cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 20)).replace(/[,;:—-]\s*$/, "") + "…";
+}
+
+const NAV_LINKS = `<nav aria-label="Site"><ul><li><a href="/">Home</a></li><li><a href="/trips">Trips</a></li><li><a href="/destinations">Destinations</a></li><li><a href="/travel-stories">Travel Stories</a></li><li><a href="/about-us">About Us</a></li><li><a href="/faqs">FAQs</a></li><li><a href="/contact">Contact</a></li></ul></nav>`;
+export const CONTACT_BLOCK = `<footer><p>Adventourist, Vile Parle West, Mumbai, Maharashtra 400056, India. Phone: <a href="tel:+919930400694">+91 99304 00694</a>. Email: <a href="mailto:support@adventourist.in">support@adventourist.in</a>. Open Monday–Saturday, 9:00–21:00.</p></footer>`;
+export function wrapBody(inner: string): string {
+  return `${NAV_LINKS}<main>${inner}</main>${CONTACT_BLOCK}`;
 }
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
@@ -258,15 +318,15 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
   const [trips, stories, dests] = await Promise.all([
     fetchTable(
       "itineraries",
-      "select=slug,headline,about,hero_image,price_per_person,seo_title,seo_description,updated_at&status=eq.published&order=updated_at.desc",
+      "select=slug,headline,about,hero_image,price_per_person,seo_title,seo_description,updated_at,days,nights,best_months,themes,suitable_for,highlights,inclusions,exclusions,itinerary_days,faqs,destination_id&status=eq.published&order=updated_at.desc",
     ),
     fetchTable(
       "travel_stories",
-      "select=slug,title,excerpt,thumbnail_url,author,published_at,seo_title,seo_description,updated_at&status=eq.published&order=updated_at.desc",
+      "select=slug,title,excerpt,content_html,thumbnail_url,author,published_at,seo_title,seo_description,updated_at&status=eq.published&order=updated_at.desc",
     ),
     fetchTable(
       "destinations",
-      "select=slug,name,about,hero_image,seo_title,seo_description,updated_at&is_active=eq.true&order=name.asc",
+      "select=id,slug,name,about,hero_image,seo_title,seo_description,updated_at,best_months,themes,suitable_for&is_active=eq.true&order=name.asc",
     ),
   ]);
 
