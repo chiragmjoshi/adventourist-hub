@@ -46,6 +46,7 @@ export interface RouteEntry {
 
 export function escHtml(s: unknown): string {
   return String(s ?? "")
+    .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
