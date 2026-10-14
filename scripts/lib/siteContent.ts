@@ -390,7 +390,7 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
       `<p><a href="/contact">Plan this trip with an Adventourist expert</a></p>`,
       `</article>`,
     ].join(""));
-    const route = [...new Set(days.slice(1, -1).map((d) => String(d?.title ?? "").replace(/^(arrive|arrival|departure|day\s*\d+)[:\s-]*/i, "").split(/[–|,(]/)[0].trim()).filter((x) => x.length > 2 && x.length < 40))].slice(0, 2);
+    const route = [...new Set(days.slice(1, -1).map((d) => String(d?.title ?? "").replace(/^(arrive|arrival|departure|day\s*\d+)[:\s-]*/i, "").split(/[–|,(&]/)[0].replace(/\b(local\s+)?sightseeing\b/gi, "").replace(/^.*\bto\s+/i, "").trim()).filter((x) => x.length > 2 && x.length < 40))].slice(0, 2);
     const short = t.nights && t.days ? `${t.nights}N/${t.days}D` : "";
     const metaDesc = clamp(
       `${dest ? dest.name + " " : ""}${short} trip${t.price_per_person ? ` from ${inr(t.price_per_person)} per person` : ""}${route.length ? `: ${route.join(" & ")}` : ""}. Customised by Adventourist's Mumbai experts, zero booking fees.`,
@@ -404,8 +404,8 @@ export async function fetchDynamicRoutes(): Promise<RouteEntry[]> {
     return {
       body,
       description: metaDesc,
-      ogTitle: `${t.headline}${t.price_per_person ? ` · from ${inr(t.price_per_person)}` : ""}${dest ? ` | ${dest.name} trip` : ""}`,
-      ogImageAlt: `Scenic view from the ${t.headline} itinerary${dest ? ` in ${dest.name}` : ""}`,
+      ogTitle: `${t.headline}${t.price_per_person ? ` · from ${inr(t.price_per_person)}` : ""}${dest && !t.headline.includes(dest.name) ? ` | ${dest.name} trip` : " | Adventourist"}`,
+      ogImageAlt: `Scenic view from the ${t.headline} itinerary${dest && !t.headline.includes(dest.name) ? ` in ${dest.name}` : ""}`,
       llms: `### [${t.headline}](${url})\n- Duration: ${duration || "flexible"}\n- Starting price: ${t.price_per_person ? `${inr(t.price_per_person)} per person` : "on request"}\n- ${llmsSummary}`,
       path: `/trips/${t.slug}`,
       lastmod: day(t.updated_at),
@@ -653,7 +653,7 @@ function buildDestination(d: any, dTrips: any[], stories: any[]): RouteEntry {
     `An ideal trip is ${g?.nights ?? "5–7 nights"}${best ? `, best planned for ${best}` : ""}.`,
     budget ? `Budget roughly ${budget} per person from Mumbai, including return flights and mid-range hotels${from ? ` (land packages from ${inr(from)})` : ""}.` : from ? `Land packages start from ${inr(from)} per person.` : "",
   ].filter(Boolean).join(" ");
-  const desc = clamp(d.seo_description || `${d.name} trips from Mumbai: ${g?.nights ?? "custom"} itineraries, best time ${best || "year-round"}${budget ? `, about ${budget} per person` : ""}. Visa tips and zero booking fees.`, 160);
+  const desc = clamp(`${d.name} trips from Mumbai: ${g?.nights ?? "custom"} itineraries, best time ${best || "year-round"}${budget ? `, about ${budget} per person` : ""}. Visa tips and zero booking fees.`, 160);
 
   const faqs: QA[] = [
     { q: `What is the best time to visit ${d.name}?`, a: `${best ? `The best months are ${best}: ${g?.notes.B ?? "the most reliable weather"}.` : ""}${good ? ` ${good} ${good.includes(" to ") || good.includes(",") ? "are" : "is"} also good: ${g?.notes.G ?? "shoulder season"}.` : ""}${avoid ? ` Avoid ${avoid} if you can: ${g?.notes.A ?? "off season"}.` : ""}`.trim() },
