@@ -54,6 +54,7 @@ function ItineraryRedirect() {
 
 // Root-level legacy slugs (e.g. /bali-bliss-trip-5-nights-6-days) → /trips/:slug
 const ROOT_SLUG_MAP: Record<string, string> = {
+  "epic-europre-trip-12-nights-13-days":                "epic-europe-trip-12-nights-13-days",
   "bali-bliss-trip-5-nights-6-days":                    "bali-bliss-trip-5-nights-6-days",
   "leh-backpacking-trip-5-nights-6-days":               "leh-backpacking-trip-5-nights-6-days",
   "leh-backpacking-trip-with-turtuk-6-nights-7-days":   "leh-backpacking-trip-with-turtuk-6-nights-7-days",

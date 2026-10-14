@@ -36,11 +36,6 @@ const HOME_JSONLD = [
         availableLanguage: ["English", "Hindi"],
       },
     ],
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "250",
-    },
     sameAs: [
       "https://instagram.com/adventourist.in",
       "https://facebook.com/adventourist",

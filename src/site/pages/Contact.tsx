@@ -125,7 +125,6 @@ export default function Contact() {
         "https://www.instagram.com/adventourist",
         "https://www.facebook.com/adventourist",
       ],
-      aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", reviewCount: "250" },
     },
     {
       "@context": "https://schema.org",

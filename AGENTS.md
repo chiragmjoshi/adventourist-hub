@@ -1,0 +1,1 @@
+- Crawler-visible page content lives in scripts/lib/siteContent.ts (RouteEntry.body) and is written by scripts/prerender.ts at build; why: the SPA renders client-side, so prerendered HTML is what search engines and AI crawlers read.
