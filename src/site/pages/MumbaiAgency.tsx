@@ -74,11 +74,6 @@ export default function MumbaiAgency() {
         "https://www.instagram.com/adventourist.in",
         "https://www.facebook.com/adventourist.in",
       ],
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "4.8",
-        reviewCount: "250",
-      },
     },
     {
       "@context": "https://schema.org",
