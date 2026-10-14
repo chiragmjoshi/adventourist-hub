@@ -127,7 +127,6 @@ function verify(html: string, entry: RouteEntry): string[] {
   const h1s = html.match(/<h1>/g)?.length ?? 0;
   if (h1s !== 1) problems.push(`${h1s} <h1> tags`);
   for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) { try { JSON.parse(m[1]); } catch { problems.push("invalid JSON-LD"); } }
-  if (false) problems.push("missing <h1>");
   return problems.map((p) => `${entry.path}: ${p}`);
 }
 
