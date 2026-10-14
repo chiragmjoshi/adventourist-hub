@@ -646,7 +646,7 @@ function buildDestination(d: any, dTrips: any[], stories: any[]): RouteEntry {
   const prices = dTrips.map((t) => t.price_per_person).filter(Boolean);
   const from = prices.length ? Math.min(...prices) : 0;
   const kw = g?.kw ?? [d.name.toLowerCase()];
-  const related = stories.filter((s) => kw.some((k) => `${s.slug} ${s.title}`.toLowerCase().includes(k.replace(/\s+/g, k.includes(" ") ? " " : "")))).slice(0, 3);
+  const related = stories.filter((s) => kw.some((k) => `${s.slug.replace(/-/g, " ")} ${s.title}`.toLowerCase().includes(k))).slice(0, 3);
 
   const summary = [
     `${d.name} suits ${suits.length ? suits.slice(0, 4).join(", ") : "couples, families and friend groups"}${themes.length ? ` looking for ${themes.slice(0, 3).join(", ").toLowerCase()} experiences` : ""}.`,

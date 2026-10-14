@@ -54,16 +54,18 @@ function buildHead(entry: RouteEntry): string {
     `<title>${esc(title)}</title>`,
     `<meta name="description" content="${esc(entry.description)}" />`,
     `<link rel="canonical" href="${esc(url)}" />`,
-    `<meta property="og:title" content="${esc(title)}" />`,
+    `<meta property="og:title" content="${esc(entry.ogTitle || title)}" />`,
     `<meta property="og:description" content="${esc(entry.description)}" />`,
     `<meta property="og:url" content="${esc(url)}" />`,
     `<meta property="og:image" content="${esc(image)}" />`,
+    `<meta property="og:image:alt" content="${esc(entry.ogImageAlt || entry.h1)}" />`,
     `<meta property="og:type" content="${entry.ogType ?? "website"}" />`,
     `<meta name="robots" content="index, follow, max-image-preview:large" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
-    `<meta name="twitter:title" content="${esc(title)}" />`,
+    `<meta name="twitter:title" content="${esc(entry.ogTitle || title)}" />`,
     `<meta name="twitter:description" content="${esc(entry.description)}" />`,
     `<meta name="twitter:image" content="${esc(image)}" />`,
+    `<meta name="twitter:image:alt" content="${esc(entry.ogImageAlt || entry.h1)}" />`,
   ];
   for (const schema of entry.schema ?? []) {
     parts.push(
@@ -92,8 +94,8 @@ function renderPage(template: string, entry: RouteEntry): string {
   // Strip the sitewide fallbacks this route is replacing.
   html = dropTag(html, /\s*<title>[\s\S]*?<\/title>/);
   html = dropTag(html, /\s*<meta\s+name="description"[^>]*>/);
-  html = dropTag(html, /\s*<meta\s+property="og:(title|description|url|image|type)"[^>]*>/g);
-  html = dropTag(html, /\s*<meta\s+name="twitter:(title|description|image)"[^>]*>/g);
+  html = dropTag(html, /\s*<meta\s+property="og:(title|description|url|image|image:alt|type)"[^>]*>/g);
+  html = dropTag(html, /\s*<meta\s+name="twitter:(title|description|image|image:alt)"[^>]*>/g);
   html = dropTag(html, /\s*<link\s+rel="canonical"[^>]*>/g);
   html = dropTag(html, /\s*<meta\s+name="(robots|twitter:card)"[^>]*>/g);
   html = html.replace(/<!--(?!\[if)[\s\S]*?-->/g, "");
@@ -164,7 +166,7 @@ async function main() {
 
   // llms-full.txt — one section per destination / trip / story, canonical links.
   const sec = (label: string, prefix: string) =>
-    [`## ${label}`, ...all.filter((e) => e.path.startsWith(prefix)).map((e) => `- [${e.h1}](${BASE_URL}${e.path}): ${clamp(e.description, 200)}`), ""].join("\n");
+    [`## ${label}`, "", ...all.filter((e) => e.path.startsWith(prefix)).map((e) => e.llms ? `${e.llms}\n` : `- [${e.h1}](${BASE_URL}${e.path}): ${clamp(e.description, 200)}`), ""].join("\n");
   writeFileSync(
     resolve(DIST, "llms-full.txt"),
     [
