@@ -15,6 +15,7 @@ const TRIPS_ALIAS_MAP: Record<string, string> = {
   "leh-ladakh-7-days":          "explore-ladakh-via-manali-in-7-nights-8-days",
   "kashmir-itinerary":          "paradise-on-earth-kashmir-trip-5-nights-6-days",
   "bali-trip":                  "bali-bliss-trip-5-nights-6-days",
+  "epic-europre-trip-12-nights-13-days": "epic-europe-trip-12-nights-13-days",
 };
 
 function stripHtml(s?: string) {
