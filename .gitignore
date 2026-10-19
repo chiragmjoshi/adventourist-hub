@@ -12,6 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Environment files — never commit secrets
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Test & coverage output
+coverage
+playwright-report
+test-results
+.playwright
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
