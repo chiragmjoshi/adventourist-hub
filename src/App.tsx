@@ -181,6 +181,9 @@ const App = () => {
             <Route path="/admin/login" element={<Login />} />
             <Route path="/admin/accept-invite" element={<AcceptInvite />} />
             <Route path="/admin/reset-password" element={<ResetPassword />} />
+            {/* Older emails linked here without /admin — keep them working */}
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/admin/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
             <Route path="/admin/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />

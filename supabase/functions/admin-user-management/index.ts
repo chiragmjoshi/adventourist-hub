@@ -50,9 +50,9 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
-    const origin = req.headers.get("origin") ?? "";
-    const redirectTo = `${origin}/accept-invite`;
-    const resetRedirect = `${origin}/reset-password`;
+    const origin = req.headers.get("origin") || "https://www.adventourist.in";
+    const redirectTo = `${origin}/admin/accept-invite`;
+    const resetRedirect = `${origin}/admin/reset-password`;
 
     switch (action) {
       case "invite": {
