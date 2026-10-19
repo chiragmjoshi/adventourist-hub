@@ -15,7 +15,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "types:gen": "scripts/gen-supabase-types.sh",
+    "types:gen:staging": "scripts/gen-supabase-types.sh --staging"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
