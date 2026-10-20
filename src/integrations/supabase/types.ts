@@ -501,6 +501,57 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          component_stack: string | null
+          context: Json | null
+          created_at: string
+          environment: string
+          id: string
+          message: string
+          name: string | null
+          release_sha: string | null
+          route: string | null
+          scope: string | null
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          environment?: string
+          id?: string
+          message: string
+          name?: string | null
+          release_sha?: string | null
+          route?: string | null
+          scope?: string | null
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          environment?: string
+          id?: string
+          message?: string
+          name?: string | null
+          release_sha?: string | null
+          route?: string | null
+          scope?: string | null
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       itineraries: {
         Row: {
           about: string | null
