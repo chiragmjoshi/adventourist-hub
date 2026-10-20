@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify (typecheck + lint + test + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      # Preexisting codebase has a known backlog of ESLint errors (mostly
+      # `@typescript-eslint/no-explicit-any`) that Phase 3 of ROLLOUT_PLAN.md is
+      # cleaning up incrementally. To stop new errors from being added while
+      # that work is in flight, we lint only the files changed in the PR.
+      # Once Phase 3.3 lands and tsconfig is strict, flip this to `bun run lint`.
+      - name: Lint changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          CHANGED=$(git diff --name-only --diff-filter=AM "$BASE_SHA"...HEAD -- '*.ts' '*.tsx' | tr '\n' ' ')
+          if [ -z "$CHANGED" ]; then
+            echo "No TS/TSX files changed; skipping lint."
+            exit 0
+          fi
+          echo "Linting: $CHANGED"
+          bunx eslint $CHANGED --max-warnings 0
+
+      - name: Lint (push to protected branch, advisory)
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: bun run lint
+
+      - name: Unit tests
+        run: bun run test
+
+      - name: Build
+        env:
+          # These are the public anon values; CI only exercises the build step.
+          # Real values live in Supabase project secrets and deploy env.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://ci.placeholder.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'ci-placeholder-key' }}
+        run: bun run build
+
+      - name: Upload build artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
+
+  migration-check:
+    name: Supabase migration lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Guard against modified-after-merge migrations
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          CHANGED_MIGRATIONS=$(git diff --name-only --diff-filter=M "$BASE_SHA"...HEAD -- supabase/migrations/ || true)
+          if [ -n "$CHANGED_MIGRATIONS" ]; then
+            echo "::error::Migrations must be append-only. These files were modified:"
+            echo "$CHANGED_MIGRATIONS"
+            echo ""
+            echo "If you need to change a committed migration, add a NEW migration that"
+            echo "applies the correction (see docs/ROLLOUT_PLAN.md)."
+            exit 1
+          fi
+          echo "No existing migrations were modified. Good."
+
+      - name: SQL syntax sanity check
+        run: |
+          # Basic sanity: every new migration must contain a trailing newline and
+          # must not reference IF NOT EXISTS on a destructive statement.
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          NEW=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- 'supabase/migrations/*.sql' || true)
+          if [ -z "$NEW" ]; then
+            echo "No new migrations in this PR."
+            exit 0
+          fi
+          FAIL=0
+          for f in $NEW; do
+            if [ "$(tail -c 1 "$f" | wc -l)" -ne 1 ]; then
+              echo "::error file=$f::Migration must end with a newline"
+              FAIL=1
+            fi
+            if grep -Ei '^\s*DROP\s+TABLE\s+(?!IF\s+EXISTS)' "$f" >/dev/null 2>&1; then
+              echo "::warning file=$f::DROP TABLE without IF EXISTS — are you sure this is reversible?"
+            fi
+          done
+          exit $FAIL
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail on committed .env
+        run: |
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '\.env\.example$' >/dev/null; then
+            echo "::error::A .env file is committed. Only .env.example may be tracked."
+            git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '\.env\.example$'
+            exit 1
+          fi
+
+      - name: Scan for likely secrets in diff
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            exit 0
+          fi
+          # Narrow pattern set: Supabase service keys, Razorpay live keys, AWS, Stripe live, generic JWT >150 chars.
+          BAD=$(git diff "$BASE_SHA"...HEAD -U0 | grep -E '^\+' | grep -Ei \
+            'sb_secret_|rzp_live_|AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24,}|eyJ[A-Za-z0-9_-]{150,}' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::Likely secret detected in diff. Rotate it and remove from git history."
+            echo "$BAD" | sed -E 's/(sb_secret_|rzp_live_|AKIA[0-9A-Z]{4}|sk_live_[0-9a-zA-Z]{4}).*/\1***REDACTED***/'
+            exit 1
+          fi
