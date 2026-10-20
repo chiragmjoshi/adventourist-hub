@@ -285,60 +285,11 @@ export async function getMasterData(): Promise<CMSMasterData | null> {
   };
 }
 
-// ── Stories ───────────────────────────────────────────────────────────────────
-export interface CMSStory {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt?: string;
-  cover_image_url?: string;
-  author: string;
-  category: string;
-  tags: string[];
-  read_time_minutes: number;
-  published_at?: string;
-  views: number;
-  destination?: { id: string; name: string; slug: string };
-}
-
-export async function getStories(category?: string): Promise<CMSStory[]> {
-  let query = supabase
-    .from("stories")
-    .select(
-      "id, slug, title, excerpt, cover_image_url, author, category, tags, read_time_minutes, published_at, views, destinations:destination_id(id, name, slug)",
-    )
-    .eq("is_published", true)
-    .order("published_at", { ascending: false })
-    .limit(20);
-  if (category && category !== "All") query = query.eq("category", category);
-
-  const { data, error } = await query;
-  if (error) {
-    console.error("getStories error:", error);
-    return [];
-  }
-  return (data ?? []).map((s: any) => ({ ...s, destination: s.destinations ?? undefined }));
-}
-
-export async function getStoryBySlug(
-  slug: string,
-): Promise<
-  | (CMSStory & { content?: string; seo_title?: string; seo_description?: string; og_image_url?: string })
-  | null
-> {
-  const { data, error } = await supabase
-    .from("stories")
-    .select("*, destinations:destination_id(id, name, slug)")
-    .eq("slug", slug)
-    .eq("is_published", true)
-    .maybeSingle();
-  if (error || !data) return null;
-  // Fire-and-forget view increment
-  supabase.rpc("increment_story_views", { story_slug: slug }).then(() => {});
-  return { ...(data as any), destination: (data as any).destinations ?? undefined };
-}
-
 // ── Travel Stories (new table) ───────────────────────────────────────────────
+// (Removed Phase 2.5: the old CMSStory / getStories / getStoryBySlug helpers
+// queried a `stories` table that no longer exists in the schema — see
+// supabase/migrations/*travel_stories*. The surviving code uses
+// getAllTravelStories / getTravelStoryBySlug below.)
 export type TravelStoryCategory = "travel-stories" | "things-to-do" | "destination-guides";
 
 export interface TravelStory {
