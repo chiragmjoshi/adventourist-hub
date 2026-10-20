@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792507943810,
+      "tag": "0000_add_error_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792507988197,
+      "tag": "0001_add_feature_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792508007663,
+      "tag": "0002_grant_error_logs_feature_flags",
+      "breakpoints": true
+    }
+  ]
+}

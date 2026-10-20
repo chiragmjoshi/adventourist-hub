@@ -501,6 +501,93 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          component_stack: string | null
+          context: Json | null
+          created_at: string
+          environment: string
+          id: string
+          message: string
+          name: string | null
+          release_sha: string | null
+          route: string | null
+          scope: string | null
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          environment?: string
+          id?: string
+          message: string
+          name?: string | null
+          release_sha?: string | null
+          route?: string | null
+          scope?: string | null
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          environment?: string
+          id?: string
+          message?: string
+          name?: string | null
+          release_sha?: string | null
+          route?: string | null
+          scope?: string | null
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled_globally: boolean
+          enabled_roles: string[]
+          enabled_user_ids: string[]
+          id: string
+          key: string
+          rollout_percent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled_globally?: boolean
+          enabled_roles?: string[]
+          enabled_user_ids?: string[]
+          id?: string
+          key: string
+          rollout_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled_globally?: boolean
+          enabled_roles?: string[]
+          enabled_user_ids?: string[]
+          id?: string
+          key?: string
+          rollout_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       itineraries: {
         Row: {
           about: string | null
@@ -2162,6 +2249,7 @@ export type Database = {
     }
     Functions: {
       current_user_role: { Args: never; Returns: string }
+      feature_flag_bucket: { Args: { p_user_id: string }; Returns: number }
       generate_adv_traveller_code: { Args: never; Returns: string }
       get_vendor_safe: { Args: { p_vendor_id: string }; Returns: Json }
       increment_story_views: {
@@ -2169,6 +2257,10 @@ export type Database = {
         Returns: undefined
       }
       is_admin_or_higher: { Args: never; Returns: boolean }
+      is_feature_enabled: {
+        Args: { p_key: string; p_user_id?: string }
+        Returns: boolean
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
