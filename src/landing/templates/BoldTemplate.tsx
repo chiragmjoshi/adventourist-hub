@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronDown, Star, X } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
 import { sanitizeRichHtml } from "@/lib/sanitize";
-import { LandingPageData, ItineraryData, FALLBACK_TESTIMONIALS, WHATSAPP_URL } from "../shared";
+import { LandingPageData, ItineraryData, pickTestimonials, WHATSAPP_URL } from "../shared";
 import LandingNavbar from "../components/LandingNavbar";
 import LandingFooter from "../components/LandingFooter";
 import MobileStickyBar from "../components/MobileStickyBar";
@@ -18,6 +18,10 @@ const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"
 export default function BoldTemplate({ page, itinerary }: Props) {
   const [expandedDay, setExpandedDay] = useState<number | null>(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  // Phase 4A.3 — show admin-curated testimonials (from destinations.testimonials)
+  // when available, falling back to the generic ones only when the destination
+  // has none authored.
+  const testimonials = pickTestimonials(page);
 
   // Cascade fallbacks across LP → itinerary → destination
   const dest = page.destinations || null;
@@ -243,7 +247,7 @@ export default function BoldTemplate({ page, itinerary }: Props) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="text-3xl md:text-4xl font-black text-[#1A1D2E] mb-10 text-center">What Travellers Say</h2>
           <div className="grid md:grid-cols-3 gap-5">
-            {FALLBACK_TESTIMONIALS.map((t) => (
+            {testimonials.map((t) => (
               <div key={t.name} className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
                 <div className="flex gap-0.5 mb-3">
                   {Array.from({ length: t.stars }).map((_, i) => (
