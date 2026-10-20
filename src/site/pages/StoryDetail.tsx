@@ -4,7 +4,7 @@ import DOMPurify from "isomorphic-dompurify";
 import { Share2, Link2, ChevronRight, MessageCircle } from "lucide-react";
 import SiteLayout from "@/site/SiteLayout";
 import SEO from "@/components/SEO";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   getTravelStoryBySlug,
   getRelatedTravelStories,
@@ -76,7 +76,6 @@ function NotFound() {
 
 export default function StoryDetail() {
   const { slug = "" } = useParams<{ slug: string }>();
-  const { toast } = useToast();
   const [story, setStory] = useState<TravelStory | null | undefined>(undefined);
   const [related, setRelated] = useState<TravelStory[]>([]);
   const [destinations, setDestinations] = useState<CMSDestinationFull[]>([]);
@@ -284,7 +283,7 @@ export default function StoryDetail() {
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl).then(() =>
-                  toast({ title: "Link copied", description: "Share it with anyone." }),
+                  toast.success("Link copied", { description: "Share it with anyone." }),
                 );
               }}
               className="inline-flex items-center gap-2 bg-abyss text-white px-4 py-2 rounded-full font-body text-sm font-medium hover:bg-abyss/90 transition-colors"

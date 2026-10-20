@@ -1,18 +1,17 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { adminCorsHeaders } from "../_shared/cors.ts";
 
 function formatMobile(mobile: string): string {
-  let c = mobile.replace(/[\s\-\(\)]/g, "").replace(/^\+/, "");
+  let c = mobile.replace(/[\s\-()]/g, "").replace(/^\+/, "");
   if (c.startsWith("91") && c.length === 12) return c;
   if (c.startsWith("0")) c = c.substring(1);
   return "91" + c;
 }
 
 Deno.serve(async (req) => {
+  // Phase 2.8: admin-only endpoint — allowlist CORS, kill-switch via
+  // ALLOW_WILDCARD_CORS env.
+  const corsHeaders = adminCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

@@ -1,9 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { adminCorsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -11,14 +7,18 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const ROLES = ["super_admin", "admin", "sales", "operations", "finance"];
 
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
 Deno.serve(async (req) => {
+  // Phase 2.8: per-request CORS. The helper reads ALLOW_WILDCARD_CORS at
+  // every cold start so flipping that secret in the Supabase dashboard is a
+  // one-command rollback if locking down CORS breaks a legit integration.
+  const corsHeaders = adminCorsHeaders(req);
+
+  const jsonResponse = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -50,7 +50,22 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
-    const origin = req.headers.get("origin") || "https://www.adventourist.in";
+
+    // Phase 2.2 — validate Origin against an allowlist before building the
+    // auth-redirect URL. The Supabase project's "Additional redirect URLs"
+    // allowlist is the primary defence, but checking here too keeps a crafted
+    // Origin header from being echoed back into password-reset / invite links.
+    // Add new deploys (new preview domains, custom customer domains for
+    // white-label, etc.) to ALLOWED_ORIGINS AND to the Supabase redirect
+    // allowlist in the dashboard — both are required.
+    const CANONICAL_ORIGIN = "https://www.adventourist.in";
+    const ALLOWED_ORIGINS = new Set([
+      "https://adventourist.in",
+      "https://www.adventourist.in",
+      "https://admin.adventourist.in",
+    ]);
+    const rawOrigin = req.headers.get("origin") ?? "";
+    const origin = ALLOWED_ORIGINS.has(rawOrigin) ? rawOrigin : CANONICAL_ORIGIN;
     const redirectTo = `${origin}/admin/accept-invite`;
     const resetRedirect = `${origin}/admin/reset-password`;
 

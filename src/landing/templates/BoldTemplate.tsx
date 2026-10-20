@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, Star, X } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { LandingPageData, ItineraryData, FALLBACK_TESTIMONIALS, WHATSAPP_URL } from "../shared";
 import LandingNavbar from "../components/LandingNavbar";
 import LandingFooter from "../components/LandingFooter";
@@ -163,7 +164,7 @@ export default function BoldTemplate({ page, itinerary }: Props) {
                     {open && (
                       <div className="px-5 pb-5 border-t border-gray-100">
                         {desc && (
-                          <div className="mt-4 text-sm text-gray-600 leading-relaxed whitespace-pre-line" dangerouslySetInnerHTML={{ __html: desc }} />
+                          <div className="mt-4 text-sm text-gray-600 leading-relaxed whitespace-pre-line" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(desc) }} />
                         )}
                         {(meals.breakfast || meals.lunch || meals.dinner) && (
                           <div className="flex gap-2 mt-3 flex-wrap">
@@ -195,7 +196,7 @@ export default function BoldTemplate({ page, itinerary }: Props) {
                     <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs font-bold">✓</span>
                     <h3 className="font-bold text-[#1A1D2E]">Inclusions</h3>
                   </div>
-                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: inclusionsText }} />
+                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(inclusionsText) }} />
                 </div>
               )}
               {exclusionsText && (
@@ -204,7 +205,7 @@ export default function BoldTemplate({ page, itinerary }: Props) {
                     <span className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center text-red-400 text-xs font-bold">✗</span>
                     <h3 className="font-bold text-[#1A1D2E]">Exclusions</h3>
                   </div>
-                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: exclusionsText }} />
+                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(exclusionsText) }} />
                 </div>
               )}
             </div>

@@ -1,14 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { loadEmailCfg, sendEmailWithFallback, sendViaResend, sendViaSmtp, type Provider } from "../_shared/emailSender.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { adminCorsHeaders } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
+  // Phase 2.8: admin-only — allowlist CORS.
+  const corsHeaders = adminCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

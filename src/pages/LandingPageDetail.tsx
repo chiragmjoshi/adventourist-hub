@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, ChevronRight, Pencil, ExternalLink, Users, TrendingUp, DollarSign, Calendar } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
+import { isClosed } from "@/lib/reporting";
 
 const LandingPageDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,7 +45,10 @@ const LandingPageDetail = () => {
 
   const now = new Date();
   const thisMonth = leads.filter(l => { const d = new Date(l.created_at!); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
-  const closedLeads = leads.filter(l => l.sales_status === "file_closed");
+  // Fix (Phase 2.3): DB stores Title Case ("File Closed"); the previous
+  // snake_case compare always returned 0, so every landing page showed 0.0 %
+  // conversion. Use the canonical isClosed() helper.
+  const closedLeads = leads.filter(isClosed);
   const conversionRate = leads.length > 0 ? ((closedLeads.length / leads.length) * 100).toFixed(1) : "0";
 
   return (

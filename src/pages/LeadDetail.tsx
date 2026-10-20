@@ -191,7 +191,7 @@ const LeadDetail = () => {
           .in("id", uniqueDestinationIds as string[]);
         (drows || []).forEach((r: any) => { destinationMap[r.id] = r; });
       }
-      let vendorMap: Record<string, number> = {};
+      const vendorMap: Record<string, number> = {};
       if (ids.length > 0) {
         const { data: vrows } = await supabase
           .from("trip_cashflow_vendors")
@@ -284,13 +284,18 @@ const LeadDetail = () => {
 
       const events: { event_type: string; note: string }[] = [];
       if (updates.sales_status && updates.sales_status !== oldLead.sales_status) {
-        const et = updates.sales_status === "File Closed" ? "file_closed" : "status_change";
+        // Phase 2.4: emit past-tense "status_changed" to match the automation
+        // trigger name used on the next line. Keep the special-case
+        // "file_closed" event_type so the green "closed" dot in the timeline
+        // still renders. EVENT_COLORS has both tenses mapped for back-compat
+        // with historical rows written as "status_change".
+        const et = updates.sales_status === "File Closed" ? "file_closed" : "status_changed";
         events.push({ event_type: et, note: `Sales status changed from "${oldLead.sales_status || 'None'}" to "${updates.sales_status}" by ${profile?.name || "User"}` });
-        // Fire rules listening for status_changed
         evaluateRulesForLead(id!, "status_changed");
       }
       if (updates.disposition && updates.disposition !== oldLead.disposition) {
-        events.push({ event_type: "disposition_change", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
+        // Phase 2.4: past-tense "disposition_changed" to match the trigger.
+        events.push({ event_type: "disposition_changed", note: `Disposition changed from "${oldLead.disposition || 'None'}" to "${updates.disposition}" by ${profile?.name || "User"}` });
         evaluateRulesForLead(id!, "disposition_changed");
         // Auto-create reminders for specific dispositions (non-blocking)
         const dk = dispKey(updates.disposition);
@@ -892,8 +897,8 @@ const LeadDetail = () => {
                           <div key={event.id} className="flex gap-3 relative">
                             <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${EVENT_COLORS[event.event_type] || "bg-gray-400"}`}>
                               {event.event_type === "lead_created" ? <User className="h-3 w-3 text-white" /> :
-                               event.event_type === "status_change" || event.event_type === "file_closed" ? <FileText className="h-3 w-3 text-white" /> :
-                               event.event_type === "disposition_change" ? <MessageSquare className="h-3 w-3 text-white" /> :
+                               event.event_type === "status_change" || event.event_type === "status_changed" || event.event_type === "file_closed" ? <FileText className="h-3 w-3 text-white" /> :
+                               event.event_type === "disposition_change" || event.event_type === "disposition_changed" ? <MessageSquare className="h-3 w-3 text-white" /> :
                                <Clock className="h-3 w-3 text-white" />}
                             </div>
                             <div className="flex-1 min-w-0 pt-0.5">

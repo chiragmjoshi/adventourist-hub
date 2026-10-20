@@ -2,13 +2,12 @@
 // Auth: requires X-API-Key header matching EXTERNAL_PUBLISH_API_KEY secret.
 // Kill switch: api_settings.external_publish_enabled must be true.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { publicCorsHeaders } from "../_shared/cors.ts";
 
-const cors = {
-  ...corsHeaders,
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-api-key",
-};
+// External Publishing API: designed to be called from arbitrary origins by
+// third-party publishing tools. Auth is X-API-Key (see EXTERNAL_PUBLISH_API_KEY)
+// — Origin is not a security gate here. Wildcard CORS is intentional.
+const cors = publicCorsHeaders();
 
 function slugify(s: string) {
   return s
