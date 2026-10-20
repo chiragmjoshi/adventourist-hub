@@ -1,14 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { loadEmailCfg, sendEmailWithFallback } from "../_shared/emailSender.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { adminCorsHeaders } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
+  // Phase 2.8: admin / service-callable — allowlist CORS. Flip
+  // ALLOW_WILDCARD_CORS=true in Supabase secrets if a legit integration
+  // breaks and you need an immediate restore.
+  const corsHeaders = adminCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

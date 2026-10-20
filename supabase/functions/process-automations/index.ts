@@ -1,12 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { wrapInBrandShell } from "../_shared/emailShell.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { adminCorsHeaders } from "../_shared/cors.ts";
 
 const TZ_OFFSET_MIN = 330; // IST
 
@@ -266,6 +260,11 @@ async function scheduleRule(
 }
 
 Deno.serve(async (req) => {
+  // Phase 2.8: scheduled worker — called by Supabase cron (service role key)
+  // and by the admin tab. Allowlisted CORS covers browser-initiated calls;
+  // service-role invocations don't send Origin so the empty-origin path
+  // just omits the ACAO header (no browser is involved either way).
+  const corsHeaders = adminCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
