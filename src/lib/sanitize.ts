@@ -10,7 +10,7 @@ import DOMPurify from "isomorphic-dompurify";
  * allowed because the TipTap editor inserts them; add `rel` so sanitized
  * anchors always carry `noopener noreferrer`.
  */
-const CONFIG: DOMPurify.Config = {
+const CONFIG = {
   ALLOWED_TAGS: [
     "p", "br", "span", "div",
     "strong", "em", "b", "i", "u", "s", "mark", "sub", "sup",
@@ -42,7 +42,7 @@ const CONFIG: DOMPurify.Config = {
  */
 export function sanitizeRichHtml(dirty: unknown): string {
   if (typeof dirty !== "string" || dirty.length === 0) return "";
-  const clean = DOMPurify.sanitize(dirty, CONFIG);
+  const clean = String(DOMPurify.sanitize(dirty, CONFIG));
   // DOMPurify can emit <a target="_blank"> without rel — tighten it after.
   return clean.replace(
     /<a\s+([^>]*?)>/gi,

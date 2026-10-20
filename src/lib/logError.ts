@@ -51,7 +51,7 @@ export function logError(input: LogErrorInput): void {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      await supabase.from("error_logs" as never).insert({
+      await (supabase as any).from("error_logs").insert({
         user_id: session.user.id,
         route: typeof window !== "undefined" ? window.location.pathname : null,
         url: typeof window !== "undefined" ? window.location.href : null,
