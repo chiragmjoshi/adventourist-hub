@@ -16,6 +16,7 @@ import {
   SALES_STATUS,
 } from "@/lib/reporting";
 import { formatINR } from "@/lib/formatINR";
+import { displayPlatform } from "@/lib/formatLabel";
 import { useAuth } from "@/contexts/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -357,7 +358,9 @@ async function fetchDashboardData(): Promise<DashboardData> {
 
   const sourceCounts = new Map<string, number>();
   for (const l of thisMonthLeads) {
-    const p = ((l as any).platform ?? "Unknown") || "Unknown";
+    // Phase 4B.1: canonical "Direct" label for null platform, matching
+    // every other report.
+    const p = displayPlatform((l as any).platform);
     sourceCounts.set(p, (sourceCounts.get(p) ?? 0) + 1);
   }
   const sourcePalette = [BLAZE, HORIZON, LAGOON, RIDGE, ABYSS];
