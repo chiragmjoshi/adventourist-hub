@@ -50,7 +50,22 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
-    const origin = req.headers.get("origin") || "https://www.adventourist.in";
+
+    // Phase 2.2 — validate Origin against an allowlist before building the
+    // auth-redirect URL. The Supabase project's "Additional redirect URLs"
+    // allowlist is the primary defence, but checking here too keeps a crafted
+    // Origin header from being echoed back into password-reset / invite links.
+    // Add new deploys (new preview domains, custom customer domains for
+    // white-label, etc.) to ALLOWED_ORIGINS AND to the Supabase redirect
+    // allowlist in the dashboard — both are required.
+    const CANONICAL_ORIGIN = "https://www.adventourist.in";
+    const ALLOWED_ORIGINS = new Set([
+      "https://adventourist.in",
+      "https://www.adventourist.in",
+      "https://admin.adventourist.in",
+    ]);
+    const rawOrigin = req.headers.get("origin") ?? "";
+    const origin = ALLOWED_ORIGINS.has(rawOrigin) ? rawOrigin : CANONICAL_ORIGIN;
     const redirectTo = `${origin}/admin/accept-invite`;
     const resetRedirect = `${origin}/admin/reset-password`;
 
