@@ -16,6 +16,7 @@ import { Save, Eye, EyeOff, CheckCircle, XCircle, ChevronDown, Download, Trash2,
 import { toast } from "sonner";
 import { useRBAC } from "@/hooks/useRBAC";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDBHealthCheck } from "@/hooks/useDBHealthCheck";
 import ExternalApiTab from "./settings/ExternalApiTab";
 
 const TEMPLATE_VARS: Record<string, string[]> = {
@@ -54,6 +55,8 @@ const Settings = () => {
   const { hasRole } = useRBAC();
   const { profile } = useAuth();
   const isSuperAdmin = hasRole("super_admin");
+  // Phase 4A.2: real DB status, not a hard-coded badge.
+  const dbHealth = useDBHealthCheck();
 
   const { data: settings = [] } = useQuery({
     queryKey: ["settings"],
@@ -697,8 +700,28 @@ const Settings = () => {
           <Card className="border-border/50 shadow-none">
             <CardContent className="px-5 py-4 space-y-3">
               <div className="flex justify-between">
-                <div><p className="text-[10px] text-muted-foreground">App Version</p><p className="text-xs font-medium">1.0.0</p></div>
-                <div><p className="text-[10px] text-muted-foreground">Database Status</p><Badge className="bg-ridge/20 text-ridge text-[10px]">Connected</Badge></div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">App Version</p>
+                  <p className="text-xs font-medium font-mono">{__APP_VERSION__}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Database Status</p>
+                  {(() => {
+                    // Phase 4A.2: badge reflects the real one-shot health
+                    // probe from useDBHealthCheck (ran on page mount).
+                    const label =
+                      dbHealth.status === "checking"  ? "Checking…" :
+                      dbHealth.status === "connected" ? `Connected${dbHealth.latencyMs !== null ? ` · ${dbHealth.latencyMs}ms` : ""}` :
+                      dbHealth.status === "degraded"  ? `Slow · ${dbHealth.latencyMs}ms` :
+                                                        "Unreachable";
+                    const cls =
+                      dbHealth.status === "connected" ? "bg-ridge/20 text-ridge" :
+                      dbHealth.status === "degraded"  ? "bg-amber-100 text-amber-800" :
+                      dbHealth.status === "error"     ? "bg-red-100 text-red-800" :
+                                                        "bg-muted text-muted-foreground";
+                    return <Badge className={`${cls} text-[10px]`}>{label}</Badge>;
+                  })()}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -78,7 +78,14 @@ export interface ItineraryData {
   destination_type?: string[] | null;
 }
 
-export const FALLBACK_TESTIMONIALS = [
+export interface TemplateTestimonial {
+  name: string;
+  trip: string;
+  text: string;
+  stars: number;
+}
+
+export const FALLBACK_TESTIMONIALS: TemplateTestimonial[] = [
   {
     name: "Rahul & Priya Sharma",
     trip: "Bali Honeymoon",
@@ -98,6 +105,54 @@ export const FALLBACK_TESTIMONIALS = [
     stars: 5,
   },
 ];
+
+/**
+ * Normalise a destination.testimonials row ({ name, description } in the DB)
+ * to the shape every landing template already renders ({ name, trip, text,
+ * stars }). Returns up to `max` entries. Missing fields are inferred:
+ *   trip → destination name
+ *   stars → 5 (all authored testimonials are positive by selection)
+ *
+ * Phase 4A.3 — the three templates used to always render FALLBACK testimonials
+ * even when the admin had curated real ones in destinations.testimonials
+ * (every destination has them). This helper closes that gap.
+ */
+export function pickTestimonials(
+  page: LandingPageData | null | undefined,
+  max = 3,
+): TemplateTestimonial[] {
+  const raw = page?.destinations?.testimonials;
+  if (!Array.isArray(raw) || raw.length === 0) return FALLBACK_TESTIMONIALS;
+
+  const destName = page?.destinations?.name ?? "";
+  const normalised = raw
+    .map((row): TemplateTestimonial | null => {
+      if (!row || typeof row !== "object") return null;
+      const r = row as Record<string, unknown>;
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      const text =
+        typeof r.description === "string" ? r.description.trim() :
+        typeof r.text === "string"        ? r.text.trim() :
+        "";
+      if (!name || !text) return null;
+      return {
+        name,
+        text,
+        trip:
+          typeof r.trip === "string" && r.trip.trim().length > 0
+            ? r.trip.trim()
+            : destName,
+        stars:
+          typeof r.stars === "number" && r.stars >= 1 && r.stars <= 5
+            ? Math.round(r.stars)
+            : 5,
+      };
+    })
+    .filter((t): t is TemplateTestimonial => t !== null)
+    .slice(0, max);
+
+  return normalised.length > 0 ? normalised : FALLBACK_TESTIMONIALS;
+}
 
 /** Parse inclusions/exclusions stored as newline or bullet text into an array. */
 export function parseList(raw?: string | null): string[] {

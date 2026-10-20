@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, Star } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
-import { LandingPageData, ItineraryData, FALLBACK_TESTIMONIALS } from "../shared";
+import { LandingPageData, ItineraryData, pickTestimonials } from "../shared";
 import LandingNavbar from "../components/LandingNavbar";
 import LandingFooter from "../components/LandingFooter";
 import MobileStickyBar from "../components/MobileStickyBar";
@@ -16,6 +16,9 @@ export default function MinimalTemplate({ page, itinerary }: Props) {
   const [expandedDay, setExpandedDay] = useState<number | null>(0);
   const destName = page.destinations?.name || "";
   const days = (itinerary?.itinerary_days as any[]) || [];
+  // Phase 4A.3 — real testimonials from destinations.testimonials, fallback
+  // only when none are authored for the destination.
+  const testimonials = pickTestimonials(page);
 
   const scrollToForm = () => document.getElementById("enquire")?.scrollIntoView({ behavior: "smooth" });
 
@@ -130,7 +133,7 @@ export default function MinimalTemplate({ page, itinerary }: Props) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="text-3xl md:text-4xl font-black text-[#1A1D2E] mb-10 text-center">Travellers Say</h2>
           <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible">
-            {FALLBACK_TESTIMONIALS.map((t) => (
+            {testimonials.map((t) => (
               <div
                 key={t.name}
                 className="bg-white rounded-2xl p-7 min-w-[80%] sm:min-w-[60%] md:min-w-0 snap-start shadow-sm"

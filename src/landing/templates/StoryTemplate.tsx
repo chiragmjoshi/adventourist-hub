@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Star, X } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
-import { LandingPageData, ItineraryData, FALLBACK_TESTIMONIALS, parseList } from "../shared";
+import { LandingPageData, ItineraryData, pickTestimonials, parseList } from "../shared";
 import LandingNavbar from "../components/LandingNavbar";
 import LandingFooter from "../components/LandingFooter";
 import MobileStickyBar from "../components/MobileStickyBar";
@@ -20,6 +20,8 @@ export default function StoryTemplate({ page, itinerary }: Props) {
   const days = (itinerary?.itinerary_days as any[]) || [];
   const inclusions = parseList(page.custom_inclusions || itinerary?.inclusions);
   const exclusions = parseList(page.custom_exclusions || itinerary?.exclusions);
+  // Phase 4A.3 — real testimonials from destinations.testimonials.
+  const testimonials = pickTestimonials(page);
 
   useEffect(() => {
     const onScroll = () => setShowStickyForm(window.scrollY > 600);
@@ -178,7 +180,7 @@ export default function StoryTemplate({ page, itinerary }: Props) {
       <section className="bg-[#1A1D2E] pt-4 pb-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid md:grid-cols-3 gap-5">
-            {FALLBACK_TESTIMONIALS.map((t) => (
+            {testimonials.map((t) => (
               <div key={t.name} className="bg-white rounded-2xl p-7">
                 <div className="flex gap-0.5 mb-3">
                   {Array.from({ length: t.stars }).map((_, i) => (
