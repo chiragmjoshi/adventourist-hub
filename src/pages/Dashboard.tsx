@@ -28,12 +28,10 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 /* ───────── brand colors ───────── */
-const BLAZE = "#FF6F4C";
-const HORIZON = "#FDC436";
-const ABYSS = "#1A1D2E";
-const LAGOON = "#64CBB9";
-const RIDGE = "#056147";
-const DRIFT = "#EEE5D5";
+// Phase 4B.3: brand colors live in one module so future palette changes
+// touch a single file (and so a drift-detection test can compare these
+// against tailwind.config.ts).
+import { BLAZE, HORIZON, ABYSS, LAGOON, RIDGE, DRIFT } from "@/lib/brandColors";
 
 const REFETCH_MS = 60_000;
 
