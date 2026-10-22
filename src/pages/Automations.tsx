@@ -23,6 +23,10 @@ const TRIGGER_COLORS: Record<string, string> = {
   travel_date_passed: "bg-teal-500/15 text-teal-700 border-teal-300",
   inactivity_days: "bg-red-500/15 text-red-700 border-red-300",
   follow_up_date_reached: "bg-indigo-500/15 text-indigo-700 border-indigo-300",
+  // Phase 3.4.1 — recurring lifecycle events; enqueued by the daily
+  // enqueue_birthday_anniversary_executions sweep.
+  customer_birthday: "bg-pink-500/15 text-pink-700 border-pink-300",
+  customer_anniversary: "bg-rose-500/15 text-rose-700 border-rose-300",
 };
 
 const TRIGGER_LABELS: Record<string, string> = {
@@ -33,6 +37,8 @@ const TRIGGER_LABELS: Record<string, string> = {
   travel_date_passed: "After travel",
   inactivity_days: "Inactivity",
   follow_up_date_reached: "Follow-up due",
+  customer_birthday: "Birthday",
+  customer_anniversary: "Wedding anniversary",
 };
 
 function conditionSummary(rule: any): string {
