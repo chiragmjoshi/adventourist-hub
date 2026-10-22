@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Download, Trophy, TrendingUp, TrendingDown } from "lucide-react";
+import TableWrapper from "@/components/TableWrapper";
 import { formatINR } from "@/lib/formatINR";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -329,7 +330,9 @@ const TripCashflowList = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="border border-border/40 rounded-lg overflow-hidden">
+        // Phase 4C.2 — TableWrapper for horizontal scroll on narrow screens;
+        // cashflow table has 10+ columns and clipped the right side without it.
+        <TableWrapper>
           <table className="w-full">
             <thead>
               <tr className="bg-muted/30 text-xs text-muted-foreground">
@@ -390,7 +393,7 @@ const TripCashflowList = () => {
               })}
             </tbody>
           </table>
-        </div>
+        </TableWrapper>
       )}
     </AppLayout>
   );

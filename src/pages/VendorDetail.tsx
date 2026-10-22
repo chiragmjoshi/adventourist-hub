@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, ChevronRight, Pencil, Ban, Phone, Mail, MessageCircle, FileText, ExternalLink } from "lucide-react";
+import { Pencil, Ban, Phone, Mail, MessageCircle, FileText, ExternalLink } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -77,14 +78,11 @@ const VendorDetail = () => {
 
   return (
     <AppLayout title={vendor.name}>
-      {/* Header */}
-      <div className="flex items-center gap-2 text-sm mb-5">
-        <button onClick={() => navigate("/admin/vendors")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-          <ArrowLeft className="h-4 w-4" />Vendors
-        </button>
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
-        <span className="font-medium">{vendor.vendor_code}</span>
-      </div>
+      {/* Phase 4C.1 — shared PageHeader for consistency with other detail pages. */}
+      <PageHeader
+        back={{ to: "/admin/vendors", label: "Vendors" }}
+        crumbs={[{ label: vendor.vendor_code }]}
+      />
 
       <div className="flex items-start gap-6 mb-6">
         <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl font-bold shrink-0">

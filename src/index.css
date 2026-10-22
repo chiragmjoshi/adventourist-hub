@@ -108,6 +108,34 @@
     @apply bg-background text-foreground font-sans;
     font-size: 14px;
   }
+
+  /*
+   * Phase 4C.3 — visible focus ring for keyboard navigation.
+   *
+   * Many of the custom orange buttons dropped the shadcn default focus
+   * ring somewhere during styling. This base rule gives every
+   * interactive element a visible focus indicator for keyboard users
+   * (focus-visible, so mouse clicks don't paint a halo).
+   *
+   * Pointer users see nothing change. Screen-magnifier / keyboard users
+   * now get a 2px blaze-colored outline with a 2px offset — WCAG 2.4.7.
+   */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  [role="link"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="menuitem"]:focus-visible,
+  [role="option"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 2px solid hsl(var(--blaze));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 /* ── Public site (Adventourist) — topographic background pattern ── */
