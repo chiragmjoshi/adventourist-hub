@@ -18,6 +18,13 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
     mobile: "",
     email: "",
     pax: "2",
+    // Phase 3.5.2 — honeypot. The submit-lead edge function (line 81)
+    // drops any submission with a non-empty `website` field. Humans
+    // never see this input (it's visually hidden + aria-hidden + off
+    // the tab order), but naive bots that fill every input will trip
+    // it. The server treats such requests as success so the bot
+    // doesn't retry with a smarter heuristic.
+    website: "",
   });
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -49,6 +56,8 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
           ad_group: page.ad_group || undefined,
           landing_url: window.location.pathname + window.location.search,
           referrer_url: document.referrer || undefined,
+          // Phase 3.5.2 — honeypot sent to the edge function.
+          website: form.website,
       })
       .catch(() => {
         /* silent — WA already opened, lead capture is best-effort */
@@ -83,6 +92,20 @@ export default function EnquiryForm({ page, variant = "card", className = "", bu
         </>
       )}
       <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Phase 3.5.2 — visually-hidden honeypot. Humans don't see it, screen
+            readers skip it (aria-hidden + tabIndex=-1), autofill ignores it
+            (autocomplete=off + strange field name). Naive bots that fill
+            every input trip the server-side filter. */}
+        <input
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          value={form.website}
+          onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))}
+          style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+        />
         <input
           required
           placeholder="Full Name *"
