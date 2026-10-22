@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Plus, Zap, MessageSquare, Mail, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, subDays, startOfDay } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 import RuleEditor from "@/components/automations/RuleEditor";
+import { BRAND } from "@/lib/brandColors";
 
 const TRIGGER_COLORS: Record<string, string> = {
   lead_created: "bg-emerald-500/15 text-emerald-700 border-emerald-300",
@@ -23,6 +25,10 @@ const TRIGGER_COLORS: Record<string, string> = {
   travel_date_passed: "bg-teal-500/15 text-teal-700 border-teal-300",
   inactivity_days: "bg-red-500/15 text-red-700 border-red-300",
   follow_up_date_reached: "bg-indigo-500/15 text-indigo-700 border-indigo-300",
+  // Phase 3.4.1 — recurring lifecycle events; enqueued by the daily
+  // enqueue_birthday_anniversary_executions sweep.
+  customer_birthday: "bg-pink-500/15 text-pink-700 border-pink-300",
+  customer_anniversary: "bg-rose-500/15 text-rose-700 border-rose-300",
 };
 
 const TRIGGER_LABELS: Record<string, string> = {
@@ -33,6 +39,8 @@ const TRIGGER_LABELS: Record<string, string> = {
   travel_date_passed: "After travel",
   inactivity_days: "Inactivity",
   follow_up_date_reached: "Follow-up due",
+  customer_birthday: "Birthday",
+  customer_anniversary: "Wedding anniversary",
 };
 
 function conditionSummary(rule: any): string {
@@ -73,6 +81,59 @@ const Automations = () => {
       ]);
       return { active: active || 0, pending: pending || 0, failed: failed || 0, sentToday: sentToday || 0 };
     },
+  });
+
+  // Phase 3.4.4 — 30-day trend + per-rule stats.
+  //
+  // Trend returns one row per day with sent/failed/skipped counts. We fetch
+  // the raw executions and bucket client-side (small dataset — ~a few
+  // hundred rows in a healthy month). Doing it in SQL would need a date-
+  // series join and the client bucket is cheap for a chart.
+  //
+  // ruleStats is a Map keyed by rule_id giving sent/failed/skipped counts
+  // over the same 30-day window, surfaced on each rule card.
+  const { data: trend30d = { daily: [], ruleStats: new Map<string, { sent: number; failed: number; skipped: number }>() } } = useQuery({
+    queryKey: ["automation_trend_30d"],
+    queryFn: async () => {
+      const since = startOfDay(subDays(new Date(), 29)).toISOString();
+      const { data } = await supabase
+        .from("automation_executions")
+        .select("rule_id, status, created_at, executed_at")
+        .gte("created_at", since)
+        .limit(5000);
+      const rows = (data || []) as any[];
+
+      // Daily bucketing (keyed by yyyy-MM-dd).
+      const byDay: Record<string, { day: string; sent: number; failed: number; skipped: number }> = {};
+      for (let i = 29; i >= 0; i--) {
+        const d = format(subDays(new Date(), i), "yyyy-MM-dd");
+        byDay[d] = { day: d, sent: 0, failed: 0, skipped: 0 };
+      }
+      // Per-rule counts.
+      const ruleStats = new Map<string, { sent: number; failed: number; skipped: number }>();
+      for (const r of rows) {
+        const whenRaw = r.executed_at || r.created_at;
+        if (!whenRaw) continue;
+        const key = format(new Date(whenRaw), "yyyy-MM-dd");
+        const bucket = byDay[key];
+        const s = r.status;
+        if (bucket && (s === "sent" || s === "failed" || s === "skipped")) {
+          bucket[s as "sent" | "failed" | "skipped"]++;
+        }
+        if (r.rule_id && (s === "sent" || s === "failed" || s === "skipped")) {
+          const current = ruleStats.get(r.rule_id) || { sent: 0, failed: 0, skipped: 0 };
+          current[s as "sent" | "failed" | "skipped"]++;
+          ruleStats.set(r.rule_id, current);
+        }
+      }
+      // Short labels for the chart x-axis.
+      const daily = Object.values(byDay).map((d) => ({
+        ...d,
+        label: format(new Date(d.day), "dd MMM"),
+      }));
+      return { daily, ruleStats };
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: executions = [] } = useQuery({
@@ -151,6 +212,37 @@ const Automations = () => {
         ))}
       </div>
 
+      {/* Phase 3.4.4 — 30-day sends trend. Visible answer to "where can I
+          see the report?". Sent = green/ridge, failed = red, skipped = amber. */}
+      <Card className="border-border/50 shadow-none mb-6">
+        <CardContent className="px-5 pt-4 pb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h2 className="text-sm font-semibold">Send trend — last 30 days</h2>
+              <p className="text-[11px] text-muted-foreground">
+                Totals: {trend30d.daily.reduce((s, d) => s + d.sent, 0)} sent ·
+                {" "}{trend30d.daily.reduce((s, d) => s + d.failed, 0)} failed ·
+                {" "}{trend30d.daily.reduce((s, d) => s + d.skipped, 0)} skipped
+              </p>
+            </div>
+          </div>
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trend30d.daily} margin={{ top: 5, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={4} />
+                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                <Tooltip wrapperStyle={{ fontSize: 11 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="sent"    stackId="s" fill={BRAND.ridge}  name="Sent" />
+                <Bar dataKey="failed"  stackId="s" fill="#dc2626"      name="Failed" />
+                <Bar dataKey="skipped" stackId="s" fill={BRAND.horizon} name="Skipped" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Rules list */}
       <h2 className="text-sm font-medium mb-3">Rules</h2>
       {rules.length === 0 ? (
@@ -183,16 +275,34 @@ const Automations = () => {
                   {r.email_enabled && <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-700 border-blue-300">Email → {r.email_recipient}</Badge>}
                 </div>
                 <p className="text-[11px] text-muted-foreground mb-2">{conditionSummary(r)}</p>
+                {/* Phase 3.4.4 — per-rule 30-day stats. Live view of what
+                    each rule has done recently without opening the logs. */}
+                {(() => {
+                  const s = trend30d.ruleStats.get(r.id);
+                  if (!s || (s.sent === 0 && s.failed === 0 && s.skipped === 0)) {
+                    return (
+                      <p className="text-[10px] text-muted-foreground mb-1">Last 30 days: no activity</p>
+                    );
+                  }
+                  return (
+                    <div className="flex items-center gap-2 mb-1 text-[10px]">
+                      <span className="text-muted-foreground">Last 30d:</span>
+                      {s.sent > 0 && <span className="text-[hsl(var(--ridge))] font-medium">{s.sent} sent</span>}
+                      {s.failed > 0 && <span className="text-red-600 font-medium">{s.failed} failed</span>}
+                      {s.skipped > 0 && <span className="text-amber-600 font-medium">{s.skipped} skipped</span>}
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center justify-between border-t pt-2 mt-2">
                   <p className="text-[10px] text-muted-foreground">
                     Ran {r.run_count || 0} times{r.last_run_at ? ` • ${formatDistanceToNow(new Date(r.last_run_at), { addSuffix: true })}` : ""}
                   </p>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingRule(r); setEditorOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingRule(r); setEditorOpen(true); }} aria-label={`Edit rule ${r.name}`}>
+                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600" onClick={() => setDeleteRule(r)}>
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600" onClick={() => setDeleteRule(r)} aria-label={`Delete rule ${r.name}`}>
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>

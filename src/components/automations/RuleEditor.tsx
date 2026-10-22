@@ -27,6 +27,11 @@ const TRIGGER_OPTIONS = [
   { value: "travel_date_approaching", label: "X days before travel date" },
   { value: "travel_date_passed", label: "X days after travel date" },
   { value: "inactivity_days", label: "No update in X days" },
+  // Phase 3.4.1 — recurring annual events. Enqueued daily by
+  // enqueue_birthday_anniversary_executions() against customers.dob /
+  // customers.anniversary.
+  { value: "customer_birthday", label: "Customer birthday (annual)" },
+  { value: "customer_anniversary", label: "Customer wedding anniversary (annual)" },
 ];
 
 const STATUS_OPTIONS = ["new_lead", "contacted", "quote_sent", "follow_up_needed", "ongoing_discussions", "file_closed", "file_lost", "refund_issued", "invalid_lead", "booked_outside"];
