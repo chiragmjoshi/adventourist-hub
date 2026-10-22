@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Bell, CheckCircle2, Clock, AlarmClock, Phone, IndianRupee, ListTodo, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format, isSameDay, startOfMonth, endOfMonth, addMonths, subMonths, isBefore, isToday, parseISO } from "date-fns";
@@ -35,6 +36,8 @@ const Reminders = () => {
   const [editing, setEditing] = useState<any | null>(null);
   const [calCursor, setCalCursor] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
+  // Phase 3.5.3 — delete-reminder confirmation state (replaces native confirm()).
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; reminder: any | null }>({ open: false, reminder: null });
 
   const [form, setForm] = useState({
     title: "", reminder_type: "task", due_at: "", lead_id: "", trip_id: "",
@@ -241,7 +244,7 @@ const Reminders = () => {
           {r.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{r.notes}</p>}
         </div>
         <button
-          onClick={() => { if (confirm("Delete this reminder?")) remove.mutate(r.id); }}
+          onClick={() => setDeleteDialog({ open: true, reminder: r })}
           className="opacity-0 group-hover:opacity-100 text-xs text-destructive transition-opacity"
         >Delete</button>
       </div>
@@ -402,6 +405,35 @@ const Reminders = () => {
           </form>
         </SheetContent>
       </Sheet>
+
+      {/* Phase 3.5.3 — delete-reminder AlertDialog. */}
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(o) => !o && setDeleteDialog({ open: false, reminder: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete reminder{deleteDialog.reminder?.title ? ` "${deleteDialog.reminder.title}"` : ""}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the reminder. The underlying lead or trip is not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteDialog.reminder?.id) remove.mutate(deleteDialog.reminder.id);
+                setDeleteDialog({ open: false, reminder: null });
+              }}
+            >
+              Delete reminder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };

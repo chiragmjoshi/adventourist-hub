@@ -20,7 +20,12 @@ const TripOperationsReport = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
+      // Phase 3.5.4 — audit L41: new Date().toISOString() returns the UTC
+      // date, which rolls over at 05:30 IST. A trip departing today in IST
+      // but after midnight UTC would silently disappear from the "upcoming"
+      // slice. Format the current wall-clock in IST instead.
+      const nowIst = new Date(Date.now() + ((330 - new Date().getTimezoneOffset()) * 60000));
+      const today = nowIst.toISOString().split("T")[0];
       // trip_cashflow has no FK to destinations/leads, so names are joined client-side.
       const [cf, dests, u] = await Promise.all([
         fetchAll(() =>

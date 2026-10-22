@@ -248,19 +248,23 @@ const TripCashflowEdit = () => {
         if (error) throw error;
       }
 
-      // Save vendor lines — delete all and re-insert
+      // Phase 3.5.1 — Save vendor lines atomically via RPC. Replaces the
+      // previous DELETE+INSERT pair that could leave a cashflow with zero
+      // vendor lines if the insert failed after the delete committed.
       if (cashflowId) {
-        await supabase.from("trip_cashflow_vendors").delete().eq("cashflow_id", cashflowId);
-        if (vendorLines.length > 0) {
-          const lines = vendorLines.map((l, i) => ({
-            cashflow_id: cashflowId!, vendor_id: l.vendor_id || null,
-            service_type: l.service_type, description: l.description || null,
-            cost_per_pax_incl_gst: l.cost_per_pax_incl_gst, invoice_url: l.invoice_url || null,
-            sort_order: i,
-          }));
-          const { error } = await supabase.from("trip_cashflow_vendors").insert(lines);
-          if (error) throw error;
-        }
+        const linesPayload = vendorLines.map((l, i) => ({
+          vendor_id: l.vendor_id || "",
+          service_type: l.service_type,
+          description: l.description || "",
+          cost_per_pax_incl_gst: l.cost_per_pax_incl_gst,
+          invoice_url: l.invoice_url || "",
+          sort_order: i,
+        }));
+        const { error } = await supabase.rpc("upsert_cashflow_vendors" as never, {
+          p_cashflow_id: cashflowId,
+          p_lines: linesPayload,
+        } as never);
+        if (error) throw error;
       }
 
       return cashflowId;

@@ -578,10 +578,14 @@ const LeadDetail = () => {
               onChange={e => handleStatusChange("follow_up_date", e.target.value || null as any)}
               className="h-8 text-xs rounded-md border border-border/60 px-2 bg-background"
             />
+            {/* Phase 4D.2 — status dots are decorative. The text label next to
+                each one carries the real meaning for screen readers; the dot
+                is marked aria-hidden so SR users don't hear "ellipsis
+                ellipsis Follow Up Needed" twice. */}
             <Select value={getField("disposition") || l.disposition || ""} onValueChange={v => handleStatusChange("disposition", v)}>
               <SelectTrigger className="h-8 text-xs rounded-md w-48 border-border/60">
                 <div className="flex items-center gap-1.5 truncate">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[getField("disposition") || l.disposition] || DISP_DOT[formatLabel(getField("disposition") || l.disposition)] || "bg-gray-300"}`} />
+                  <span aria-hidden="true" className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[getField("disposition") || l.disposition] || DISP_DOT[formatLabel(getField("disposition") || l.disposition)] || "bg-gray-300"}`} />
                   <span className="truncate">{formatLabel(getField("disposition") || l.disposition) || "Disposition"}</span>
                 </div>
               </SelectTrigger>
@@ -589,7 +593,7 @@ const LeadDetail = () => {
                 {mvByType("disposition").map((d: any) => (
                   <SelectItem key={d.id} value={d.value}>
                     <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${DISP_DOT[d.value] || "bg-gray-300"}`} />
+                      <span aria-hidden="true" className={`w-2 h-2 rounded-full ${DISP_DOT[d.value] || "bg-gray-300"}`} />
                       {d.value}
                     </div>
                   </SelectItem>
@@ -599,7 +603,7 @@ const LeadDetail = () => {
             <Select value={getField("sales_status") || l.sales_status || ""} onValueChange={v => handleStatusChange("sales_status", v)}>
               <SelectTrigger className="h-8 text-xs rounded-md w-40 border-border/60">
                 <div className="flex items-center gap-1.5 truncate">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[getField("sales_status") || l.sales_status] || STATUS_DOT[formatLabel(getField("sales_status") || l.sales_status)] || "bg-gray-300"}`} />
+                  <span aria-hidden="true" className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[getField("sales_status") || l.sales_status] || STATUS_DOT[formatLabel(getField("sales_status") || l.sales_status)] || "bg-gray-300"}`} />
                   <span className="truncate">{formatLabel(getField("sales_status") || l.sales_status) || "Status"}</span>
                 </div>
               </SelectTrigger>
@@ -607,7 +611,7 @@ const LeadDetail = () => {
                 {mvByType("sales_status").map((s: any) => (
                   <SelectItem key={s.id} value={s.value}>
                     <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${STATUS_DOT[s.value] || "bg-gray-300"}`} />
+                      <span aria-hidden="true" className={`w-2 h-2 rounded-full ${STATUS_DOT[s.value] || "bg-gray-300"}`} />
                       {s.value}
                     </div>
                   </SelectItem>

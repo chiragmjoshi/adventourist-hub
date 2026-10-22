@@ -80,7 +80,18 @@ const DestinationReport = () => {
   });
   const destData = Object.values(destMap).sort((a, b) => b.leads - a.leads);
 
-  const chartData = [...destData].sort((a, b) => toggle === "leads" ? b.leads - a.leads : toggle === "revenue" ? b.revenue - a.revenue : (b.revenue > 0 ? b.margin / b.revenue : 0) - (a.revenue > 0 ? a.margin / a.revenue : 0)).slice(0, 10);
+  // Phase 3.5.4 — precompute margin_pct per row so the chart dataKey and
+  // the tooltip don't have to agree on an ad-hoc derivation. Previously
+  // the "margin" toggle fed the raw INR `margin` value to the Bar AND
+  // multiplied it by 100 in the tooltip ("12000000%") — audit L40.
+  const chartData = [...destData]
+    .map((d) => ({ ...d, marginPct: d.revenue > 0 ? (d.margin / d.revenue) * 100 : 0 }))
+    .sort((a, b) =>
+      toggle === "leads" ? b.leads - a.leads :
+      toggle === "revenue" ? b.revenue - a.revenue :
+      b.marginPct - a.marginPct
+    )
+    .slice(0, 10);
 
   const mostEnquired = destData[0]?.name || "—";
   const highestRev = [...destData].sort((a, b) => b.revenue - a.revenue)[0]?.name || "—";
@@ -120,8 +131,12 @@ const DestinationReport = () => {
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 12 }} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={120} />
-                  <Tooltip formatter={(v: number) => toggle === "revenue" ? formatINR(Math.round(v)) : toggle === "margin" ? `${((v) * 100).toFixed(1)}%` : v} />
-                  <Bar dataKey={toggle === "margin" ? "margin" : toggle} fill="hsl(var(--lagoon))" radius={[0, 4, 4, 0]} />
+                  <Tooltip formatter={(v: number) =>
+                    toggle === "revenue" ? formatINR(Math.round(v))
+                    : toggle === "margin" ? `${v.toFixed(1)}%`
+                    : v
+                  } />
+                  <Bar dataKey={toggle === "margin" ? "marginPct" : toggle} fill="hsl(var(--lagoon))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
