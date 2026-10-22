@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Search, Upload, Compass, MoreHorizontal, Eye, Pencil, Ban, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import TableWrapper from "@/components/TableWrapper";
 
 type ContactPoint = { name?: string; mobile?: string; email?: string; role?: string };
 
@@ -75,7 +76,7 @@ const VendorList = () => {
   });
 
   // Filter & sort
-  let filtered = vendors.filter((v: any) => {
+  const filtered = vendors.filter((v: any) => {
     if (search && !v.name.toLowerCase().includes(search.toLowerCase()) && !(v.nick_name || "").toLowerCase().includes(search.toLowerCase())) return false;
     if (statusFilter === "active" && !v.is_active) return false;
     if (statusFilter === "inactive" && v.is_active) return false;
@@ -172,7 +173,10 @@ const VendorList = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="border border-border/40 rounded-lg overflow-hidden">
+        // Phase 4C.2 — TableWrapper swaps overflow-hidden → overflow-x-auto
+        // so the 6-column vendor table scrolls horizontally on narrow
+        // screens instead of clipping the right-most columns.
+        <TableWrapper>
           <table className="w-full">
             <thead>
               <tr className="bg-muted/30 text-xs text-muted-foreground">
@@ -253,7 +257,7 @@ const VendorList = () => {
               })}
             </tbody>
           </table>
-        </div>
+        </TableWrapper>
       )}
 
       {/* Confirm Dialog */}

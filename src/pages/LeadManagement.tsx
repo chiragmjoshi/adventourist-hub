@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import TableWrapper from "@/components/TableWrapper";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -412,12 +413,13 @@ const LeadManagement = () => {
     setFilterAdGroup("all"); setFilterDestination("all");
     setActiveDispositions(new Set()); setActiveStatuses(new Set()); setCurrentPage(1);
     setSearch("");
-    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* sessionStorage unavailable in private browsing */ }
   };
 
   const toggleChip = (set: Set<string>, setFn: (s: Set<string>) => void, val: string) => {
     const next = new Set(set);
-    next.has(val) ? next.delete(val) : next.add(val);
+    if (next.has(val)) next.delete(val);
+    else next.add(val);
     setFn(next);
     setCurrentPage(1);
   };
@@ -637,7 +639,10 @@ const LeadManagement = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-border/50 shadow-none overflow-hidden">
+        <Card className="border-border/50 shadow-none">
+          {/* Phase 4C.2 — overflow-x-auto so wide tables scroll within the
+              card instead of clipping on narrow screens. */}
+          <TableWrapper framed={false}>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b border-border/50">
@@ -779,6 +784,7 @@ const LeadManagement = () => {
               )}
             </TableBody>
           </Table>
+          </TableWrapper>
         </Card>
       )}
 
