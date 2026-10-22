@@ -278,16 +278,22 @@ const Settings = () => {
               {isSuperAdmin ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                    {COMPANY_FIELDS.map((field) => (
-                      <div key={field.key} className={field.type === "textarea" ? "col-span-2" : ""}>
-                        <Label className="text-xs text-muted-foreground">{field.label}</Label>
-                        {field.type === "textarea" ? (
-                          <Textarea value={companyForm[field.key] || ""} onChange={(e) => setCompanyForm(f => ({ ...f, [field.key]: e.target.value }))} className="mt-1 rounded-md" rows={2} />
-                        ) : (
-                          <Input type={field.type} value={companyForm[field.key] || ""} onChange={(e) => setCompanyForm(f => ({ ...f, [field.key]: e.target.value }))} className="mt-1 rounded-md" placeholder={(field as any).placeholder || ""} />
-                        )}
-                      </div>
-                    ))}
+                    {COMPANY_FIELDS.map((field) => {
+                      // Phase 4D.1 — pair Label and Input via htmlFor/id so
+                      // screen readers announce the field name on focus and
+                      // clicking the label focuses the control.
+                      const inputId = `company-${field.key}`;
+                      return (
+                        <div key={field.key} className={field.type === "textarea" ? "col-span-2" : ""}>
+                          <Label htmlFor={inputId} className="text-xs text-muted-foreground">{field.label}</Label>
+                          {field.type === "textarea" ? (
+                            <Textarea id={inputId} value={companyForm[field.key] || ""} onChange={(e) => setCompanyForm(f => ({ ...f, [field.key]: e.target.value }))} className="mt-1 rounded-md" rows={2} />
+                          ) : (
+                            <Input id={inputId} type={field.type} value={companyForm[field.key] || ""} onChange={(e) => setCompanyForm(f => ({ ...f, [field.key]: e.target.value }))} className="mt-1 rounded-md" placeholder={(field as any).placeholder || ""} />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <Button size="sm" className="rounded-md text-xs bg-primary hover:bg-primary/90" onClick={() => saveCompany.mutate()} disabled={saveCompany.isPending}>
                     <Save className="h-3.5 w-3.5 mr-1" />Save Company Details
@@ -444,24 +450,29 @@ const Settings = () => {
             <CardHeader className="px-5 pt-4 pb-2"><CardTitle className="text-sm flex items-center gap-2"><Mail className="h-4 w-4" />Email — SMTP Configuration</CardTitle></CardHeader>
             <CardContent className="px-5 pb-5 space-y-3">
               <div className="grid grid-cols-2 gap-4 max-w-lg">
-                {EMAIL_FIELDS.map((field) => (
+                {EMAIL_FIELDS.map((field) => {
+                  // Phase 4D.1 — htmlFor pairing.
+                  const inputId = `email-${field.key}`;
+                  return (
                   <div key={field.key}>
-                    <Label className="text-xs text-muted-foreground">{field.label}</Label>
+                    <Label htmlFor={inputId} className="text-xs text-muted-foreground">{field.label}</Label>
                     {field.type === "password" ? (
                       <div className="relative mt-1">
                         <Input
+                          id={inputId}
                           type={showSmtpPassword ? "text" : "password"}
                           value={getAutomationFieldValue(field.key)}
                           onChange={(e) => updateAutoField(field.key, e.target.value)}
                           className="pr-9 rounded-md"
                           placeholder={field.placeholder}
                         />
-                        <button type="button" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowSmtpPassword(!showSmtpPassword)}>
-                          {showSmtpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <button type="button" aria-label={showSmtpPassword ? "Hide password" : "Show password"} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowSmtpPassword(!showSmtpPassword)}>
+                          {showSmtpPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                         </button>
                       </div>
                     ) : (
                       <Input
+                        id={inputId}
                         type={field.type}
                         value={getAutomationFieldValue(field.key)}
                         onChange={(e) => updateAutoField(field.key, e.target.value)}
@@ -470,7 +481,8 @@ const Settings = () => {
                       />
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <Button
                 size="sm"
