@@ -487,9 +487,13 @@ function DashboardBody({
   // 12-month performance chart — always last 12 months
   const last12 = data.monthly.slice(-12);
 
-  // this-vs-last comparison (always current vs prior calendar month)
-  const tm = data.monthly[data.monthly.length - 1];
-  const lm = data.monthly[data.monthly.length - 2];
+  // Phase 3.3 — this-vs-last comparison crashed on brand-new installs or
+  // date-filtered views with 0-1 monthly rows (tm/lm were undefined and
+  // the <CmpRow curr={tm.leads} ...> accessors threw). Guard both and
+  // render an empty state when there isn't enough history yet.
+  const hasComparison = data.monthly.length >= 2;
+  const tm = hasComparison ? data.monthly[data.monthly.length - 1] : null;
+  const lm = hasComparison ? data.monthly[data.monthly.length - 2] : null;
 
   return (
     <div className="space-y-6">
@@ -707,24 +711,30 @@ function DashboardBody({
           {/* This Month vs Last Month */}
           <div className="bg-white border border-border rounded-xl shadow-sm p-5">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">This Month vs Last Month</h3>
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="text-left text-muted-foreground border-b border-border">
-                  <th className="py-2 font-medium">Metric</th>
-                  <th className="py-2 font-medium text-right">This</th>
-                  <th className="py-2 font-medium text-right">Last</th>
-                  <th className="py-2 font-medium text-right">Δ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <CmpRow label="Leads" curr={tm.leads} prev={lm.leads} />
-                <CmpRow label="Closed" curr={tm.filesClosed} prev={lm.filesClosed} />
-                <CmpRow label="Revenue" curr={tm.revenue} prev={lm.revenue} formatter={fmtCompactINR} />
-                <CmpRow label="Gross Margin %" curr={tm.marginPct} prev={lm.marginPct} isPP />
-                <CmpRow label="Expenses" curr={tm.expenses} prev={lm.expenses} formatter={fmtCompactINR} />
-                <CmpRow label="Net Margin %" curr={tm.netMarginPct} prev={lm.netMarginPct} isPP />
-              </tbody>
-            </table>
+            {tm && lm ? (
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="text-left text-muted-foreground border-b border-border">
+                    <th className="py-2 font-medium">Metric</th>
+                    <th className="py-2 font-medium text-right">This</th>
+                    <th className="py-2 font-medium text-right">Last</th>
+                    <th className="py-2 font-medium text-right">Δ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <CmpRow label="Leads" curr={tm.leads} prev={lm.leads} />
+                  <CmpRow label="Closed" curr={tm.filesClosed} prev={lm.filesClosed} />
+                  <CmpRow label="Revenue" curr={tm.revenue} prev={lm.revenue} formatter={fmtCompactINR} />
+                  <CmpRow label="Gross Margin %" curr={tm.marginPct} prev={lm.marginPct} isPP />
+                  <CmpRow label="Expenses" curr={tm.expenses} prev={lm.expenses} formatter={fmtCompactINR} />
+                  <CmpRow label="Net Margin %" curr={tm.netMarginPct} prev={lm.netMarginPct} isPP />
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-xs text-muted-foreground py-6 text-center">
+                Add at least two months of leads to see a month-over-month comparison.
+              </p>
+            )}
           </div>
         </div>
       </div>

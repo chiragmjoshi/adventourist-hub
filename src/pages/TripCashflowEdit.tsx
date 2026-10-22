@@ -76,6 +76,7 @@ const TripCashflowEdit = () => {
   };
 
   const [vendorLines, setVendorLines] = useState<VendorLine[]>([]);
+  // Phase 3.2 — populated from existing cashflow on load, persisted on save.
   const [additionalDocs, setAdditionalDocs] = useState<string[]>([]);
 
   // Queries
@@ -163,6 +164,13 @@ const TripCashflowEdit = () => {
     }
   }, [existingLines]);
 
+  // Phase 3.2 — hydrate the additional-docs editor from the saved column.
+  useEffect(() => {
+    if (existing && Array.isArray((existing as any).additional_docs)) {
+      setAdditionalDocs(((existing as any).additional_docs as string[]).filter(Boolean));
+    }
+  }, [existing]);
+
   // Pre-fill from lead
   useEffect(() => {
     if (lead && isNew) {
@@ -214,6 +222,9 @@ const TripCashflowEdit = () => {
         is_customized: form.is_customized,
         custom_itinerary_url: form.custom_itinerary_url || null,
         agreed_selling_price: form.agreed_selling_price || null,
+        // Phase 3.2 — persist uploaded "Other Documents" paths. Previously
+        // dropped on the floor, orphaning the uploaded files in storage.
+        additional_docs: additionalDocs,
       };
 
       let cashflowId = id;
