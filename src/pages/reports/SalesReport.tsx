@@ -7,7 +7,7 @@ import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { Link } from "react-router-dom";
 
-import { formatLabel } from "@/lib/formatLabel";
+import { formatLabel, displayDisposition } from "@/lib/formatLabel";
 import {
   DEFAULT_REPORT_FROM,
   DEFAULT_REPORT_TO,
@@ -67,7 +67,9 @@ const SalesReport = () => {
   }));
 
   const dispositions = leads.reduce((acc: Record<string, number>, l) => {
-    const d = l.disposition || "Unknown";
+    // Phase 4B.1: "No disposition" is the canonical label for null — matches
+    // other reports and reads more naturally than "Unknown" in the chart.
+    const d = displayDisposition(l.disposition);
     acc[d] = (acc[d] || 0) + 1;
     return acc;
   }, {});

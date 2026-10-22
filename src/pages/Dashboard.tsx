@@ -16,6 +16,7 @@ import {
   SALES_STATUS,
 } from "@/lib/reporting";
 import { formatINR } from "@/lib/formatINR";
+import { displayPlatform } from "@/lib/formatLabel";
 import { useAuth } from "@/contexts/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -27,12 +28,10 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 /* ───────── brand colors ───────── */
-const BLAZE = "#FF6F4C";
-const HORIZON = "#FDC436";
-const ABYSS = "#1A1D2E";
-const LAGOON = "#64CBB9";
-const RIDGE = "#056147";
-const DRIFT = "#EEE5D5";
+// Phase 4B.3: brand colors live in one module so future palette changes
+// touch a single file (and so a drift-detection test can compare these
+// against tailwind.config.ts).
+import { BLAZE, HORIZON, ABYSS, LAGOON, RIDGE, DRIFT } from "@/lib/brandColors";
 
 const REFETCH_MS = 60_000;
 
@@ -357,7 +356,9 @@ async function fetchDashboardData(): Promise<DashboardData> {
 
   const sourceCounts = new Map<string, number>();
   for (const l of thisMonthLeads) {
-    const p = ((l as any).platform ?? "Unknown") || "Unknown";
+    // Phase 4B.1: canonical "Direct" label for null platform, matching
+    // every other report.
+    const p = displayPlatform((l as any).platform);
     sourceCounts.set(p, (sourceCounts.get(p) ?? 0) + 1);
   }
   const sourcePalette = [BLAZE, HORIZON, LAGOON, RIDGE, ABYSS];

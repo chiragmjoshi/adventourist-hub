@@ -2,10 +2,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Pencil, ExternalLink, Users, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import { Pencil, ExternalLink, Users, TrendingUp, DollarSign, Calendar } from "lucide-react";
 import { formatINR } from "@/lib/formatINR";
 import { isClosed } from "@/lib/reporting";
 
@@ -53,23 +54,24 @@ const LandingPageDetail = () => {
 
   return (
     <AppLayout title={page.name}>
-      <div className="flex items-center justify-between mb-5 pb-4 border-b border-border/50">
-        <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/admin/landing-pages")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-            <ArrowLeft className="h-4 w-4" />Landing Pages
-          </button>
-          <ChevronRight className="h-3 w-3 text-muted-foreground" />
-          <span className="font-medium">{page.name}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/admin/landing-pages/edit/${id}`)}>
-            <Pencil className="h-3.5 w-3.5 mr-1" />Edit Page
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => window.open(`https://www.adventourist.in/l/${page.slug}`, "_blank")}>
-            <ExternalLink className="h-3.5 w-3.5 mr-1" />View Live
-          </Button>
-        </div>
-      </div>
+      {/* Phase 4B.2 — switched the hand-rolled back-arrow + chevron bar to the
+          shared PageHeader. Keeps spacing/border consistent as more pages
+          adopt the component in Phase 4C. */}
+      <PageHeader
+        className="pb-4 border-b border-border/50"
+        back={{ to: "/admin/landing-pages", label: "Landing Pages" }}
+        crumbs={[{ label: page.name }]}
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => navigate(`/admin/landing-pages/edit/${id}`)}>
+              <Pencil className="h-3.5 w-3.5 mr-1" />Edit Page
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-md text-xs" onClick={() => window.open(`https://www.adventourist.in/l/${page.slug}`, "_blank")}>
+              <ExternalLink className="h-3.5 w-3.5 mr-1" />View Live
+            </Button>
+          </>
+        }
+      />
 
       {/* Header info */}
       <div className="flex items-center gap-3 mb-5">

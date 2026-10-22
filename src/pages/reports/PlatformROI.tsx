@@ -7,6 +7,7 @@ import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
+import { displayPlatform } from "@/lib/formatLabel";
 import {
   calcTrip,
   DEFAULT_REPORT_FROM,
@@ -74,14 +75,17 @@ const PlatformROI = () => {
       if (!map[k]) map[k] = { key: k, leads: 0, closed: 0, revenue: 0 };
       return map[k];
     };
+    // Phase 4B.1: use displayPlatform() so a null value renders as "Direct"
+    // consistently across every report. "Unattributed" stays distinct —
+    // it marks a cashflow with no linked lead at all.
     leads.forEach((l) => {
-      const row = bucket((l as any)[field] || "Direct");
+      const row = bucket(displayPlatform((l as any)[field]));
       row.leads++;
       if (isClosed(l)) row.closed++;
     });
     cashflows.forEach((cf) => {
       const lead = attributedLead(cf);
-      const key = lead ? ((lead as any)[field] || "Direct") : "Unattributed";
+      const key = lead ? displayPlatform((lead as any)[field]) : "Unattributed";
       bucket(key).revenue += calcTrip(cf, costByCf.get(cf.id) ?? 0).sellingExGst;
     });
     return Object.values(map).sort((a, b) => b.leads - a.leads || b.revenue - a.revenue);
