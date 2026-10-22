@@ -82,6 +82,10 @@ const LeadDetail = () => {
   const [cashflowPrompt, setCashflowPrompt] = useState(false);
   const [formState, setFormState] = useState<Record<string, any>>({});
   const [remindOpen, setRemindOpen] = useState(false);
+  // Phase 3.4.3 — local editor state for the Personal Dates card.
+  // Hydrated from the linked customer row below.
+  const [dobDraft, setDobDraft] = useState<string>("");
+  const [annivDraft, setAnnivDraft] = useState<string>("");
 
   /* Realtime: keep this lead & its timeline live */
   useRealtimeInvalidate("leads", [["lead", id]], { filter: id ? `id=eq.${id}` : undefined });
@@ -110,6 +114,25 @@ const LeadDetail = () => {
       return data;
     },
     enabled: !!id,
+  });
+
+  // Phase 3.4.3 — the linked customer row holds DOB + anniversary. Fetched
+  // separately so the sidebar editor can show / update them even when the
+  // lead itself hasn't changed. Null customer_id is handled by the save
+  // handler (creates a customer row on first write).
+  const customerId: string | null = (lead as any)?.customer_id ?? null;
+  const { data: customer } = useQuery({
+    queryKey: ["lead_customer", customerId],
+    enabled: !!customerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, dob, anniversary")
+        .eq("id", customerId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: trips = [] } = useQuery({
@@ -451,11 +474,72 @@ const LeadDetail = () => {
     onError: (e: any) => toast.error(e?.message || "Failed to create inquiry"),
   });
 
+  /* Phase 3.4.3 — persist DOB + anniversary. If customer_id is null,
+     reuses an existing customer that matches on email/mobile; else creates
+     a new customer and links it. Fires birthday + wedding-anniversary
+     automations from the day the admin saves these dates. */
+  const saveCustomerDates = useMutation({
+    mutationFn: async (payload: { dob: string | null; anniversary: string | null }) => {
+      const l = lead as any;
+      let targetId = customerId;
+      if (!targetId) {
+        // Look up existing customer by email first, then mobile.
+        if (l?.email) {
+          const { data } = await supabase.from("customers").select("id").eq("email", l.email).maybeSingle();
+          if (data?.id) targetId = data.id;
+        }
+        if (!targetId && l?.mobile) {
+          const { data } = await supabase.from("customers").select("id").eq("mobile", l.mobile).maybeSingle();
+          if (data?.id) targetId = data.id;
+        }
+        if (!targetId) {
+          const { data: created, error } = await supabase.from("customers").insert({
+            name: l?.name || null, email: l?.email || null, mobile: l?.mobile || null,
+            dob: payload.dob || null, anniversary: payload.anniversary || null,
+          }).select("id").single();
+          if (error) throw error;
+          targetId = created.id;
+        } else {
+          const { error } = await supabase.from("customers")
+            .update({ dob: payload.dob || null, anniversary: payload.anniversary || null })
+            .eq("id", targetId);
+          if (error) throw error;
+        }
+        // Link the lead → customer so later edits don't re-run this branch.
+        await supabase.from("leads").update({ customer_id: targetId } as any).eq("id", id!);
+      } else {
+        const { error } = await supabase.from("customers")
+          .update({ dob: payload.dob || null, anniversary: payload.anniversary || null })
+          .eq("id", targetId);
+        if (error) throw error;
+      }
+      return targetId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lead", id] });
+      queryClient.invalidateQueries({ queryKey: ["lead_customer"] });
+      toast.success("Personal dates saved");
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to save dates"),
+  });
+
+  // Hydrate the draft from fetched customer row.
+  useEffect(() => {
+    if (customer) {
+      setDobDraft((customer as any).dob || "");
+      setAnnivDraft((customer as any).anniversary || "");
+    }
+  }, [customer]);
+
   if (isLoading) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Loading lead...</div></AppLayout>;
   if (!lead) return <AppLayout title="Lead Detail"><div className="flex items-center justify-center py-20 text-muted-foreground">Lead not found</div></AppLayout>;
 
   const l = lead as any;
   const initials = l.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  // Phase 3.4.3 — hydration + dirty tracking for the Personal Dates editor.
+  const savedDob = (customer as any)?.dob ?? "";
+  const savedAnniv = (customer as any)?.anniversary ?? "";
+  const datesDirty = dobDraft !== savedDob || annivDraft !== savedAnniv;
   // comments now from lead_comments query above
 
   return (
@@ -619,6 +703,55 @@ const LeadDetail = () => {
                   <span className="text-xs font-medium text-foreground">{val || "—"}</span>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          {/* Phase 3.4.3 — Personal Dates. Powers the birthday + wedding-
+              anniversary automations. Writes to the linked customers row
+              (creates one on first save if customer_id is null). */}
+          <Card className="border-border/50 shadow-none">
+            <CardHeader className="pb-2 px-5 pt-4">
+              <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Personal Dates
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-4 space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1" htmlFor="lead-dob">
+                  Birthday
+                </label>
+                <input
+                  id="lead-dob"
+                  type="date"
+                  value={dobDraft}
+                  onChange={(e) => setDobDraft(e.target.value)}
+                  className="h-8 w-full text-xs rounded-md border border-border/60 px-2 bg-background"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1" htmlFor="lead-anniv">
+                  Wedding anniversary
+                </label>
+                <input
+                  id="lead-anniv"
+                  type="date"
+                  value={annivDraft}
+                  onChange={(e) => setAnnivDraft(e.target.value)}
+                  className="h-8 w-full text-xs rounded-md border border-border/60 px-2 bg-background"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-8 text-xs"
+                disabled={!datesDirty || saveCustomerDates.isPending}
+                onClick={() => saveCustomerDates.mutate({ dob: dobDraft || null, anniversary: annivDraft || null })}
+              >
+                {saveCustomerDates.isPending ? "Saving…" : datesDirty ? "Save dates" : "Up to date"}
+              </Button>
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                Birthday + anniversary wishes fire automatically on these dates each year.
+              </p>
             </CardContent>
           </Card>
 
