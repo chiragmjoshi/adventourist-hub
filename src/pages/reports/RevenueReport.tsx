@@ -104,6 +104,10 @@ const RevenueReport = () => {
   }, {});
   const destData = Object.values(byDest).sort((a: any, b: any) => b.revenue - a.revenue).slice(0, 10);
 
+  // Phase 3.5.4 — audit L45. The trend is INTENTIONALLY always the last
+  // 12 calendar months (not the date filter) so the shape stays stable
+  // when ops narrows to a single month. The chart card header now says
+  // so explicitly; the KPI tiles above continue to respect the filter.
   // Monthly trend (last 12 months) — grouped by effective date
   const trendData = Array.from({ length: 12 }, (_, i) => {
     const month = subMonths(new Date(), 11 - i);
@@ -143,7 +147,12 @@ const RevenueReport = () => {
           </div>
 
           <Card className="border shadow-sm mb-6">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Revenue & Margin Trend</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Revenue & Margin Trend</CardTitle>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Always the last 12 months — not affected by the date filter above.
+              </p>
+            </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={trendData}>
