@@ -259,32 +259,65 @@ async function scheduleRule(rule: any, leadId: string, ctx: VariableContext, tri
 
 export async function processAutomationQueue() {
   try {
-    const { data: due } = await supabase
-      .from("automation_executions")
-      .select("*, automation_rules(*)")
-      .eq("status", "pending")
-      .lte("scheduled_for", new Date().toISOString())
-      .limit(50);
+    // Phase 3.1 — atomic claim via SECURITY DEFINER RPC. The RPC uses
+    // SELECT ... FOR UPDATE SKIP LOCKED to flip rows from 'pending' to
+    // 'processing' in one shot, so concurrent tabs / server cron callers
+    // never see the same row. Each claimed row's `claimed_at` is set to
+    // now(); dispatchExecution() will overwrite status to 'sent' or
+    // 'failed' at the end. If we return a row to 'pending' (deferred for
+    // the send-time window) or mark it 'skipped' we also clear
+    // claimed_at so the stale-recovery helper doesn't later re-queue it.
+    const { data: claimed, error: claimErr } = await supabase.rpc(
+      "claim_pending_automation_executions" as never,
+      { p_limit: 50 } as never,
+    );
+    if (claimErr) {
+      console.error("claim_pending_automation_executions error", claimErr);
+      return;
+    }
 
-    for (const ex of due || []) {
-      const rule = (ex as any).automation_rules;
-      if (!rule) continue;
-      if (!isInsideTimeWindow(rule.send_time_window_start, rule.send_time_window_end)) {
+    for (const ex of (claimed as any[]) || []) {
+      const rule = ex.rule as any;
+      if (!rule) {
+        // Rule was deleted after the row was created — abandon this row.
         await supabase
           .from("automation_executions")
-          .update({ scheduled_for: nextAvailableSlot(rule.send_time_window_start).toISOString() })
-          .eq("id", ex.id);
+          .update({ status: "failed", error_message: "rule missing", claimed_at: null })
+          .eq("id", ex.execution_id);
         continue;
       }
-      const ctx = ex.lead_id ? await loadLeadContext(ex.lead_id) : {};
+      if (!isInsideTimeWindow(rule.send_time_window_start, rule.send_time_window_end)) {
+        // Defer: return row to pending with a new scheduled_for.
+        await supabase
+          .from("automation_executions")
+          .update({
+            status: "pending",
+            claimed_at: null,
+            scheduled_for: nextAvailableSlot(rule.send_time_window_start).toISOString(),
+          })
+          .eq("id", ex.execution_id);
+        continue;
+      }
       if (ex.channel && ex.channel !== "email") {
         await supabase
           .from("automation_executions")
-          .update({ status: "skipped", skip_reason: "WhatsApp disabled — email only" })
-          .eq("id", ex.id);
+          .update({
+            status: "skipped",
+            skip_reason: "WhatsApp disabled — email only",
+            claimed_at: null,
+          })
+          .eq("id", ex.execution_id);
         continue;
       }
-      await dispatchExecution(ex.id, rule, ctx, "email", ex.recipient_type || "customer", ex.recipient_contact || "");
+      const ctx = ex.lead_id ? await loadLeadContext(ex.lead_id) : {};
+      await dispatchExecution(
+        ex.execution_id,
+        rule,
+        ctx,
+        "email",
+        ex.recipient_type || "customer",
+        ex.recipient_contact || "",
+      );
     }
 
     // Travel date / past trip rules

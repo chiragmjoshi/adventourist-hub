@@ -274,35 +274,50 @@ Deno.serve(async (req) => {
 
     const stats = { pending_processed: 0, date_rules_evaluated: 0, sent: 0, failed: 0 };
 
-    // 1) Pending email executions whose scheduled_for has elapsed
-    const { data: due } = await admin
-      .from("automation_executions")
-      .select("*, automation_rules(*)")
-      .eq("status", "pending")
-      .eq("channel", "email")
-      .lte("scheduled_for", new Date().toISOString())
-      .limit(50);
+    // 1) Phase 3.1 — Atomic claim via SECURITY DEFINER RPC. Flips rows
+    // from 'pending' → 'processing' using SELECT ... FOR UPDATE SKIP
+    // LOCKED so this cron run and any concurrent client tabs never see
+    // the same row. The RPC also internally recovers rows stuck in
+    // 'processing' > 10 min (crashed dispatcher) by moving them back to
+    // 'pending'.
+    const { data: claimed, error: claimErr } = await admin.rpc(
+      "claim_pending_automation_executions",
+      { p_limit: 50 },
+    );
+    if (claimErr) {
+      console.error("claim RPC failed:", claimErr);
+      throw claimErr;
+    }
 
-    for (const ex of due || []) {
-      const rule = (ex as any).automation_rules;
-      if (!rule) continue;
+    for (const ex of (claimed as any[]) || []) {
+      const rule = ex.rule as any;
       stats.pending_processed++;
+      if (!rule) {
+        await admin
+          .from("automation_executions")
+          .update({ status: "failed", error_message: "rule missing", claimed_at: null })
+          .eq("id", ex.execution_id);
+        stats.failed++;
+        continue;
+      }
       if (!isInsideTimeWindow(rule.send_time_window_start, rule.send_time_window_end)) {
+        // Defer: return to pending with a new scheduled_for.
         await admin
           .from("automation_executions")
           .update({
+            status: "pending",
+            claimed_at: null,
             scheduled_for: nextAvailableSlot(rule.send_time_window_start).toISOString(),
           })
-          .eq("id", ex.id);
+          .eq("id", ex.execution_id);
         continue;
       }
       const ctx = ex.lead_id ? await loadLeadContext(admin, ex.lead_id) : {};
-      const before = stats.sent;
       await dispatchExecution(
         admin,
         supabaseUrl,
         serviceKey,
-        ex.id,
+        ex.execution_id,
         rule,
         ctx,
         "email",
@@ -311,13 +326,10 @@ Deno.serve(async (req) => {
       const { data: after } = await admin
         .from("automation_executions")
         .select("status")
-        .eq("id", ex.id)
+        .eq("id", ex.execution_id)
         .maybeSingle();
       if (after?.status === "sent") stats.sent++;
       else stats.failed++;
-      if (before === stats.sent && after?.status !== "sent") {
-        // counted
-      }
     }
 
     // 2) Travel-date sweep (approaching / passed) — email-only here
