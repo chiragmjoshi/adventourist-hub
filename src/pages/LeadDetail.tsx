@@ -16,7 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, ChevronRight, Briefcase, Plus, Bell, FilePlus } from "lucide-react";
+import { RefreshCw, Flame, Phone, Mail, MessageCircle, Clock, FileText, MessageSquare, User, Info, Briefcase, Plus, Bell, FilePlus } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { formatLabel } from "@/lib/formatLabel";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -459,79 +460,79 @@ const LeadDetail = () => {
 
   return (
     <AppLayout title="Lead Detail">
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate("/admin/leads")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-            <ArrowLeft className="h-4 w-4" />Lead Management
-          </button>
-          <ChevronRight className="h-3 w-3 text-muted-foreground" />
-          <span className="font-mono font-semibold" style={{ color: "hsl(var(--blaze))" }}>{l.traveller_code}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => newInquiry.mutate()}
-            disabled={newInquiry.isPending}
-            className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
-          >
-            <FilePlus className="h-3.5 w-3.5" />
-            New Inquiry
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRemindOpen(true)}
-            className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
-          >
-            <Bell className="h-3.5 w-3.5" />
-            Remind
-          </Button>
-          <input
-            type="date"
-            title="Follow-up date"
-            value={getField("follow_up_date") || (l as any).follow_up_date || ""}
-            onChange={e => handleStatusChange("follow_up_date", e.target.value || null as any)}
-            className="h-8 text-xs rounded-md border border-border/60 px-2 bg-background"
-          />
-          <Select value={getField("disposition") || l.disposition || ""} onValueChange={v => handleStatusChange("disposition", v)}>
-            <SelectTrigger className="h-8 text-xs rounded-md w-48 border-border/60">
-              <div className="flex items-center gap-1.5 truncate">
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[getField("disposition") || l.disposition] || DISP_DOT[formatLabel(getField("disposition") || l.disposition)] || "bg-gray-300"}`} />
-                <span className="truncate">{formatLabel(getField("disposition") || l.disposition) || "Disposition"}</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {mvByType("disposition").map((d: any) => (
-                <SelectItem key={d.id} value={d.value}>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${DISP_DOT[d.value] || "bg-gray-300"}`} />
-                    {d.value}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={getField("sales_status") || l.sales_status || ""} onValueChange={v => handleStatusChange("sales_status", v)}>
-            <SelectTrigger className="h-8 text-xs rounded-md w-40 border-border/60">
-              <div className="flex items-center gap-1.5 truncate">
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[getField("sales_status") || l.sales_status] || STATUS_DOT[formatLabel(getField("sales_status") || l.sales_status)] || "bg-gray-300"}`} />
-                <span className="truncate">{formatLabel(getField("sales_status") || l.sales_status) || "Status"}</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {mvByType("sales_status").map((s: any) => (
-                <SelectItem key={s.id} value={s.value}>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${STATUS_DOT[s.value] || "bg-gray-300"}`} />
-                    {s.value}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      {/* Phase 4C.1 — shared PageHeader; the 5 toolbar controls (new inquiry,
+          remind, follow-up date, disposition, status) ride in the actions
+          prop so the chrome matches TripCashflowDetail / VendorDetail etc. */}
+      <PageHeader
+        back={{ to: "/admin/leads", label: "Lead Management" }}
+        crumbs={[{ label: l.traveller_code, variant: "mono" }]}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => newInquiry.mutate()}
+              disabled={newInquiry.isPending}
+              className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
+            >
+              <FilePlus className="h-3.5 w-3.5" />
+              New Inquiry
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRemindOpen(true)}
+              className="h-8 text-xs gap-1.5 hover:bg-[#FFF5F2] hover:text-blaze hover:border-blaze"
+            >
+              <Bell className="h-3.5 w-3.5" />
+              Remind
+            </Button>
+            <input
+              type="date"
+              title="Follow-up date"
+              value={getField("follow_up_date") || (l as any).follow_up_date || ""}
+              onChange={e => handleStatusChange("follow_up_date", e.target.value || null as any)}
+              className="h-8 text-xs rounded-md border border-border/60 px-2 bg-background"
+            />
+            <Select value={getField("disposition") || l.disposition || ""} onValueChange={v => handleStatusChange("disposition", v)}>
+              <SelectTrigger className="h-8 text-xs rounded-md w-48 border-border/60">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DISP_DOT[getField("disposition") || l.disposition] || DISP_DOT[formatLabel(getField("disposition") || l.disposition)] || "bg-gray-300"}`} />
+                  <span className="truncate">{formatLabel(getField("disposition") || l.disposition) || "Disposition"}</span>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {mvByType("disposition").map((d: any) => (
+                  <SelectItem key={d.id} value={d.value}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${DISP_DOT[d.value] || "bg-gray-300"}`} />
+                      {d.value}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={getField("sales_status") || l.sales_status || ""} onValueChange={v => handleStatusChange("sales_status", v)}>
+              <SelectTrigger className="h-8 text-xs rounded-md w-40 border-border/60">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[getField("sales_status") || l.sales_status] || STATUS_DOT[formatLabel(getField("sales_status") || l.sales_status)] || "bg-gray-300"}`} />
+                  <span className="truncate">{formatLabel(getField("sales_status") || l.sales_status) || "Status"}</span>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {mvByType("sales_status").map((s: any) => (
+                  <SelectItem key={s.id} value={s.value}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${STATUS_DOT[s.value] || "bg-gray-300"}`} />
+                      {s.value}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        }
+      />
 
       <div className="flex gap-6">
         <div className="w-[320px] flex-shrink-0 space-y-4 sticky top-6 self-start">

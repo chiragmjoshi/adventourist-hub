@@ -5,7 +5,8 @@ import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Pencil, Send, Zap } from "lucide-react";
+import { Pencil, Send, Zap } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { formatINR } from "@/lib/formatINR";
 import { formatLabel } from "@/lib/formatLabel";
 import { format } from "date-fns";
@@ -84,13 +85,11 @@ const TripCashflowDetail = () => {
 
   return (
     <AppLayout title={cf.cashflow_code}>
-      <div className="flex items-center gap-2 text-sm mb-5">
-        <button onClick={() => navigate("/admin/trip-cashflow")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-          <ArrowLeft className="h-4 w-4" />Trip Cashflow
-        </button>
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
-        <span className="font-mono font-medium text-primary">{cf.cashflow_code}</span>
-      </div>
+      {/* Phase 4C.1 — shared PageHeader for consistency with other detail pages. */}
+      <PageHeader
+        back={{ to: "/admin/trip-cashflow", label: "Trip Cashflow" }}
+        crumbs={[{ label: cf.cashflow_code, variant: "mono" }]}
+      />
 
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
