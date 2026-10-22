@@ -691,10 +691,18 @@ const LeadManagement = () => {
                               const count = loyaltyMap[(lead as any).traveller_code] || 0;
                               if (count < 2) return null;
                               const color = count >= 5 ? "hsl(var(--blaze))" : count >= 3 ? "#16a34a" : "#2563eb";
+                              // Phase 4D.2 — loyalty dot carries meaning only via color
+                              // + hover tooltip. Add aria-label so SR users hear "X
+                              // confirmed trips" instead of silence.
                               return (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                                    <span
+                                      className="inline-block w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: color }}
+                                      role="img"
+                                      aria-label={`${count} confirmed trips`}
+                                    />
                                   </TooltipTrigger>
                                   <TooltipContent>{count} confirmed trips</TooltipContent>
                                 </Tooltip>
