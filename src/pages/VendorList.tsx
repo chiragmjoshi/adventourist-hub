@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Search, Upload, Compass, MoreHorizontal, Eye, Pencil, Ban, Trash2 } from "lucide-react";
@@ -26,6 +27,10 @@ const VendorList = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [sortBy, setSortBy] = useState("recent");
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; vendor: any | null }>({ open: false, vendor: null });
+  // Phase 3.5.3 — delete-vendor confirmation. Replaces the blocking native
+  // confirm() with a styled AlertDialog that names the row + is keyboard-
+  // reachable + consistent with every other destructive action in the app.
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; vendor: any | null }>({ open: false, vendor: null });
 
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: ["vendors"],
@@ -253,7 +258,10 @@ const VendorList = () => {
                           <DropdownMenuItem onClick={() => setConfirmDialog({ open: true, vendor: v })}>
                             <Ban className="h-3.5 w-3.5 mr-2" />{v.is_active ? "Mark Inactive" : "Mark Active"}
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => { if (confirm("Delete this vendor?")) deleteMutation.mutate(v.id); }}>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setDeleteDialog({ open: true, vendor: v })}
+                          >
                             <Trash2 className="h-3.5 w-3.5 mr-2" />Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -287,6 +295,37 @@ const VendorList = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Phase 3.5.3 — delete-vendor AlertDialog (replaces native confirm). */}
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(o) => !o && setDeleteDialog({ open: false, vendor: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete vendor {deleteDialog.vendor?.name ? `"${deleteDialog.vendor.name}"` : ""}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the vendor from the directory. Trip cashflow lines that
+              reference this vendor will keep the vendor name on them but lose the link.
+              This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteDialog.vendor?.id) deleteMutation.mutate(deleteDialog.vendor.id);
+                setDeleteDialog({ open: false, vendor: null });
+              }}
+            >
+              Delete vendor
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
