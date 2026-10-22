@@ -238,7 +238,14 @@ const VendorList = () => {
                     <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            aria-label={`Actions for ${v.name}`}
+                          >
+                            <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-36">
                           <DropdownMenuItem onClick={() => navigate(`/admin/vendors/${v.id}`)}><Eye className="h-3.5 w-3.5 mr-2" />View</DropdownMenuItem>
