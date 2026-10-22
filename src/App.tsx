@@ -129,15 +129,18 @@ const App = () => {
       meta.content = "noindex, nofollow";
     }
 
-    // Only run automation worker on admin/preview hosts — never on the public site.
-    if (kind === "public" && !isAdminPath(window.location.pathname)) return;
-    let interval: ReturnType<typeof setInterval> | undefined;
-    // Dynamic import keeps the automation engine out of the initial bundle.
-    import("./services/automationEngine").then(({ processAutomationQueue }) => {
-      processAutomationQueue();
-      interval = setInterval(processAutomationQueue, 15 * 60 * 1000);
-    });
-    return () => { if (interval) clearInterval(interval); };
+    // Phase 3.4b — client-side automation worker removed.
+    // The dispatcher is now driven exclusively by the `process-automations
+    // -every-5-min` pg_cron job (see supabase/migrations/*
+    // schedule_process_automations*). Running a client setInterval too
+    // caused duplicate sends across admin tabs; the atomic claim RPC
+    // (phase 3.1) stopped the dupes but doing both still wasted every
+    // open tab's bandwidth on redundant RPC calls that would always
+    // claim 0 rows (the server cron had already drained them).
+    //
+    // Rollback plan: if the server cron ever stops firing, restore
+    // the previous dynamic import + setInterval here as an emergency
+    // backup. See git log for Phase 3.4b.2 for the exact snippet.
   }, []);
 
   return (
