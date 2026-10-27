@@ -133,15 +133,81 @@ const PlatformROI = () => {
     [cashflows, costByCf, leadById, leadByTravellerCode]
   );
 
+  // Phase M3 — prorate each marketing_spends row to the filter window.
+  // Days are counted inclusive on both ends to match how the user thinks
+  // about flight periods (a 1-Oct–31-Oct campaign has 31 billable days,
+  // not 30). A row that doesn't overlap the filter contributes 0.
+  const spendByPlatform = useMemo(() => {
+    const m = new Map<string, number>();
+    const filterStartMs = from.getTime();
+    const filterEndMs = to.getTime();
+    (spendsQuery.data ?? []).forEach((row) => {
+      const rowStartMs = new Date(row.start_date).getTime();
+      const rowEndMs = new Date(row.end_date).getTime();
+      const spanDays = Math.floor((rowEndMs - rowStartMs) / 86_400_000) + 1;
+      if (spanDays <= 0) return;
+      const overlapStart = Math.max(rowStartMs, filterStartMs);
+      const overlapEnd = Math.min(rowEndMs, filterEndMs);
+      const overlapDays = Math.floor((overlapEnd - overlapStart) / 86_400_000) + 1;
+      if (overlapDays <= 0) return;
+      const allocated = Number(row.amount) * (overlapDays / spanDays);
+      const key = displayPlatform(row.platform);
+      m.set(key, (m.get(key) ?? 0) + allocated);
+    });
+    return m;
+  }, [spendsQuery.data, from, to]);
+
+  const totalSpendPeriod = useMemo(
+    () => Array.from(spendByPlatform.values()).reduce((s, v) => s + v, 0),
+    [spendByPlatform]
+  );
+
+  // Rich platform rows — same aggregation as buildTable("platform") plus
+  // gross margin, prorated spend, CPL / CAC / ROAS, and Net Margin.
+  // Spend-only platforms (we logged a Meta row but no Meta leads landed
+  // in the filter) still show up with 0 leads so nothing hides.
+  const platformRows = useMemo(() => {
+    type R = { key: string; leads: number; closed: number; revenue: number; grossMargin: number };
+    const map: Record<string, R> = {};
+    const bucket = (k: string): R => {
+      if (!map[k]) map[k] = { key: k, leads: 0, closed: 0, revenue: 0, grossMargin: 0 };
+      return map[k];
+    };
+    leads.forEach((l) => {
+      const row = bucket(displayPlatform((l as any).platform));
+      row.leads++;
+      if (isClosed(l)) row.closed++;
+    });
+    cashflows.forEach((cf) => {
+      const lead = attributedLead(cf);
+      const key = lead ? displayPlatform((lead as any).platform) : "Unattributed";
+      const trip = calcTrip(cf, costByCf.get(cf.id) ?? 0);
+      const row = bucket(key);
+      row.revenue += trip.sellingExGst;
+      row.grossMargin += trip.sellingExGst - trip.totalVendorCost;
+    });
+    spendByPlatform.forEach((_, k) => bucket(k));
+    return Object.values(map).map((row) => {
+      const spend = spendByPlatform.get(row.key) ?? 0;
+      return {
+        ...row,
+        spend,
+        netMargin: row.grossMargin - spend,
+        cpl: row.leads > 0 ? spend / row.leads : null,
+        cac: row.closed > 0 ? spend / row.closed : null,
+        roas: spend > 0 ? row.revenue / spend : null,
+      };
+    }).sort((a, b) => b.leads - a.leads || b.revenue - a.revenue);
+  }, [leads, cashflows, costByCf, spendByPlatform, leadById, leadByTravellerCode]);
+
   const sections = [
-    { title: "Platform Breakdown", data: buildTable("platform") },
     { title: "Channel Breakdown", data: buildTable("channel") },
     { title: "Campaign Type Breakdown", data: buildTable("campaign_type") },
     { title: "Ad Group Breakdown", data: buildTable("ad_group") },
   ];
 
-  const bestPlatform = sections[0].data.filter((r) => r.key !== "Unattributed")[0]?.key || "—";
-  const bestChannel = sections[1].data.filter((r) => r.key !== "Unattributed")[0]?.key || "—";
+  const bestPlatform = platformRows.filter((r) => r.key !== "Unattributed")[0]?.key || "—";
+  const bestChannel = sections[0].data.filter((r) => r.key !== "Unattributed")[0]?.key || "—";
 
   return (
     <AppLayout title="Platform ROI Report">
@@ -182,6 +248,77 @@ const PlatformROI = () => {
               </span>
             </div>
           )}
+
+          {/* Phase M3 — Platform breakdown with spend-aware columns.
+              When the flag is off, we render the same 6-column shape as
+              the three secondary tables below so nothing visibly changes
+              for RMs who don't yet see spend data. */}
+          <Card className="border shadow-sm mb-6">
+            <CardHeader className="pb-2">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <CardTitle className="text-base">Platform Breakdown</CardTitle>
+                  {marketingSpendOn && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Spend is prorated to the selected date range (overlap days ÷ campaign length).
+                    </p>
+                  )}
+                </div>
+                {marketingSpendOn && totalSpendPeriod > 0 && (
+                  <div className="text-xs text-right">
+                    <span className="text-muted-foreground">Spend in range · </span>
+                    <strong className="text-foreground tabular-nums">{formatINR(Math.round(totalSpendPeriod))}</strong>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Platform</TableHead>
+                    <TableHead className="text-right">Leads</TableHead>
+                    <TableHead className="text-right">Closed</TableHead>
+                    <TableHead className="text-right">Revenue</TableHead>
+                    <TableHead className="text-right">Conversion %</TableHead>
+                    <TableHead className="text-right">Avg Ticket</TableHead>
+                    {marketingSpendOn && (
+                      <>
+                        <TableHead className="text-right">Spend</TableHead>
+                        <TableHead className="text-right">CPL</TableHead>
+                        <TableHead className="text-right">CAC</TableHead>
+                        <TableHead className="text-right">ROAS</TableHead>
+                        <TableHead className="text-right">Net Margin</TableHead>
+                      </>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {platformRows.map((r) => (
+                    <TableRow key={r.key}>
+                      <TableCell className="font-medium">{r.key}</TableCell>
+                      <TableCell className="text-right">{r.leads}</TableCell>
+                      <TableCell className="text-right">{r.closed}</TableCell>
+                      <TableCell className="text-right">{formatINR(Math.round(r.revenue))}</TableCell>
+                      <TableCell className="text-right">{r.leads > 0 ? ((r.closed / r.leads) * 100).toFixed(1) : 0}%</TableCell>
+                      <TableCell className="text-right">{r.closed > 0 ? formatINR(Math.round(r.revenue / r.closed)) : "—"}</TableCell>
+                      {marketingSpendOn && (
+                        <>
+                          <TableCell className="text-right tabular-nums">{r.spend > 0 ? formatINR(Math.round(r.spend)) : "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{r.cpl !== null ? formatINR(Math.round(r.cpl)) : "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{r.cac !== null ? formatINR(Math.round(r.cac)) : "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{r.roas !== null ? `${r.roas.toFixed(1)}x` : "—"}</TableCell>
+                          <TableCell className={"text-right tabular-nums " + (r.netMargin < 0 ? "text-destructive" : r.spend > 0 ? "text-[hsl(var(--ridge))]" : "")}>
+                            {r.spend > 0 || r.revenue > 0 ? formatINR(Math.round(r.netMargin)) : "—"}
+                          </TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           {sections.map((s) => (
             <Card key={s.title} className="border shadow-sm mb-6">
