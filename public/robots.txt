@@ -59,6 +59,17 @@ Allow: /
 User-agent: meta-externalagent
 Allow: /
 
+# ChatGPT Ads landing-page crawler (OAI-AdsBot). Needs to read /l/ and
+# /thank-you, so it gets its own full rule set — a crawler obeys only the
+# single most specific matching group and never inherits from `*`.
+# Do NOT block /l/ for this agent: our paid-ad landing pages live there.
+User-agent: OAI-AdsBot
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /accept-invite
+Disallow: /reset-password
+
 # Default
 User-agent: *
 Allow: /
