@@ -117,7 +117,7 @@ export default function MinimalTemplate({ page, itinerary }: Props) {
                     </button>
                     {open && (
                       <div className="pb-5 text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                        {d.description || d.day_description || ""}
+                        {d.detail || d.description || d.day_description || ""}
                       </div>
                     )}
                   </div>
