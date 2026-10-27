@@ -221,7 +221,7 @@ export default function BoldTemplate({ page, itinerary }: Props) {
       {gallery.length > 0 && (
         <section className="bg-[#1A1D2E] py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-8 text-center">Trip Highlights</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-8 text-center">What this trip looks like</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {gallery.slice(0, 9).map((src, i) => (
                 <button
