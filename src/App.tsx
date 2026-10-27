@@ -1,4 +1,5 @@
 import PixelRouteTracker from "@/site/components/PixelRouteTracker";
+import { installWhatsAppClickTracking } from "@/lib/adsTracking";
 import { useEffect, lazy, Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -108,6 +109,7 @@ function MaybeAuth({ children }: { children: ReactNode }) {
 }
 
 const App = () => {
+  useEffect(() => installWhatsAppClickTracking(), []);
   useEffect(() => {
     // Hostname-based gating: redirect cross-domain traffic before anything renders.
     const redirect = getCrossHostRedirect();

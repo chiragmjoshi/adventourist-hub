@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import KeepQueryNavigate from "@/routes/KeepQueryNavigate";
 export default function Team() {
-  return <Navigate to="/about-us#team" replace />;
+  return <KeepQueryNavigate to="/about-us#team" replace />;
 }

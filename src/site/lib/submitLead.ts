@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { trackLead } from "@/site/lib/pixel";
+import { trackAdsLead } from "@/lib/adsTracking";
 
 /**
  * The ONE shared success path for every public enquiry form.
@@ -11,6 +11,6 @@ export async function submitLeadRecord(body: Record<string, unknown>): Promise<s
   if (error) throw error;
   if (data && (data as any).error) throw new Error((data as any).error);
   const leadId = ((data as any)?.lead_id as string | undefined) ?? null;
-  trackLead(leadId);
+  if (leadId) trackAdsLead("enquiry_form", leadId);
   return leadId;
 }

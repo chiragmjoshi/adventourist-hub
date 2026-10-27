@@ -1,6 +1,7 @@
 import { useRedirectPending } from "@/site/lib/routeSettle";
 import { useEffect, useState } from "react";
-import { Route, Navigate, useParams, useLocation } from "react-router-dom";
+import { Route, useParams, useLocation } from "react-router-dom";
+import KeepQueryNavigate from "@/routes/KeepQueryNavigate";
 import NotFound from "@/pages/NotFound";
 import { getTravelStoryBySlug } from "@/site/lib/api";
 
@@ -12,7 +13,7 @@ import { getTravelStoryBySlug } from "@/site/lib/api";
  */
 
 function RedirectStatic({ to }: { to: string }) {
-  return <Navigate to={to} replace />;
+  return <KeepQueryNavigate to={to} replace />;
 }
 
 /** Hard redirect to a path served by the host (e.g. /sitemap.xml in /public). */
@@ -49,7 +50,7 @@ function normaliseSlug(s: string): string {
 function ItineraryRedirect() {
   const { slug = "" } = useParams();
   const mapped = ITINERARY_MAP[normaliseSlug(slug)];
-  return <Navigate to={mapped ? `/trips/${mapped}` : "/trips"} replace />;
+  return <KeepQueryNavigate to={mapped ? `/trips/${mapped}` : "/trips"} replace />;
 }
 
 // Root-level legacy slugs (e.g. /bali-bliss-trip-5-nights-6-days) → /trips/:slug
@@ -129,7 +130,7 @@ function RootSlugRedirect() {
   const { slug = "" } = useParams();
   const mapped = ROOT_SLUG_MAP[normaliseSlug(slug)];
   if (!mapped) return <NotFound />;
-  return <Navigate to={`/trips/${mapped}`} replace />;
+  return <KeepQueryNavigate to={`/trips/${mapped}`} replace />;
 }
 
 /**
@@ -150,7 +151,7 @@ const STORY_MAP: Record<string, string> = {
 function StoryRedirect() {
   const { slug = "" } = useParams();
   const mapped = STORY_MAP[normaliseSlug(slug)];
-  return <Navigate to={mapped ? `/travel-stories/${mapped}` : "/travel-stories"} replace />;
+  return <KeepQueryNavigate to={mapped ? `/travel-stories/${mapped}` : "/travel-stories"} replace />;
 }
 
 // Tag → specific story map (falls back to listing)
@@ -162,7 +163,7 @@ const TAG_MAP: Record<string, string> = {
 function TagRedirect() {
   const { tag = "" } = useParams();
   const mapped = TAG_MAP[tag];
-  return <Navigate to={mapped ? `/travel-stories/${mapped}` : "/travel-stories"} replace />;
+  return <KeepQueryNavigate to={mapped ? `/travel-stories/${mapped}` : "/travel-stories"} replace />;
 }
 
 /** /travel-stories/:slug/feed, /1000, /amp → the clean story URL. */
@@ -170,9 +171,9 @@ function StorySlugRedirect() {
   const { slug = "" } = useParams();
   const clean = slug.replace(/\/+$/g, "");
   if (!clean || clean === "feed" || clean === "1000" || clean === "amp") {
-    return <Navigate to="/travel-stories" replace />;
+    return <KeepQueryNavigate to="/travel-stories" replace />;
   }
-  return <Navigate to={`/travel-stories/${clean}`} replace />;
+  return <KeepQueryNavigate to={`/travel-stories/${clean}`} replace />;
 }
 
 /**
@@ -209,7 +210,7 @@ function BlogPostRedirect() {
   useRedirectPending(!target);
 
   if (!target) return null;
-  return <Navigate to={target} replace state={{ from: location.pathname }} />;
+  return <KeepQueryNavigate to={target} replace state={{ from: location.pathname }} />;
 }
 
 /**

@@ -1,1 +1,3 @@
 - Crawler-visible page content lives in scripts/lib/siteContent.ts (RouteEntry.body) and is written by scripts/prerender.ts at build; why: the SPA renders client-side, so prerendered HTML is what search engines and AI crawlers read.
+- ChatGPT Ads `lead_created` fires only via src/lib/adsTracking.ts: WhatsApp CTA clicks (one capture-phase listener installed in App.tsx) and saved enquiries (src/site/lib/submitLead.ts, event_id from the saved lead id); never on /admin, never with personal data; why: one place to audit ad conversions and avoid double counting.
+- Client-side redirects use src/routes/KeepQueryNavigate.tsx; why: utm_*/oppref must survive redirects for ad attribution.
