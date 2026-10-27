@@ -38,6 +38,7 @@ export type Database = {
       automation_executions: {
         Row: {
           channel: string | null
+          claimed_at: string | null
           created_at: string
           error_message: string | null
           executed_at: string | null
@@ -54,6 +55,7 @@ export type Database = {
         }
         Insert: {
           channel?: string | null
+          claimed_at?: string | null
           created_at?: string
           error_message?: string | null
           executed_at?: string | null
@@ -70,6 +72,7 @@ export type Database = {
         }
         Update: {
           channel?: string | null
+          claimed_at?: string | null
           created_at?: string
           error_message?: string | null
           executed_at?: string | null
@@ -1480,6 +1483,59 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_spends: {
+        Row: {
+          ad_group: string | null
+          amount: number
+          campaign_name: string | null
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          landing_page_id: string | null
+          notes: string | null
+          platform: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          ad_group?: string | null
+          amount: number
+          campaign_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          landing_page_id?: string | null
+          notes?: string | null
+          platform: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          ad_group?: string | null
+          amount?: number
+          campaign_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          landing_page_id?: string | null
+          notes?: string | null
+          platform?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_spends_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       master_values: {
         Row: {
           created_at: string | null
@@ -1860,6 +1916,7 @@ export type Database = {
       }
       trip_cashflow: {
         Row: {
+          additional_docs: string[]
           agreed_selling_price: number | null
           assigned_to: string | null
           booking_date: string | null
@@ -1887,6 +1944,7 @@ export type Database = {
           zoho_invoice_ref: string | null
         }
         Insert: {
+          additional_docs?: string[]
           agreed_selling_price?: number | null
           assigned_to?: string | null
           booking_date?: string | null
@@ -1914,6 +1972,7 @@ export type Database = {
           zoho_invoice_ref?: string | null
         }
         Update: {
+          additional_docs?: string[]
           agreed_selling_price?: number | null
           assigned_to?: string | null
           booking_date?: string | null
@@ -2248,7 +2307,36 @@ export type Database = {
       }
     }
     Functions: {
+      _target_trip_stage: {
+        Args: { p_today: string; p_travel_end: string; p_travel_start: string }
+        Returns: string
+      }
+      _trip_stage_rank: { Args: { p_stage: string }; Returns: number }
+      advance_trip_stages: {
+        Args: never
+        Returns: {
+          cashflow_code: string
+          from_stage: string
+          to_stage: string
+          trip_id: string
+        }[]
+      }
+      claim_pending_automation_executions: {
+        Args: { p_limit?: number }
+        Returns: {
+          channel: string
+          execution_id: string
+          lead_id: string
+          recipient_contact: string
+          recipient_type: string
+          rule: Json
+          rule_id: string
+          scheduled_for: string
+          trigger_event: string
+        }[]
+      }
       current_user_role: { Args: never; Returns: string }
+      enqueue_birthday_anniversary_executions: { Args: never; Returns: number }
       feature_flag_bucket: { Args: { p_user_id: string }; Returns: number }
       generate_adv_traveller_code: { Args: never; Returns: string }
       get_vendor_safe: { Args: { p_vendor_id: string }; Returns: Json }
@@ -2261,8 +2349,28 @@ export type Database = {
         Args: { p_key: string; p_user_id?: string }
         Returns: boolean
       }
+      preview_trip_stage_advances: {
+        Args: never
+        Returns: {
+          cashflow_code: string
+          current_stage: string
+          days_to_travel: number
+          target_stage: string
+          travel_end_date: string
+          travel_start_date: string
+          trip_id: string
+        }[]
+      }
+      requeue_stale_automation_claims: {
+        Args: { p_max_processing_minutes?: number }
+        Returns: number
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      upsert_cashflow_vendors: {
+        Args: { p_cashflow_id: string; p_lines: Json }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
