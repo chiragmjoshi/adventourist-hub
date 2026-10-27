@@ -124,7 +124,7 @@ export default function StoryTemplate({ page, itinerary }: Props) {
                     {d.title || d.day_title || `Day ${i + 1}`}
                   </h3>
                   <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                    {d.description || d.day_description || ""}
+                    {d.detail || d.description || d.day_description || ""}
                   </p>
                 </div>
               </div>

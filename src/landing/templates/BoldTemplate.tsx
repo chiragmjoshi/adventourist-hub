@@ -152,7 +152,7 @@ export default function BoldTemplate({ page, itinerary }: Props) {
             <div className="space-y-2">
               {days.map((d, i) => {
                 const open = expandedDay === i;
-                const desc = d.description || d.day_description || "";
+                const desc = d.detail || d.description || d.day_description || "";
                 const meals = d.meals || {};
                 return (
                   <div key={i} className="border border-gray-200 rounded-xl overflow-hidden">
