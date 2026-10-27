@@ -1,13 +1,26 @@
 import { useState, useEffect, useMemo } from "react";
-import { Download, Info } from "lucide-react";
+import { Download, Info, Pencil, Plus, Trash2 } from "lucide-react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
+import MarketingSpendDialog from "@/components/MarketingSpendDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/formatINR";
 import { displayPlatform } from "@/lib/formatLabel";
+import { useFlag } from "@/hooks/useFlag";
+import {
+  MarketingSpend,
+  useDeleteMarketingSpend,
+  useMarketingSpends,
+} from "@/hooks/useMarketingSpends";
 import {
   calcTrip,
   DEFAULT_REPORT_FROM,
@@ -28,6 +41,29 @@ const PlatformROI = () => {
   const [allCashflows, setAllCashflows] = useState<any[]>([]);
   const [cfVendors, setCfVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Phase M2 — the ROI route is already admin+super_admin only (see
+  // ROUTE_PERMISSIONS in useRBAC), so the whole page audience is the one
+  // we want for the dialog + delete action; we only need the flag gate.
+  const marketingSpendOn = useFlag("feature:marketing_spend");
+  const [spendDialogOpen, setSpendDialogOpen] = useState(false);
+  const [editingSpend, setEditingSpend] = useState<MarketingSpend | null>(null);
+  const [spendToDelete, setSpendToDelete] = useState<MarketingSpend | null>(null);
+  const spendsQuery = useMarketingSpends();
+  const deleteSpend = useDeleteMarketingSpend();
+
+  // Resolve landing_page_id → name once. Includes inactive pages so a spend
+  // row for a now-archived page still renders its real name instead of "—".
+  const [landingPageNames, setLandingPageNames] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    if (!marketingSpendOn) return;
+    (async () => {
+      const { data } = await supabase.from("landing_pages").select("id, name");
+      const m = new Map<string, string>();
+      (data || []).forEach((lp: { id: string; name: string }) => m.set(lp.id, lp.name));
+      setLandingPageNames(m);
+    })();
+  }, [marketingSpendOn]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -109,9 +145,20 @@ const PlatformROI = () => {
 
   return (
     <AppLayout title="Platform ROI Report">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
-        <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
+        <div className="flex items-center gap-2">
+          {marketingSpendOn && (
+            <Button
+              size="sm"
+              onClick={() => { setEditingSpend(null); setSpendDialogOpen(true); }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Marketing Spend
+            </Button>
+          )}
+          <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
+        </div>
       </div>
 
       {loading ? (
@@ -167,8 +214,137 @@ const PlatformROI = () => {
               </CardContent>
             </Card>
           ))}
+
+          {/* Phase M2 — spend ledger. Shown only when the flag is on; the
+              aggregates that use these rows (CPL/CAC/ROAS) land in M3. */}
+          {marketingSpendOn && (
+            <Card className="border shadow-sm mb-6">
+              <CardHeader className="pb-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base">Marketing Spend History</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Rows are stored once and prorated to any date filter by the ROI tiles (M3).
+                      Edits take effect immediately.
+                    </p>
+                  </div>
+                  <div className="text-xs text-muted-foreground text-right">
+                    {spendsQuery.data && spendsQuery.data.length > 0 && (
+                      <>
+                        <div><strong className="text-foreground tabular-nums">{formatINR(Math.round(spendsQuery.data.reduce((s, r) => s + Number(r.amount), 0)))}</strong> logged</div>
+                        <div>across {spendsQuery.data.length} {spendsQuery.data.length === 1 ? "row" : "rows"}</div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {spendsQuery.isLoading ? (
+                  <div className="h-20 bg-muted/40 animate-pulse rounded" />
+                ) : spendsQuery.data && spendsQuery.data.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Platform</TableHead>
+                        <TableHead>Landing page</TableHead>
+                        <TableHead>Dates</TableHead>
+                        <TableHead>Campaign</TableHead>
+                        <TableHead>Ad group</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-20 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {spendsQuery.data.map((row) => (
+                        <TableRow key={row.id}>
+                          <TableCell className="font-medium">{displayPlatform(row.platform)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {row.landing_page_id
+                              ? (landingPageNames.get(row.landing_page_id) ?? "—")
+                              : <em>— (platform-wide)</em>}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {format(new Date(row.start_date), "d MMM yy")} – {format(new Date(row.end_date), "d MMM yy")}
+                          </TableCell>
+                          <TableCell className="text-xs">{row.campaign_name || "—"}</TableCell>
+                          <TableCell className="text-xs">{row.ad_group || "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{formatINR(Math.round(Number(row.amount)))}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="inline-flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Edit marketing spend"
+                                onClick={() => { setEditingSpend(row); setSpendDialogOpen(true); }}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Delete marketing spend"
+                                onClick={() => setSpendToDelete(row)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-sm text-muted-foreground py-6 text-center">
+                    No marketing spend logged yet. Click <strong>Add Marketing Spend</strong> above to start.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
+
+      <MarketingSpendDialog
+        open={spendDialogOpen}
+        onOpenChange={setSpendDialogOpen}
+        initial={editingSpend}
+      />
+
+      <AlertDialog open={!!spendToDelete} onOpenChange={(open) => !open && setSpendToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete marketing spend?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {spendToDelete && (
+                <>
+                  This removes <strong>{formatINR(Math.round(Number(spendToDelete.amount)))}</strong> of logged
+                  spend for <strong>{displayPlatform(spendToDelete.platform)}</strong>
+                  {" "}({format(new Date(spendToDelete.start_date), "d MMM yy")} – {format(new Date(spendToDelete.end_date), "d MMM yy")}).
+                  This cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteSpend.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteSpend.isPending}
+              onClick={async () => {
+                if (!spendToDelete) return;
+                try {
+                  await deleteSpend.mutateAsync(spendToDelete.id);
+                  toast.success("Marketing spend deleted");
+                  setSpendToDelete(null);
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Delete failed");
+                }
+              }}
+            >
+              {deleteSpend.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
