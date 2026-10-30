@@ -52,14 +52,16 @@ WHERE NOT EXISTS (
 
 -- ─────────────── expense_entries table ───────────────
 --
--- month_year is a GENERATED column from entry_date so queries that group
--- by month (Dashboard, E5 report) stay index-friendly without the UI
--- having to pass both. STORED so the index below actually lands.
+-- month_year is a plain text column kept in sync by a BEFORE trigger.
+-- GENERATED STORED was attempted first but to_char() is only STABLE,
+-- not IMMUTABLE, so Postgres rejects it as a generation expression.
+-- Trigger approach is equivalent for Dashboard/E5 month-grouping and
+-- keeps the index working.
 
 CREATE TABLE IF NOT EXISTS public.expense_entries (
   id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   entry_date            date NOT NULL,
-  month_year            text GENERATED ALWAYS AS (to_char(entry_date, 'YYYY-MM')) STORED,
+  month_year            text NOT NULL DEFAULT '',
   head                  text NOT NULL,
   sub_head              text,
   amount                numeric(14,2) NOT NULL CHECK (amount >= 0),
@@ -70,6 +72,23 @@ CREATE TABLE IF NOT EXISTS public.expense_entries (
   created_at            timestamptz NOT NULL DEFAULT now(),
   updated_at            timestamptz NOT NULL DEFAULT now()
 );
+
+-- Keep month_year in sync with entry_date on every write.
+CREATE OR REPLACE FUNCTION public.expense_entries_sync_month_year()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.month_year := to_char(NEW.entry_date, 'YYYY-MM');
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS expense_entries_set_month_year ON public.expense_entries;
+CREATE TRIGGER expense_entries_set_month_year
+  BEFORE INSERT OR UPDATE OF entry_date ON public.expense_entries
+  FOR EACH ROW
+  EXECUTE FUNCTION public.expense_entries_sync_month_year();
 
 -- Dashboard / expense report group by month; the UI page groups by head.
 CREATE INDEX IF NOT EXISTS expense_entries_month_year_idx
