@@ -49,11 +49,14 @@ const LandingPageList = () => {
 
   /* PERF-4 — fetch only the landing_page_id column (drops payload ~95%)
      and exclude rows where it is null so the count is meaningful.
-     Flag-off path: this unfiltered count is what the Leads column shows. */
+     Phase M4 regression fix: this query is now ALWAYS enabled so the
+     Leads column still shows an all-time total even when the flag is
+     on and the date filter happens to catch zero leads. Previously the
+     flag-on view fell through to a bare "0" badge, which read as a
+     missing count. */
   const { data: leadCounts = {} } = useQuery({
     queryKey: ["landing_page_lead_counts"],
     staleTime: 5 * 60 * 1000,
-    enabled: !marketingSpendOn,
     queryFn: async () => {
       const { data } = await supabase
         .from("leads")
@@ -312,15 +315,18 @@ const LandingPageList = () => {
                     </div>
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">
-                    {marketingSpendOn ? (
-                      perPage[p.id]?.leads
-                        ? <Badge variant="secondary" className="text-[10px] rounded-md">{perPage[p.id].leads}</Badge>
-                        : <span className="text-muted-foreground">0</span>
-                    ) : (
-                      (leadCounts as any)[p.id]
-                        ? <Badge variant="secondary" className="text-[10px] rounded-md">{(leadCounts as any)[p.id]} leads</Badge>
-                        : <span className="text-muted-foreground">0</span>
-                    )}
+                    {(leadCounts as any)[p.id] || (marketingSpendOn && perPage[p.id]?.leads) ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <Badge variant="secondary" className="text-[10px] rounded-md">
+                          {(leadCounts as any)[p.id] ?? 0} leads
+                        </Badge>
+                        {marketingSpendOn && (
+                          <span className="text-[9px] text-muted-foreground opacity-70 mt-0.5">
+                            {perPage[p.id]?.leads ?? 0} in range
+                          </span>
+                        )}
+                      </div>
+                    ) : <span className="text-muted-foreground">0</span>}
                   </td>
                   {marketingSpendOn && (
                     <>

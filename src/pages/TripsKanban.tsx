@@ -144,8 +144,20 @@ const TripsKanban = () => {
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {};
     STAGES.forEach((s) => (map[s.key] = []));
+    // Defensive: belt-and-braces against the DB cleanup migration missing
+    // any edge case — hide legacy rows that returned travel more than 30
+    // days ago and never got a proper trip_stage. Prevents them from
+    // falling into the "Trip Sold" fallback bucket.
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
     filtered
       .filter((t) => !hideCompleted || t.trip_stage !== "trip_completed")
+      .filter((t) => {
+        const isStageless = !t.trip_stage || t.trip_stage === "trip_sold";
+        if (!isStageless) return true;
+        if (!t.travel_end_date) return true;
+        return new Date(t.travel_end_date) >= cutoff;
+      })
       .forEach((t) => {
         const k = (t.trip_stage && STAGES.find((s) => s.key === t.trip_stage))
           ? t.trip_stage
@@ -231,7 +243,10 @@ const TripsKanban = () => {
         </div>
       )}
 
-      <div className="overflow-x-auto pb-4">
+      {/* w-full keeps the scroll container inside AppLayout's main
+          overflow box; overscroll-x-contain stops left-swipe from
+          triggering browser back-navigation when scrolled to the start. */}
+      <div className="w-full overflow-x-auto overscroll-x-contain pb-4">
         <div className="flex gap-3 min-w-max">
           {STAGES.map((stage) => {
             const list = grouped[stage.key] || [];
