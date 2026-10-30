@@ -25,7 +25,10 @@ import { evaluateRulesForLead } from "@/services/automationEngine";
 import AddReminderModal from "@/components/reminders/AddReminderModal";
 import LeadReminderStrip from "@/components/reminders/LeadReminderStrip";
 import QuickCashflowModal from "@/components/QuickCashflowModal";
+import FeedbackCaptureDialog from "@/components/lead/FeedbackCaptureDialog";
 import { useRealtimeInvalidate } from "@/hooks/useRealtimeInvalidate";
+import { useFlag } from "@/hooks/useFlag";
+import type { FeedbackType } from "@/hooks/useLeadFeedback";
 import {
   tomorrowAt, inHours, fromDateAt, dispKey,
 } from "@/lib/reminderHelpers";
@@ -80,6 +83,8 @@ const LeadDetail = () => {
   const { profile } = useAuth();
 
   const [cashflowPrompt, setCashflowPrompt] = useState(false);
+  const adFeedbackOn = useFlag("feature:ad_feedback");
+  const [feedbackDialog, setFeedbackDialog] = useState<{ open: boolean; type: FeedbackType | null }>({ open: false, type: null });
   const [formState, setFormState] = useState<Record<string, any>>({});
   const [remindOpen, setRemindOpen] = useState(false);
   // Phase 3.4.3 — local editor state for the Personal Dates card.
@@ -401,6 +406,17 @@ const LeadDetail = () => {
   const handleStatusChange = (key: string, value: string) => {
     setFormState(prev => ({ ...prev, [key]: value }));
     updateLead.mutate({ [key]: value });
+
+    // Phase A2 — fire a skippable feedback capture when sales_status
+    // transitions to one of the three terminal states. The save above
+    // is unconditional; this is a secondary, append-only capture layer.
+    if (adFeedbackOn && key === "sales_status" && value !== (lead?.sales_status ?? "")) {
+      const feedbackType: FeedbackType | null =
+        value === "Invalid Lead" ? "invalid_lead" :
+        value === "File Lost"    ? "closed_lost"  :
+        value === "File Closed"  ? "closed_won"   : null;
+      if (feedbackType) setFeedbackDialog({ open: true, type: feedbackType });
+    }
   };
 
   const handleSaveNotes = () => {
@@ -1069,6 +1085,12 @@ const LeadDetail = () => {
 
       <QuickCashflowModal open={cashflowPrompt} onOpenChange={setCashflowPrompt} lead={lead as any} />
       <AddReminderModal open={remindOpen} onOpenChange={setRemindOpen} lead={lead as any} />
+      <FeedbackCaptureDialog
+        open={feedbackDialog.open}
+        onOpenChange={(o) => setFeedbackDialog((s) => ({ ...s, open: o }))}
+        leadId={lead?.id ?? null}
+        feedbackType={feedbackDialog.type}
+      />
     </AppLayout>
   );
 };
