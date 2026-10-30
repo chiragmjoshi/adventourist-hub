@@ -148,6 +148,10 @@ const TripsKanban = () => {
     // any edge case — hide legacy rows that returned travel more than 30
     // days ago and never got a proper trip_stage. Prevents them from
     // falling into the "Trip Sold" fallback bucket.
+    //
+    // When travel_end_date is missing (common on legacy imports), fall
+    // back to travel_start_date + 30 days — a safe buffer for Indian
+    // trips — so stageless rows with ancient starts don't linger.
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
     filtered
@@ -155,8 +159,13 @@ const TripsKanban = () => {
       .filter((t) => {
         const isStageless = !t.trip_stage || t.trip_stage === "trip_sold";
         if (!isStageless) return true;
-        if (!t.travel_end_date) return true;
-        return new Date(t.travel_end_date) >= cutoff;
+        const endish = t.travel_end_date
+          ? new Date(t.travel_end_date)
+          : t.travel_start_date
+            ? new Date(new Date(t.travel_start_date).getTime() + 30 * 86_400_000)
+            : null;
+        if (!endish) return true;
+        return endish >= cutoff;
       })
       .forEach((t) => {
         const k = (t.trip_stage && STAGES.find((s) => s.key === t.trip_stage))
