@@ -9,7 +9,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   admin: [
     "leads", "itineraries", "landing_pages", "trip_cashflow", "vendors",
     "reports", "reports_sales", "reports_revenue", "reports_conversion",
-    "reports_destinations", "reports_platform_roi", "reports_team",
+    "reports_destinations", "reports_platform_roi", "reports_platform_performance", "reports_team",
     "db_management", "settings", "automations",
   ],
   sales: [
@@ -59,6 +59,7 @@ export const useRBAC = () => {
 export const ROUTE_PERMISSIONS: Record<string, Role[]> = {
   "/reports/revenue": ["finance", "admin", "super_admin"],
   "/reports/platform-roi": ["admin", "super_admin"],
+  "/reports/platform-performance": ["admin", "super_admin"],
   "/reports/team": ["admin", "super_admin"],
   "/user-management": ["super_admin"],
   "/role-management": ["super_admin"],

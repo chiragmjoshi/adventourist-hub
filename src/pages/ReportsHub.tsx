@@ -1,14 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map } from "lucide-react";
+import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map, Megaphone } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppLayout from "@/components/AppLayout";
 import { useRBAC } from "@/hooks/useRBAC";
+import { useFlag } from "@/hooks/useFlag";
 
 const ReportsHub = () => {
   const navigate = useNavigate();
   const { hasPermission } = useRBAC();
+  const marketingSpendOn = useFlag("feature:marketing_spend");
 
   const reports = [
     { id: "sales", name: "Sales Report", desc: "Lead volume, conversion funnel, team performance", icon: Users, preview: "View leads data", url: "/admin/reports/sales", perm: "reports_sales" },
@@ -16,6 +18,17 @@ const ReportsHub = () => {
     { id: "conversion", name: "Conversion Report", desc: "Lead to closure rates by source, platform and campaign", icon: TrendingUp, preview: "View conversion data", url: "/admin/reports/conversion", perm: "reports_conversion" },
     { id: "destinations", name: "Destination Report", desc: "Top destinations by leads, revenue and margin", icon: MapPin, preview: "View destination data", url: "/admin/reports/destinations", perm: "reports_destinations" },
     { id: "platform-roi", name: "Platform ROI Report", desc: "Revenue and conversion by platform, channel and campaign", icon: BarChart3, preview: "View platform data", url: "/admin/reports/platform-roi", perm: "reports_platform_roi", restrictLabel: "Admin only" },
+    ...(marketingSpendOn ? [{
+      id: "platform-performance",
+      name: "Platform Performance",
+      desc: "Spend, CPL, CAC, ROAS and top destinations per ad platform. CSV export.",
+      icon: Megaphone,
+      preview: "View marketing performance",
+      url: "/admin/reports/platform-performance",
+      perm: "reports_platform_performance",
+      restrictLabel: "Admin only",
+      isNew: true,
+    }] : []),
     { id: "team", name: "Team Performance", desc: "Individual agent metrics — leads, closures, revenue", icon: Trophy, preview: "View team data", url: "/admin/reports/team", perm: "reports_team", restrictLabel: "Admin only" },
     { id: "vendors", name: "Vendor Report", desc: "Vendor usage, cost contribution, and trip count", icon: Truck, preview: "View vendor data", url: "/admin/reports/vendors", perm: "reports_vendors", restrictLabel: "Admin only" },
     { id: "trip-operations", name: "Trip Operations", desc: "Upcoming trips, payment status, and stage pipeline", icon: Map, preview: "View trip operations", url: "/admin/reports/trip-operations", perm: "reports_trip_ops", restrictLabel: "Operations only" },
@@ -34,8 +47,13 @@ const ReportsHub = () => {
                     {allowed ? <r.icon className="h-5 w-5 text-primary" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-sm">{r.name}</h3>
+                      {(r as { isNew?: boolean }).isNew && (
+                        <Badge className="text-[9px] px-1.5 py-0 bg-[hsl(var(--horizon))]/20 text-[hsl(var(--horizon))] border-[hsl(var(--horizon))]/40">
+                          New
+                        </Badge>
+                      )}
                       {!allowed && r.restrictLabel && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{r.restrictLabel}</Badge>
                       )}
