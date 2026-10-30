@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map, Megaphone } from "lucide-react";
+import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map, Megaphone, MessageSquareText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ const ReportsHub = () => {
   const navigate = useNavigate();
   const { hasPermission } = useRBAC();
   const marketingSpendOn = useFlag("feature:marketing_spend");
+  const adFeedbackOn = useFlag("feature:ad_feedback");
 
   const reports = [
     { id: "sales", name: "Sales Report", desc: "Lead volume, conversion funnel, team performance", icon: Users, preview: "View leads data", url: "/admin/reports/sales", perm: "reports_sales" },
@@ -26,6 +27,17 @@ const ReportsHub = () => {
       preview: "View marketing performance",
       url: "/admin/reports/platform-performance",
       perm: "reports_platform_performance",
+      restrictLabel: "Admin only",
+      isNew: true,
+    }] : []),
+    ...(adFeedbackOn ? [{
+      id: "ad-feedback",
+      name: "Ad Feedback",
+      desc: "Why leads went invalid or lost — per-reason counts, scrubbed quotes, top destinations. For hand-off to ad platforms.",
+      icon: MessageSquareText,
+      preview: "View ad feedback",
+      url: "/admin/reports/ad-feedback",
+      perm: "reports_ad_feedback",
       restrictLabel: "Admin only",
       isNew: true,
     }] : []),
