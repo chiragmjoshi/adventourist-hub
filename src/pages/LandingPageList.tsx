@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
+import DateRangePicker from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +14,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Plus, Search, MoreHorizontal, Pencil, Eye, Copy, ToggleRight, Trash2, Layout, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatINR } from "@/lib/formatINR";
+import { useFlag } from "@/hooks/useFlag";
+import { useMarketingSpends } from "@/hooks/useMarketingSpends";
+import {
+  calcTrip, effectiveDate, endOfSelectedDay, fetchCashflows,
+  fetchCashflowVendors, inRange, vendorCostMap,
+} from "@/lib/reporting";
 
 const LandingPageList = () => {
   const navigate = useNavigate();
@@ -23,6 +31,13 @@ const LandingPageList = () => {
   const [deactivateId, setDeactivateId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  // Phase M4 — spend-aware columns live behind the same flag as M2/M3.
+  // When off, the page renders identically to pre-PR (all-time Leads
+  // count, no date filter, no Spend / CPL / Revenue columns).
+  const marketingSpendOn = useFlag("feature:marketing_spend");
+  const [from, setFrom] = useState<Date>(() => subDays(new Date(), 30));
+  const [to, setTo] = useState<Date>(() => new Date());
+
   const { data: pages = [], isLoading } = useQuery({
     queryKey: ["landing_pages"],
     queryFn: async () => {
@@ -33,10 +48,12 @@ const LandingPageList = () => {
   });
 
   /* PERF-4 — fetch only the landing_page_id column (drops payload ~95%)
-     and exclude rows where it is null so the count is meaningful. */
+     and exclude rows where it is null so the count is meaningful.
+     Flag-off path: this unfiltered count is what the Leads column shows. */
   const { data: leadCounts = {} } = useQuery({
     queryKey: ["landing_page_lead_counts"],
     staleTime: 5 * 60 * 1000,
+    enabled: !marketingSpendOn,
     queryFn: async () => {
       const { data } = await supabase
         .from("leads")
@@ -49,6 +66,104 @@ const LandingPageList = () => {
       return counts;
     },
   });
+
+  // Flag-on path — fetches the richer dataset once and derives per-page
+  // rollups client-side. All three queries idle until the flag is on.
+  const { data: leadsAll = [] } = useQuery({
+    queryKey: ["landing_page_leads_full"],
+    staleTime: 5 * 60 * 1000,
+    enabled: marketingSpendOn,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leads")
+        .select("id, landing_page_id, traveller_code, created_at")
+        .not("landing_page_id", "is", null);
+      return data || [];
+    },
+  });
+
+  const { data: cashflowCtx } = useQuery({
+    queryKey: ["landing_page_cashflow_ctx"],
+    staleTime: 5 * 60 * 1000,
+    enabled: marketingSpendOn,
+    queryFn: async () => {
+      const cashflows = await fetchCashflows(
+        "id, lead_id, traveller_code, pax_count, margin_percent, gst_billing, booking_date, travel_start_date, created_at"
+      ) as any[];
+      const vendors = await fetchCashflowVendors(cashflows.map((c) => c.id), "cashflow_id, cost_per_pax_incl_gst");
+      return { cashflows, costByCf: vendorCostMap(vendors as any[]) };
+    },
+  });
+
+  const spendsQuery = useMarketingSpends();
+
+  // Per-page rollups for the flag-on view. Shape mirrors the four new
+  // columns: Leads in range, Spend prorated to range, CPL, Revenue by
+  // cashflow effective date in range.
+  const perPage = useMemo(() => {
+    const out: Record<string, { leads: number; spend: number; revenue: number; cpl: number | null }> = {};
+    if (!marketingSpendOn) return out;
+
+    (pages as any[]).forEach((p) => {
+      out[p.id] = { leads: 0, spend: 0, revenue: 0, cpl: null };
+    });
+
+    // Leads created in the window.
+    const fromMs = from.getTime();
+    const toMs = endOfSelectedDay(to).getTime();
+    (leadsAll as any[]).forEach((l) => {
+      if (!out[l.landing_page_id]) return;
+      const createdMs = new Date(l.created_at).getTime();
+      if (createdMs < fromMs || createdMs > toMs) return;
+      out[l.landing_page_id].leads += 1;
+    });
+
+    // Spend attribution per M-1: a row with landing_page_id attributes
+    // only to that page. Platform-wide rows (no landing_page_id) are
+    // deliberately NOT allocated to individual pages here — they can't
+    // be fairly split across pages without dumping noise into every
+    // row. They stay visible on the Platform ROI report (M3).
+    (spendsQuery.data || []).forEach((row) => {
+      if (!row.landing_page_id || !out[row.landing_page_id]) return;
+      const rowStart = new Date(row.start_date).getTime();
+      const rowEnd = new Date(row.end_date).getTime();
+      const spanDays = Math.floor((rowEnd - rowStart) / 86_400_000) + 1;
+      if (spanDays <= 0) return;
+      const overlapStart = Math.max(rowStart, fromMs);
+      const overlapEnd = Math.min(rowEnd, toMs);
+      const overlapDays = Math.floor((overlapEnd - overlapStart) / 86_400_000) + 1;
+      if (overlapDays <= 0) return;
+      out[row.landing_page_id].spend += Number(row.amount) * (overlapDays / spanDays);
+    });
+
+    // Revenue — attribute each cashflow in-range to its lead's page.
+    if (cashflowCtx) {
+      const leadById = new Map<string, any>();
+      const leadByCode = new Map<string, any>();
+      (leadsAll as any[]).forEach((l) => {
+        leadById.set(l.id, l);
+        if (l.traveller_code && !leadByCode.has(l.traveller_code)) {
+          leadByCode.set(l.traveller_code, l);
+        }
+      });
+      cashflowCtx.cashflows.forEach((cf) => {
+        if (!inRange(effectiveDate(cf), from, to)) return;
+        const lead =
+          (cf.lead_id ? leadById.get(cf.lead_id) : null) ||
+          (cf.traveller_code ? leadByCode.get(cf.traveller_code) : null);
+        if (!lead?.landing_page_id || !out[lead.landing_page_id]) return;
+        const trip = calcTrip(cf, cashflowCtx.costByCf.get(cf.id) ?? 0);
+        out[lead.landing_page_id].revenue += trip.sellingExGst;
+      });
+    }
+
+    // CPL (division by zero => "—" at render)
+    Object.values(out).forEach((r) => {
+      r.cpl = r.leads > 0 && r.spend > 0 ? r.spend / r.leads : null;
+    });
+
+    return out;
+  }, [marketingSpendOn, pages, leadsAll, spendsQuery.data, cashflowCtx, from, to]);
 
   const { data: destinations = [] } = useQuery({
     queryKey: ["destinations_active"],
@@ -140,6 +255,9 @@ const LandingPageList = () => {
             className="text-xs text-primary hover:underline">Clear filters</button>
         )}
         <div className="flex-1" />
+        {marketingSpendOn && (
+          <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
+        )}
         <Button variant="outline" size="sm" className="rounded-md text-xs h-8"><Download className="h-3.5 w-3.5 mr-1" />Export</Button>
       </div>
 
@@ -162,7 +280,16 @@ const LandingPageList = () => {
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Destination</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Budget</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Attribution</th>
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Leads</th>
+                <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">
+                  Leads{marketingSpendOn && <span className="text-[9px] font-normal ml-1 opacity-60">(in range)</span>}
+                </th>
+                {marketingSpendOn && (
+                  <>
+                    <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Spend</th>
+                    <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">CPL</th>
+                    <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Revenue</th>
+                  </>
+                )}
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Status</th>
                 <th className="text-center px-3 py-2.5 font-medium text-muted-foreground w-10"></th>
               </tr>
@@ -184,11 +311,32 @@ const LandingPageList = () => {
                       {p.channel && <Badge variant="outline" className="text-[10px] rounded-sm w-fit">{p.channel}</Badge>}
                     </div>
                   </td>
-                  <td className="px-3 py-3">
-                    {(leadCounts as any)[p.id] ? (
-                      <Badge variant="secondary" className="text-[10px] rounded-md">{(leadCounts as any)[p.id]} leads</Badge>
-                    ) : <span className="text-muted-foreground">0</span>}
+                  <td className="px-3 py-3 text-right tabular-nums">
+                    {marketingSpendOn ? (
+                      perPage[p.id]?.leads
+                        ? <Badge variant="secondary" className="text-[10px] rounded-md">{perPage[p.id].leads}</Badge>
+                        : <span className="text-muted-foreground">0</span>
+                    ) : (
+                      (leadCounts as any)[p.id]
+                        ? <Badge variant="secondary" className="text-[10px] rounded-md">{(leadCounts as any)[p.id]} leads</Badge>
+                        : <span className="text-muted-foreground">0</span>
+                    )}
                   </td>
+                  {marketingSpendOn && (
+                    <>
+                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+                        {perPage[p.id]?.spend ? formatINR(Math.round(perPage[p.id].spend)) : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+                        {perPage[p.id]?.cpl !== null && perPage[p.id]?.cpl !== undefined
+                          ? formatINR(Math.round(perPage[p.id].cpl as number))
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+                        {perPage[p.id]?.revenue ? formatINR(Math.round(perPage[p.id].revenue)) : "—"}
+                      </td>
+                    </>
+                  )}
                   <td className="px-3 py-3">
                     <Badge className={`text-[10px] rounded-full font-normal ${p.is_active ? "bg-[hsl(var(--ridge))]/10 text-[hsl(var(--ridge))] border-[hsl(var(--ridge))]/20" : "bg-muted text-muted-foreground"}`}>
                       {p.is_active ? "Active" : "Inactive"}
