@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { Info, Megaphone } from "lucide-react";
+import { Download, FileDown, Info } from "lucide-react";
+import { toast } from "sonner";
 import AppLayout from "@/components/AppLayout";
 import DateRangePicker from "@/components/DateRangePicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -117,6 +119,8 @@ const AdFeedbackReport = () => {
   const [loading, setLoading] = useState(true);
 
   const spendsQuery = useMarketingSpends();
+
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -301,6 +305,120 @@ const AdFeedbackReport = () => {
     return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 5);
   }, [leads, destinationNames, platformFilter, from, to]);
 
+  /* ─── Exports ─── */
+
+  const platformLabel = platformFilter === "all" ? "All platforms" : platformFilter;
+  const dateRangeLabel = `${format(from, "d MMM yyyy")} – ${format(to, "d MMM yyyy")}`;
+  const fileStem = `ad-feedback_${platformFilter === "all" ? "all" : platformFilter.toLowerCase().replace(/\s+/g, "-")}_${format(from, "yyyy-MM-dd")}_${format(to, "yyyy-MM-dd")}`;
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadCsv = () => {
+    const esc = (v: unknown) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const line = (...vals: unknown[]) => vals.map(esc).join(",");
+    const out: string[] = [];
+    out.push(line("Ad Feedback Report"));
+    out.push(line("Platform", platformLabel));
+    out.push(line("Date range", dateRangeLabel));
+    out.push(line("Generated at", format(new Date(), "d MMM yyyy, HH:mm")));
+    out.push("");
+
+    out.push(line("Section", "Metric", "Value"));
+    out.push(line("Volume", "Leads", kpis.totalLeads));
+    out.push(line("Volume", "Closed Won", kpis.closedWonCount));
+    out.push(line("Volume", "Closed Lost", kpis.closedLostCount));
+    out.push(line("Volume", "Invalid", kpis.invalidCount));
+    out.push(line("Volume", "Conversion %", kpis.conversionPct !== null ? kpis.conversionPct.toFixed(1) : ""));
+    out.push(line("Financial", "Spend", Math.round(kpis.spend)));
+    out.push(line("Financial", "Revenue", Math.round(kpis.revenue)));
+    out.push(line("Financial", "CPL", kpis.cpl !== null ? Math.round(kpis.cpl) : ""));
+    out.push(line("Financial", "CAC", kpis.cac !== null ? Math.round(kpis.cac) : ""));
+    out.push(line("Financial", "ROAS", kpis.roas !== null ? kpis.roas.toFixed(2) : ""));
+    out.push(line("Financial", "Gross Margin", Math.round(kpis.grossMargin)));
+    out.push(line("Financial", "Net Margin", Math.round(kpis.netMargin)));
+    out.push("");
+
+    out.push(line("Reason type", "Reason", "Count"));
+    invalidReasons.forEach((r) => out.push(line("Invalid", r.reason, r.count)));
+    lostReasons.forEach((r) => out.push(line("Lost", r.reason, r.count)));
+    out.push("");
+
+    out.push(line("Note type", "Reason", "Date", "Note (PII scrubbed)"));
+    representativeNotes.forEach((n) => out.push(
+      line(
+        n.feedbackType === "invalid_lead" ? "Invalid" : n.feedbackType === "closed_lost" ? "Lost" : "Won",
+        n.reason,
+        format(n.when, "yyyy-MM-dd"),
+        n.notes,
+      ),
+    ));
+    out.push("");
+
+    out.push(line("Destination", "Closed Won"));
+    topDestinations.forEach((d) => out.push(line(d.name, d.count)));
+
+    triggerDownload(
+      new Blob([out.join("\n")], { type: "text/csv;charset=utf-8" }),
+      `${fileStem}.csv`,
+    );
+  };
+
+  const downloadPdf = async () => {
+    try {
+      setPdfBusy(true);
+      const [{ pdf }, { AdFeedbackPdfDoc }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/components/reports/AdFeedbackPdfDoc"),
+      ]);
+      const data = {
+        platform: platformLabel,
+        dateRange: dateRangeLabel,
+        generatedAt: format(new Date(), "d MMM yyyy, HH:mm"),
+        kpis: {
+          totalLeads: kpis.totalLeads,
+          invalidCount: kpis.invalidCount,
+          closedWonCount: kpis.closedWonCount,
+          closedLostCount: kpis.closedLostCount,
+          conversionPct: kpis.conversionPct,
+          spend: kpis.spend,
+          revenue: kpis.revenue,
+          cpl: kpis.cpl,
+          cac: kpis.cac,
+          roas: kpis.roas,
+          netMargin: kpis.netMargin,
+        },
+        invalidReasons,
+        lostReasons,
+        notes: representativeNotes.map((n) => ({
+          feedbackType: n.feedbackType,
+          reason: n.reason,
+          notes: n.notes,
+          when: format(n.when, "d MMM yyyy"),
+        })),
+        topDestinations,
+      };
+      const blob = await pdf(<AdFeedbackPdfDoc data={data} />).toBlob();
+      triggerDownload(blob, `${fileStem}.pdf`);
+      toast.success("PDF ready");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "PDF generation failed");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   if (!adFeedbackOn) {
     return (
       <AppLayout title="Ad Feedback">
@@ -328,9 +446,15 @@ const AdFeedbackReport = () => {
             </SelectContent>
           </Select>
         </div>
-        <Badge variant="outline" className="text-[10px]">
-          <Megaphone className="h-3 w-3 mr-1" /> Export in A4 (PDF + CSV)
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={downloadCsv} disabled={loading}>
+            <Download className="h-4 w-4 mr-2" />CSV
+          </Button>
+          <Button size="sm" onClick={downloadPdf} disabled={loading || pdfBusy}>
+            <FileDown className="h-4 w-4 mr-2" />
+            {pdfBusy ? "Preparing PDF…" : "PDF"}
+          </Button>
+        </div>
       </div>
 
       {loading ? (
