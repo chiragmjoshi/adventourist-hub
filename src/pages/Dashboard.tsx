@@ -32,6 +32,8 @@ import { toast } from "sonner";
 // touch a single file (and so a drift-detection test can compare these
 // against tailwind.config.ts).
 import { BLAZE, HORIZON, ABYSS, LAGOON, RIDGE, DRIFT } from "@/lib/brandColors";
+import { useFlag } from "@/hooks/useFlag";
+import { useMarketingSpends } from "@/hooks/useMarketingSpends";
 
 const REFETCH_MS = 60_000;
 
@@ -482,6 +484,47 @@ function DashboardBody({
   const curr = agg(periodMonths);
   const prev = agg(priorMonths);
 
+  // ─── Phase M5 — Total Marketing Spend tile (flag-gated) ───
+  // Spends can span months, so each row is allocated to every month it
+  // touches by day-overlap. Totals sum to the row's full amount by
+  // construction — same shape as the Platform ROI proration from M3.
+  const marketingSpendOn = useFlag("feature:marketing_spend");
+  const spendsQuery = useMarketingSpends();
+  const spendByMonthKey = useMemo(() => {
+    const m = new Map<string, number>();
+    if (!marketingSpendOn || !spendsQuery.data) return m;
+    const DAY = 86_400_000;
+    for (const row of spendsQuery.data) {
+      const rowStart = new Date(row.start_date);
+      const rowEnd = new Date(row.end_date);
+      const spanDays = Math.floor((rowEnd.getTime() - rowStart.getTime()) / DAY) + 1;
+      if (spanDays <= 0) continue;
+      const cursor = new Date(rowStart.getFullYear(), rowStart.getMonth(), 1);
+      const stop = new Date(rowEnd.getFullYear(), rowEnd.getMonth(), 1);
+      while (cursor <= stop) {
+        const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+        const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+        const overlapStart = Math.max(rowStart.getTime(), monthStart.getTime());
+        const overlapEnd = Math.min(rowEnd.getTime(), monthEnd.getTime());
+        const overlapDays = Math.floor((overlapEnd - overlapStart) / DAY) + 1;
+        if (overlapDays > 0) {
+          const key = monthKey(cursor);
+          m.set(key, (m.get(key) ?? 0) + Number(row.amount) * (overlapDays / spanDays));
+        }
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+    }
+    return m;
+  }, [marketingSpendOn, spendsQuery.data]);
+  const currSpend = useMemo(
+    () => periodMonths.reduce((s, m) => s + (spendByMonthKey.get(m.monthKey) ?? 0), 0),
+    [periodMonths, spendByMonthKey]
+  );
+  const prevSpend = useMemo(
+    () => priorMonths.reduce((s, m) => s + (spendByMonthKey.get(m.monthKey) ?? 0), 0),
+    [priorMonths, spendByMonthKey]
+  );
+
   // sparkline data — last 6 months
   const last6 = data.monthly.slice(-6);
   // 12-month performance chart — always last 12 months
@@ -574,6 +617,16 @@ function DashboardBody({
           spark={last6.map((m) => ({ x: m.monthLabel, y: m.netMarginPct }))}
           sparkColor={BLAZE}
         />
+        {marketingSpendOn && (
+          <KpiCard
+            accent={HORIZON}
+            title="Total Marketing Spend"
+            value={fmtCompactINR(currSpend)}
+            delta={deltaPct(currSpend, prevSpend)}
+            spark={last6.map((m) => ({ x: m.monthLabel, y: Math.round(spendByMonthKey.get(m.monthKey) ?? 0) }))}
+            sparkColor={HORIZON}
+          />
+        )}
       </div>
 
       {/* SECTION C — Combo chart */}
