@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map, Megaphone, MessageSquareText } from "lucide-react";
+import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map, Megaphone, MessageSquareText, Receipt } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ const ReportsHub = () => {
   const { hasPermission } = useRBAC();
   const marketingSpendOn = useFlag("feature:marketing_spend");
   const adFeedbackOn = useFlag("feature:ad_feedback");
+  const expenseEntriesOn = useFlag("feature:expense_entries");
 
   const reports = [
     { id: "sales", name: "Sales Report", desc: "Lead volume, conversion funnel, team performance", icon: Users, preview: "View leads data", url: "/admin/reports/sales", perm: "reports_sales" },
@@ -38,6 +39,17 @@ const ReportsHub = () => {
       preview: "View ad feedback",
       url: "/admin/reports/ad-feedback",
       perm: "reports_ad_feedback",
+      restrictLabel: "Admin only",
+      isNew: true,
+    }] : []),
+    ...(expenseEntriesOn ? [{
+      id: "expenses",
+      name: "Expenses Report",
+      desc: "Monthly operating expenses by head + sub-head. Line + stacked-bar charts, top sub-heads, CSV export.",
+      icon: Receipt,
+      preview: "View expenses",
+      url: "/admin/reports/expenses",
+      perm: "reports_expenses",
       restrictLabel: "Admin only",
       isNew: true,
     }] : []),
