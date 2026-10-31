@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Map, Layout, DollarSign, Truck, BarChart3,
-  Database, UserCheck, Shield, ChevronDown, Settings, Zap, Crown, LogOut,
+  Database, ChevronDown, Settings, Zap, Crown, LogOut,
   Bell, KanbanSquare, BookOpen, Wallet, Megaphone, MessageSquareText,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -121,13 +121,12 @@ export function AppSidebar() {
   ];
 
   const showDb = hasPermission("db_management") || hasRole("super_admin", "admin");
-  const showUserMgmt = hasRole("super_admin");
   const showSettings = hasRole("super_admin");
   const showAutomations = hasRole("admin", "super_admin");
 
-  // Admin section is rendered custom (DB has a sub-menu, Settings has a
-  // divider), so it isn't in the sections array above.
-  const anyAdminItem = showAutomations || showDb || showUserMgmt || showSettings;
+  // User + Role management live under Settings → Company → Team & Access,
+  // so we don't duplicate them in the sidebar.
+  const anyAdminItem = showAutomations || showDb || showSettings;
 
   const dbSubItems = [
     { title: "Destinations", url: "/admin/db/destinations" },
@@ -244,27 +243,6 @@ export function AppSidebar() {
                       )}
                     </Collapsible>
                   </SidebarMenuItem>
-                )}
-
-                {showUserMgmt && (
-                  <>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <NavLink to="/admin/user-management" className={({ isActive }) => linkClasses(isActive)}>
-                          <UserCheck className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span>User Management</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <NavLink to="/admin/role-management" className={({ isActive }) => linkClasses(isActive)}>
-                          <Shield className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span>Role Management</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </>
                 )}
 
                 {showSettings && (
