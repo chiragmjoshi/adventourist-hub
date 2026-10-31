@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map, Megaphone, MessageSquareText, Receipt } from "lucide-react";
+import { Users, DollarSign, TrendingUp, MapPin, BarChart3, Trophy, Lock, Truck, Map, Megaphone, MessageSquareText, Receipt, Scale } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,17 @@ const ReportsHub = () => {
       preview: "View expenses",
       url: "/admin/reports/expenses",
       perm: "reports_expenses",
+      restrictLabel: "Admin only",
+      isNew: true,
+    }] : []),
+    ...(marketingSpendOn && expenseEntriesOn ? [{
+      id: "pnl",
+      name: "Combined P&L",
+      desc: "Revenue − Vendor − Marketing − Operating = Net Profit. Monthly, stacked chart, CSV export.",
+      icon: Scale,
+      preview: "View P&L",
+      url: "/admin/reports/pnl",
+      perm: "reports_pnl",
       restrictLabel: "Admin only",
       isNew: true,
     }] : []),
