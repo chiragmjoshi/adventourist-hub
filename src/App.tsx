@@ -71,6 +71,7 @@ const DestinationReport = lazy(() => import("./pages/reports/DestinationReport")
 const PlatformROI = lazy(() => import("./pages/reports/PlatformROI"));
 const PlatformPerformance = lazy(() => import("./pages/reports/PlatformPerformance"));
 const AdFeedbackReport = lazy(() => import("./pages/reports/AdFeedbackReport"));
+const Expenses = lazy(() => import("./pages/Expenses"));
 const TeamPerformance = lazy(() => import("./pages/reports/TeamPerformance"));
 const VendorReport = lazy(() => import("./pages/reports/VendorReport"));
 const TripOperationsReport = lazy(() => import("./pages/reports/TripOperationsReport"));
@@ -219,6 +220,7 @@ const App = () => {
             <Route path="/admin/reports/platform-roi" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Platform ROI"><PlatformROI /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/admin/reports/platform-performance" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Platform Performance"><PlatformPerformance /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/admin/reports/ad-feedback" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Ad Feedback"><AdFeedbackReport /></RoleProtectedRoute></ProtectedRoute>} />
+            <Route path="/admin/expenses" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Operating Expenses"><Expenses /></RoleProtectedRoute></ProtectedRoute>} />
             <Route path="/admin/reports/team" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Team Performance"><TeamPerformance /></RoleProtectedRoute></ProtectedRoute>} />
            <Route path="/admin/reports/vendors" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin", "super_admin"]} pageName="Vendor Report"><VendorReport /></RoleProtectedRoute></ProtectedRoute>} />
            <Route path="/admin/reports/trip-operations" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["operations", "admin", "super_admin"]} pageName="Trip Operations"><TripOperationsReport /></RoleProtectedRoute></ProtectedRoute>} />

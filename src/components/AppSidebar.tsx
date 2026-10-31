@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Map, Layout, DollarSign, Truck, BarChart3,
   Database, UserCheck, Shield, ChevronDown, Settings, Zap, Crown, LogOut,
-  Bell, KanbanSquare, BookOpen,
+  Bell, KanbanSquare, BookOpen, Wallet,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRBAC } from "@/hooks/useRBAC";
+import { useFlag } from "@/hooks/useFlag";
 import { useAuth } from "@/contexts/AuthContext";
 import logoHorizontal from "@/assets/logo-horizontal.webp";
 import logoMain from "@/assets/logo-main.webp";
@@ -34,6 +35,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { hasPermission, hasRole, role } = useRBAC();
+  const expenseEntriesOn = useFlag("feature:expense_entries");
   const { profile, signOut } = useAuth();
   const isDbActive = location.pathname.startsWith("/admin/db");
 
@@ -73,6 +75,7 @@ export function AppSidebar() {
     { title: "Reminders", url: "/admin/reminders", icon: Bell, show: true, badge: dueCount },
     { title: "Vendors", url: "/admin/vendors", icon: Truck, show: hasPermission("vendors") },
     { title: "Reports", url: "/admin/reports", icon: BarChart3, show: hasPermission("reports") },
+    { title: "Expenses", url: "/admin/expenses", icon: Wallet, show: expenseEntriesOn && hasRole("admin", "super_admin") },
     { title: "Automations", url: "/admin/automations", icon: Zap, show: hasRole("admin", "super_admin") },
   ].filter((i) => i.show);
 
