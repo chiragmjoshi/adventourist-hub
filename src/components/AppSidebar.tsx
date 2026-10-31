@@ -201,7 +201,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <NavLink to="/admin/automations" className={({ isActive }) => linkClasses(isActive)}>
                         <Zap className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span>Automations</span>}
+                        {!collapsed && <span>Comms Automation</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
