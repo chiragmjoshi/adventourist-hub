@@ -96,3 +96,23 @@ export function useDeleteExpenseEntry() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["expense_entries"] }),
   });
 }
+
+/**
+ * Phase E3 — stop a recurring series from a given month onward.
+ * Deletes this row + every future row sharing recurring_group_id,
+ * leaving past rows intact as historical records.
+ */
+export function useStopRecurring() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { recurringGroupId: string; fromDate: string }) => {
+      const { error } = await supabase
+        .from("expense_entries" as never)
+        .delete()
+        .eq("recurring_group_id", args.recurringGroupId)
+        .gte("entry_date", args.fromDate);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense_entries"] }),
+  });
+}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { addMonths, format, parse, startOfMonth, subMonths } from "date-fns";
-import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { formatINR } from "@/lib/formatINR";
 import { useFlag } from "@/hooks/useFlag";
 import {
-  ExpenseEntry, useDeleteExpenseEntry, useExpenseEntries,
+  ExpenseEntry, useDeleteExpenseEntry, useExpenseEntries, useStopRecurring,
 } from "@/hooks/useExpenseEntries";
 import ExpenseEntryDialog from "@/components/expenses/ExpenseEntryDialog";
 
@@ -48,9 +48,11 @@ const Expenses = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<ExpenseEntry | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<ExpenseEntry | null>(null);
+  const [entryToStopRecurring, setEntryToStopRecurring] = useState<ExpenseEntry | null>(null);
 
   const entriesQuery = useExpenseEntries(monthKey);
   const deleteEntry = useDeleteExpenseEntry();
+  const stopRecurring = useStopRecurring();
 
   const setMonth = (d: Date) => {
     const next = new URLSearchParams(searchParams);
@@ -196,6 +198,17 @@ const Expenses = () => {
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
+                              {r.is_recurring && r.recurring_group_id && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Stop recurring from this month"
+                                  title="Stop recurring from this month"
+                                  onClick={() => setEntryToStopRecurring(r)}
+                                >
+                                  <Repeat className="h-3.5 w-3.5 text-[hsl(var(--horizon))]" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -223,6 +236,44 @@ const Expenses = () => {
         initial={editingEntry}
         defaultEntryDate={`${monthKey}-01`}
       />
+
+      <AlertDialog open={!!entryToStopRecurring} onOpenChange={(open) => !open && setEntryToStopRecurring(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Stop recurring from this month?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {entryToStopRecurring && (
+                <>
+                  This deletes <strong>{entryToStopRecurring.sub_head || entryToStopRecurring.head}</strong>{" "}
+                  from <strong>{format(new Date(entryToStopRecurring.entry_date), "MMMM yyyy")}</strong> onward.
+                  Past rows in the series stay as history. This cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={stopRecurring.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={stopRecurring.isPending}
+              onClick={async () => {
+                if (!entryToStopRecurring?.recurring_group_id) return;
+                try {
+                  await stopRecurring.mutateAsync({
+                    recurringGroupId: entryToStopRecurring.recurring_group_id,
+                    fromDate: entryToStopRecurring.entry_date,
+                  });
+                  toast.success("Recurring series stopped");
+                  setEntryToStopRecurring(null);
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Could not stop series");
+                }
+              }}
+            >
+              {stopRecurring.isPending ? "Stopping…" : "Stop recurring"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!entryToDelete} onOpenChange={(open) => !open && setEntryToDelete(null)}>
         <AlertDialogContent>
