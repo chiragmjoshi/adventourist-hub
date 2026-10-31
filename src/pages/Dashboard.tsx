@@ -163,14 +163,35 @@ function cashflowEffectiveDate(c: { booking_date?: string | null; travel_start_d
 }
 
 /* ───────── main fetch ───────── */
-async function fetchDashboardData(): Promise<DashboardData> {
+//
+// Phase E4 — expense source flips with the feature:expense_entries flag:
+//   flag OFF -> legacy monthly_expenses lumpsums (one row per month)
+//   flag ON  -> expense_entries line items summed by month_year
+// Backfill migration 20261031130000_backfill_monthly_expenses.sql seeded
+// expense_entries with one 'Other / Legacy lumpsum' row per historical
+// monthly_expenses, so numbers are identical across the switch.
+async function fetchDashboardData(useExpenseEntries: boolean): Promise<DashboardData> {
   const now = new Date();
+
+  const expenseFetch = useExpenseEntries
+    ? (async () => {
+        const rows = await fetchAll<any>(() =>
+          supabase.from("expense_entries" as never).select("month_year, amount"));
+        const bucket = new Map<string, number>();
+        for (const r of rows) {
+          const key = (r as any).month_year as string;
+          bucket.set(key, (bucket.get(key) ?? 0) + Number((r as any).amount ?? 0));
+        }
+        // Shape to the legacy {month_year, amount} rows the loop downstream expects.
+        return Array.from(bucket.entries()).map(([month_year, amount]) => ({ month_year, amount }));
+      })()
+    : fetchAll<any>(() => supabase.from("monthly_expenses").select("*"));
 
   const [leadRows, cashflows, expenseRows, destinationRows] = await Promise.all([
     fetchAll<any>(() => supabase.from("leads").select("id, created_at, sales_status, disposition, destination_id, platform")),
     fetchAll<any>(() => supabase.from("trip_cashflow")
       .select("id, lead_id, pax_count, margin_percent, gst_billing, created_at, booking_date, travel_start_date, destination_id, trip_stage")),
-    fetchAll<any>(() => supabase.from("monthly_expenses").select("*")),
+    expenseFetch,
     fetchAll<any>(() => supabase.from("destinations").select("id, name")),
   ]);
   const leadsRes = { data: leadRows };
@@ -392,11 +413,12 @@ const Dashboard = () => {
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const { profile } = useAuth();
   const canEditExpenses = profile?.role === "super_admin" || profile?.role === "admin";
+  const expenseEntriesOn = useFlag("feature:expense_entries");
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-bi"],
-    queryFn: fetchDashboardData,
+    queryKey: ["dashboard-bi", expenseEntriesOn ? "entries" : "lumpsum"],
+    queryFn: () => fetchDashboardData(expenseEntriesOn),
     refetchInterval: REFETCH_MS,
   });
 
@@ -418,6 +440,7 @@ const Dashboard = () => {
         customTo={customTo}
         setCustom={(f, t) => { setCustomFrom(f); setCustomTo(t); setPeriod("custom"); }}
         canEditExpenses={canEditExpenses}
+        expenseEntriesOn={expenseEntriesOn}
         onExpenseSaved={() => qc.invalidateQueries({ queryKey: ["dashboard-bi"] })}
       />
     </AppLayout>
@@ -439,7 +462,7 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
 ];
 
 function DashboardBody({
-  data, period, setPeriod, customFrom, customTo, setCustom, canEditExpenses, onExpenseSaved,
+  data, period, setPeriod, customFrom, customTo, setCustom, canEditExpenses, expenseEntriesOn, onExpenseSaved,
 }: {
   data: DashboardData;
   period: PeriodKey;
@@ -448,6 +471,7 @@ function DashboardBody({
   customTo?: Date;
   setCustom: (from: Date, to: Date) => void;
   canEditExpenses: boolean;
+  expenseEntriesOn: boolean;
   onExpenseSaved: () => void;
 }) {
   const window = useMemo(() => {
@@ -735,7 +759,18 @@ function DashboardBody({
                       <td className="py-2 text-right">{pct(m.conversionRate)}</td>
                       {canEditExpenses && (
                         <td className="py-2 text-right">
-                          <ExpenseEditor month={m} onSaved={onExpenseSaved} />
+                          {expenseEntriesOn ? (
+                            <a
+                              href={`/admin/expenses?month=${m.monthKey}`}
+                              className="inline-block p-1 rounded hover:bg-muted text-muted-foreground hover:text-abyss"
+                              title={`Open ${m.monthLabel} in Expenses`}
+                              aria-label={`Edit expenses for ${m.monthLabel}`}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </a>
+                          ) : (
+                            <ExpenseEditor month={m} onSaved={onExpenseSaved} />
+                          )}
                         </td>
                       )}
                     </tr>
