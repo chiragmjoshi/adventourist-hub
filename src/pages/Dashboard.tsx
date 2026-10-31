@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, ComposedChart, Line, Area, AreaChart,
 } from "recharts";
-import { TrendingUp, TrendingDown, Pencil, Minus, CalendarIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, Pencil, Minus, CalendarIcon, ArrowRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -407,6 +409,8 @@ async function fetchDashboardData(useExpenseEntries: boolean): Promise<Dashboard
 }
 
 /* ───────── component ───────── */
+const VALID_TABS = new Set(["overview", "revenue", "leads", "marketing"]);
+
 const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodKey>("this_month");
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
@@ -415,6 +419,17 @@ const Dashboard = () => {
   const canEditExpenses = profile?.role === "super_admin" || profile?.role === "admin";
   const expenseEntriesOn = useFlag("feature:expense_entries");
   const qc = useQueryClient();
+
+  // Phase D — tab state synced to ?tab=overview|revenue|leads|marketing
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get("tab") || "overview";
+  const currentTab = VALID_TABS.has(rawTab) ? rawTab : "overview";
+  const setTab = (t: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (t === "overview") next.delete("tab");
+    else next.set("tab", t);
+    setSearchParams(next, { replace: true });
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-bi", expenseEntriesOn ? "entries" : "lumpsum"],
@@ -441,6 +456,8 @@ const Dashboard = () => {
         setCustom={(f, t) => { setCustomFrom(f); setCustomTo(t); setPeriod("custom"); }}
         canEditExpenses={canEditExpenses}
         expenseEntriesOn={expenseEntriesOn}
+        currentTab={currentTab}
+        setTab={setTab}
         onExpenseSaved={() => qc.invalidateQueries({ queryKey: ["dashboard-bi"] })}
       />
     </AppLayout>
@@ -462,7 +479,8 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
 ];
 
 function DashboardBody({
-  data, period, setPeriod, customFrom, customTo, setCustom, canEditExpenses, expenseEntriesOn, onExpenseSaved,
+  data, period, setPeriod, customFrom, customTo, setCustom, canEditExpenses, expenseEntriesOn,
+  currentTab, setTab, onExpenseSaved,
 }: {
   data: DashboardData;
   period: PeriodKey;
@@ -472,6 +490,8 @@ function DashboardBody({
   setCustom: (from: Date, to: Date) => void;
   canEditExpenses: boolean;
   expenseEntriesOn: boolean;
+  currentTab: string;
+  setTab: (t: string) => void;
   onExpenseSaved: () => void;
 }) {
   const window = useMemo(() => {
@@ -507,6 +527,19 @@ function DashboardBody({
   };
   const curr = agg(periodMonths);
   const prev = agg(priorMonths);
+
+  // Phase D — "where to look next" nudge for the Overview tab.
+  // Pick the metric with the biggest absolute MoM delta >= 15% and
+  // point the user at the tab that explains it.
+  const insight = (() => {
+    const items = [
+      { tab: "leads",   label: "Leads",          pct: deltaPct(curr.leads, prev.leads) },
+      { tab: "revenue", label: "Revenue",        pct: deltaPct(curr.revenue, prev.revenue) },
+      { tab: "revenue", label: "Gross Margin %", pct: curr.grossPct - prev.grossPct },
+    ];
+    const biggest = items.filter(d => Math.abs(d.pct) >= 15).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))[0];
+    return biggest ?? null;
+  })();
 
   // ─── Phase M5 — Total Marketing Spend tile (flag-gated) ───
   // Spends can span months, so each row is allocated to every month it
@@ -564,98 +597,186 @@ function DashboardBody({
 
   return (
     <div className="space-y-6">
-      {/* SECTION A — Period selector */}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <span className="text-xs text-muted-foreground hidden md:inline">
-          {format(window.from, "d MMM yyyy")} – {format(window.to, "d MMM yyyy")}
-        </span>
-        <div className="inline-flex flex-wrap rounded-lg border border-border bg-white p-1 shadow-sm">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => setPeriod(opt.key)}
-              className={
-                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors " +
-                (period === opt.key
-                  ? "bg-abyss text-white"
-                  : "text-muted-foreground hover:text-abyss")
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
-          <CustomRangePicker
-            active={period === "custom"}
-            from={customFrom}
-            to={customTo}
-            onChange={setCustom}
-          />
+      {/* Period selector + tab bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs value={currentTab} onValueChange={setTab}>
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="revenue">Revenue</TabsTrigger>
+            <TabsTrigger value="leads">Leads</TabsTrigger>
+            {marketingSpendOn && <TabsTrigger value="marketing">Marketing</TabsTrigger>}
+          </TabsList>
+        </Tabs>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground hidden md:inline">
+            {format(window.from, "d MMM yyyy")} – {format(window.to, "d MMM yyyy")}
+          </span>
+          <div className="inline-flex flex-wrap rounded-lg border border-border bg-white p-1 shadow-sm">
+            {PERIOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setPeriod(opt.key)}
+                className={
+                  "px-3 py-1.5 text-xs font-medium rounded-md transition-colors " +
+                  (period === opt.key
+                    ? "bg-abyss text-white"
+                    : "text-muted-foreground hover:text-abyss")
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+            <CustomRangePicker
+              active={period === "custom"}
+              from={customFrom}
+              to={customTo}
+              onChange={setCustom}
+            />
+          </div>
         </div>
       </div>
 
-      {/* SECTION B — KPI strip */}
-      <SectionTitle>Performance Snapshot</SectionTitle>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <KpiCard
-          accent={LAGOON} title="Total Leads"
-          value={curr.leads.toLocaleString("en-IN")}
-          delta={deltaPct(curr.leads, prev.leads)}
-          spark={last6.map((m) => ({ x: m.monthLabel, y: m.leads }))}
-          sparkColor={LAGOON}
-        />
-        <KpiCard
-          accent={LAGOON} title="Files Closed"
-          value={curr.closed.toLocaleString("en-IN")}
-          delta={deltaPct(curr.closed, prev.closed)}
-          spark={last6.map((m) => ({ x: m.monthLabel, y: m.filesClosed }))}
-          sparkColor={LAGOON}
-        />
-        <KpiCard
-          accent={LAGOON} title="Conversion Rate"
-          value={pct(curr.conv)}
-          delta={curr.conv - prev.conv}
-          deltaSuffix="pp" isPP
-          spark={last6.map((m) => ({ x: m.monthLabel, y: m.conversionRate }))}
-          sparkColor={LAGOON}
-        />
-        <KpiCard
-          accent={BLAZE} title="Revenue"
-          value={fmtCompactINR(curr.revenue)}
-          delta={deltaPct(curr.revenue, prev.revenue)}
-          spark={last6.map((m) => ({ x: m.monthLabel, y: m.revenue }))}
-          sparkColor={BLAZE}
-        />
-        <KpiCard
-          accent={BLAZE} title="Gross Margin %"
-          value={pct(curr.grossPct)}
-          delta={curr.grossPct - prev.grossPct}
-          deltaSuffix="pp" isPP
-          spark={last6.map((m) => ({ x: m.monthLabel, y: m.marginPct }))}
-          sparkColor={BLAZE}
-        />
-        <KpiCard
-          accent={BLAZE} title="Net Margin %"
-          value={pct(curr.netPct)}
-          delta={curr.netPct - prev.netPct}
-          deltaSuffix="pp" isPP
-          spark={last6.map((m) => ({ x: m.monthLabel, y: m.netMarginPct }))}
-          sparkColor={BLAZE}
-        />
-        {marketingSpendOn && (
-          <KpiCard
-            accent={HORIZON}
-            title="Total Marketing Spend"
-            value={fmtCompactINR(currSpend)}
-            delta={deltaPct(currSpend, prevSpend)}
-            spark={last6.map((m) => ({ x: m.monthLabel, y: Math.round(spendByMonthKey.get(m.monthKey) ?? 0) }))}
-            sparkColor={HORIZON}
-          />
-        )}
-      </div>
+      {/* ─── OVERVIEW TAB ─── */}
+      {currentTab === "overview" && (
+        <>
+          {insight && (
+            <div className="rounded-md border border-blaze/30 bg-blaze/5 p-3 flex items-center gap-2 text-sm">
+              {insight.pct > 0
+                ? <TrendingUp className="h-4 w-4 text-ridge shrink-0" />
+                : <TrendingDown className="h-4 w-4 text-destructive shrink-0" />}
+              <span className="text-foreground">
+                <strong>{insight.label}</strong> {insight.pct > 0 ? "up" : "down"}{" "}
+                <strong>{Math.abs(insight.pct).toFixed(1)}%</strong> vs prior period —
+                <button
+                  onClick={() => setTab(insight.tab)}
+                  className="ml-1 text-blaze font-medium hover:underline"
+                >
+                  check the {insight.tab} tab →
+                </button>
+              </span>
+            </div>
+          )}
 
-      {/* SECTION C — Combo chart */}
-      <SectionTitle>12-Month Business Performance</SectionTitle>
-      <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+          {/* 4 anchor KPIs */}
+          <SectionTitle>Performance Snapshot</SectionTitle>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard
+              accent={LAGOON} title="Total Leads"
+              value={curr.leads.toLocaleString("en-IN")}
+              delta={deltaPct(curr.leads, prev.leads)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.leads }))}
+              sparkColor={LAGOON}
+            />
+            <KpiCard
+              accent={BLAZE} title="Revenue"
+              value={fmtCompactINR(curr.revenue)}
+              delta={deltaPct(curr.revenue, prev.revenue)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.revenue }))}
+              sparkColor={BLAZE}
+            />
+            <KpiCard
+              accent={BLAZE} title="Gross Margin %"
+              value={pct(curr.grossPct)}
+              delta={curr.grossPct - prev.grossPct}
+              deltaSuffix="pp" isPP
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.marginPct }))}
+              sparkColor={BLAZE}
+            />
+            <KpiCard
+              accent={BLAZE} title="Net Margin %"
+              value={pct(curr.netPct)}
+              delta={curr.netPct - prev.netPct}
+              deltaSuffix="pp" isPP
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.netMarginPct }))}
+              sparkColor={BLAZE}
+            />
+          </div>
+
+          {/* Lifetime + This-vs-Last */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-drift/40 border border-border rounded-xl shadow-sm p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-abyss mb-3">Lifetime Business Snapshot</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                <Stat label="Total Leads" value={data.lifetime.totalLeads.toLocaleString("en-IN")} />
+                <Stat label="Total Trips Closed" value={data.lifetime.totalClosed.toLocaleString("en-IN")} />
+                <Stat label="Avg Monthly Leads" value={data.lifetime.avgMonthlyLeads.toFixed(0)} />
+                <Stat label="Avg Monthly Closures" value={data.lifetime.avgMonthlyClosed.toFixed(1)} />
+                <Stat label="Avg Ticket Size" value={fmtCompactINR(data.lifetime.avgTicket)} />
+                <Stat label="Conversion Rate" value={pct(data.lifetime.conversionRate)} />
+              </div>
+            </div>
+
+            <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">This Month vs Last Month</h3>
+              {tm && lm ? (
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="text-left text-muted-foreground border-b border-border">
+                      <th className="py-2 font-medium">Metric</th>
+                      <th className="py-2 font-medium text-right">This</th>
+                      <th className="py-2 font-medium text-right">Last</th>
+                      <th className="py-2 font-medium text-right">Δ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <CmpRow label="Leads" curr={tm.leads} prev={lm.leads} />
+                    <CmpRow label="Closed" curr={tm.filesClosed} prev={lm.filesClosed} />
+                    <CmpRow label="Revenue" curr={tm.revenue} prev={lm.revenue} formatter={fmtCompactINR} />
+                    <CmpRow label="Gross Margin %" curr={tm.marginPct} prev={lm.marginPct} isPP />
+                    <CmpRow label="Expenses" curr={tm.expenses} prev={lm.expenses} formatter={fmtCompactINR} />
+                    <CmpRow label="Net Margin %" curr={tm.netMarginPct} prev={lm.netMarginPct} isPP />
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-xs text-muted-foreground py-6 text-center">
+                  Add at least two months of leads to see a month-over-month comparison.
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ─── REVENUE TAB ─── */}
+      {currentTab === "revenue" && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard
+              accent={BLAZE} title="Revenue"
+              value={fmtCompactINR(curr.revenue)}
+              delta={deltaPct(curr.revenue, prev.revenue)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.revenue }))}
+              sparkColor={BLAZE}
+            />
+            <KpiCard
+              accent={BLAZE} title="Gross Margin %"
+              value={pct(curr.grossPct)}
+              delta={curr.grossPct - prev.grossPct}
+              deltaSuffix="pp" isPP
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.marginPct }))}
+              sparkColor={BLAZE}
+            />
+            <KpiCard
+              accent={HORIZON} title="Operating Expenses"
+              value={fmtCompactINR(curr.expenses)}
+              delta={deltaPct(curr.expenses, prev.expenses)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.expenses }))}
+              sparkColor={HORIZON}
+            />
+            <KpiCard
+              accent={BLAZE} title="Net Margin %"
+              value={pct(curr.netPct)}
+              delta={curr.netPct - prev.netPct}
+              deltaSuffix="pp" isPP
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.netMarginPct }))}
+              sparkColor={BLAZE}
+            />
+          </div>
+
+          {/* 12-month combo */}
+          <SectionTitle>12-Month Business Performance</SectionTitle>
+          <div className="bg-white border border-border rounded-xl shadow-sm p-5">
         <ResponsiveContainer width="100%" height={320}>
           <ComposedChart data={last12} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
@@ -696,141 +817,110 @@ function DashboardBody({
         </ResponsiveContainer>
       </div>
 
-      {/* SECTION D — two col */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* LEFT 60% */}
-        <div className="lg:col-span-3 space-y-4">
-          <div className="bg-white border border-border rounded-xl shadow-sm p-5">
-            <SectionTitle className="mb-3">Revenue · Margin · Expenses — Monthly Breakdown</SectionTitle>
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={periodMonths.length > 0 ? periodMonths : last12} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
-                <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
-                <YAxis
-                  yAxisId="left"
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(v) => `₹${(v / 1e5).toFixed(0)}L`}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(v) => `${v.toFixed(0)}%`}
-                />
-                <Tooltip
-                  contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }}
-                  formatter={(value: any, name: string) => {
-                    if (name === "Net Margin %") return [`${Number(value).toFixed(1)}%`, name];
-                    return [fmtCompactINR(Number(value)), name];
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar yAxisId="left" dataKey="vendorCost" stackId="a" name="Vendor Cost" fill={DRIFT} stroke={ABYSS} />
-                <Bar yAxisId="left" dataKey="grossMargin" stackId="a" name="Gross Margin" fill={BLAZE} />
-                <Bar yAxisId="left" dataKey="expenses" name="Expenses" fill={HORIZON} />
-                <Line yAxisId="right" type="monotone" dataKey="netMarginPct" name="Net Margin %" stroke={RIDGE} strokeWidth={2.5} dot={{ r: 3 }} />
-              </ComposedChart>
-            </ResponsiveContainer>
+      {/* Revenue · Margin · Expenses breakdown — full-width inside Revenue tab */}
+      <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+        <SectionTitle className="mb-3">Revenue · Margin · Expenses — Monthly Breakdown</SectionTitle>
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={periodMonths.length > 0 ? periodMonths : last12} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
+            <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
+            <YAxis yAxisId="left" tick={{ fontSize: 12 }} tickFormatter={(v) => `₹${(v / 1e5).toFixed(0)}L`} />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+            <Tooltip
+              contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }}
+              formatter={(value: any, name: string) => {
+                if (name === "Net Margin %") return [`${Number(value).toFixed(1)}%`, name];
+                return [fmtCompactINR(Number(value)), name];
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar yAxisId="left" dataKey="vendorCost" stackId="a" name="Vendor Cost" fill={DRIFT} stroke={ABYSS} />
+            <Bar yAxisId="left" dataKey="grossMargin" stackId="a" name="Gross Margin" fill={BLAZE} />
+            <Bar yAxisId="left" dataKey="expenses" name="Expenses" fill={HORIZON} />
+            <Line yAxisId="right" type="monotone" dataKey="netMarginPct" name="Net Margin %" stroke={RIDGE} strokeWidth={2.5} dot={{ r: 3 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
 
-            {/* Compact table — last 6 months */}
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="text-left text-muted-foreground border-b border-border">
-                    <th className="py-2 font-medium">Month</th>
-                    <th className="py-2 font-medium text-right">Revenue</th>
-                    <th className="py-2 font-medium text-right">Gross Margin</th>
-                    <th className="py-2 font-medium text-right">Expenses</th>
-                    <th className="py-2 font-medium text-right">Net Margin</th>
-                    <th className="py-2 font-medium text-right">Conv %</th>
-                    {canEditExpenses && <th className="py-2 w-8" />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.monthly.slice(-6).map((m) => (
-                    <tr key={m.monthKey} className="border-b border-border/50 last:border-0">
-                      <td className="py-2 text-abyss font-medium">{m.monthLabel}</td>
-                      <td className="py-2 text-right">{fmtCompactINR(m.revenue)}</td>
-                      <td className="py-2 text-right">{fmtCompactINR(m.grossMargin)}</td>
-                      <td className="py-2 text-right">{fmtCompactINR(m.expenses)}</td>
-                      <td className={"py-2 text-right font-medium " + (m.netMargin >= 0 ? "text-ridge" : "text-destructive")}>
-                        {fmtCompactINR(m.netMargin)}
-                      </td>
-                      <td className="py-2 text-right">{pct(m.conversionRate)}</td>
-                      {canEditExpenses && (
-                        <td className="py-2 text-right">
-                          {expenseEntriesOn ? (
-                            <a
-                              href={`/admin/expenses?month=${m.monthKey}`}
-                              className="inline-block p-1 rounded hover:bg-muted text-muted-foreground hover:text-abyss"
-                              title={`Open ${m.monthLabel} in Expenses`}
-                              aria-label={`Edit expenses for ${m.monthLabel}`}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </a>
-                          ) : (
-                            <ExpenseEditor month={m} onSaved={onExpenseSaved} />
-                          )}
-                        </td>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="text-left text-muted-foreground border-b border-border">
+                <th className="py-2 font-medium">Month</th>
+                <th className="py-2 font-medium text-right">Revenue</th>
+                <th className="py-2 font-medium text-right">Gross Margin</th>
+                <th className="py-2 font-medium text-right">Expenses</th>
+                <th className="py-2 font-medium text-right">Net Margin</th>
+                <th className="py-2 font-medium text-right">Conv %</th>
+                {canEditExpenses && <th className="py-2 w-8" />}
+              </tr>
+            </thead>
+            <tbody>
+              {data.monthly.slice(-6).map((m) => (
+                <tr key={m.monthKey} className="border-b border-border/50 last:border-0">
+                  <td className="py-2 text-abyss font-medium">{m.monthLabel}</td>
+                  <td className="py-2 text-right">{fmtCompactINR(m.revenue)}</td>
+                  <td className="py-2 text-right">{fmtCompactINR(m.grossMargin)}</td>
+                  <td className="py-2 text-right">{fmtCompactINR(m.expenses)}</td>
+                  <td className={"py-2 text-right font-medium " + (m.netMargin >= 0 ? "text-ridge" : "text-destructive")}>
+                    {fmtCompactINR(m.netMargin)}
+                  </td>
+                  <td className="py-2 text-right">{pct(m.conversionRate)}</td>
+                  {canEditExpenses && (
+                    <td className="py-2 text-right">
+                      {expenseEntriesOn ? (
+                        <a
+                          href={`/admin/expenses?month=${m.monthKey}`}
+                          className="inline-block p-1 rounded hover:bg-muted text-muted-foreground hover:text-abyss"
+                          title={`Open ${m.monthLabel} in Expenses`}
+                          aria-label={`Edit expenses for ${m.monthLabel}`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <ExpenseEditor month={m} onSaved={onExpenseSaved} />
                       )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT 40% */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Lifetime */}
-          <div className="bg-drift/40 border border-border rounded-xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-abyss mb-3">Lifetime Business Snapshot</h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <Stat label="Total Leads" value={data.lifetime.totalLeads.toLocaleString("en-IN")} />
-              <Stat label="Total Trips Closed" value={data.lifetime.totalClosed.toLocaleString("en-IN")} />
-              <Stat label="Avg Monthly Leads" value={data.lifetime.avgMonthlyLeads.toFixed(0)} />
-              <Stat label="Avg Monthly Closures" value={data.lifetime.avgMonthlyClosed.toFixed(1)} />
-              <Stat label="Avg Ticket Size" value={fmtCompactINR(data.lifetime.avgTicket)} />
-              <Stat label="Conversion Rate" value={pct(data.lifetime.conversionRate)} />
-            </div>
-          </div>
-
-          {/* This Month vs Last Month */}
-          <div className="bg-white border border-border rounded-xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">This Month vs Last Month</h3>
-            {tm && lm ? (
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="text-left text-muted-foreground border-b border-border">
-                    <th className="py-2 font-medium">Metric</th>
-                    <th className="py-2 font-medium text-right">This</th>
-                    <th className="py-2 font-medium text-right">Last</th>
-                    <th className="py-2 font-medium text-right">Δ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <CmpRow label="Leads" curr={tm.leads} prev={lm.leads} />
-                  <CmpRow label="Closed" curr={tm.filesClosed} prev={lm.filesClosed} />
-                  <CmpRow label="Revenue" curr={tm.revenue} prev={lm.revenue} formatter={fmtCompactINR} />
-                  <CmpRow label="Gross Margin %" curr={tm.marginPct} prev={lm.marginPct} isPP />
-                  <CmpRow label="Expenses" curr={tm.expenses} prev={lm.expenses} formatter={fmtCompactINR} />
-                  <CmpRow label="Net Margin %" curr={tm.netMarginPct} prev={lm.netMarginPct} isPP />
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-xs text-muted-foreground py-6 text-center">
-                Add at least two months of leads to see a month-over-month comparison.
-              </p>
-            )}
-          </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
+        </>
+      )}
 
-      {/* SECTION E — bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Top Destinations */}
-        <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+      {/* ─── LEADS TAB ─── */}
+      {currentTab === "leads" && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <KpiCard
+              accent={LAGOON} title="Total Leads"
+              value={curr.leads.toLocaleString("en-IN")}
+              delta={deltaPct(curr.leads, prev.leads)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.leads }))}
+              sparkColor={LAGOON}
+            />
+            <KpiCard
+              accent={LAGOON} title="Files Closed"
+              value={curr.closed.toLocaleString("en-IN")}
+              delta={deltaPct(curr.closed, prev.closed)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.filesClosed }))}
+              sparkColor={LAGOON}
+            />
+            <KpiCard
+              accent={LAGOON} title="Conversion Rate"
+              value={pct(curr.conv)}
+              delta={curr.conv - prev.conv}
+              deltaSuffix="pp" isPP
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.conversionRate }))}
+              sparkColor={LAGOON}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Top Destinations */}
+            <div className="bg-white border border-border rounded-xl shadow-sm p-5">
           <SectionTitle className="mb-3">Top Destinations (This Month)</SectionTitle>
           {data.topDestThisMonth.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No destination data this month.</p>
@@ -929,6 +1019,51 @@ function DashboardBody({
           )}
         </div>
       </div>
+        </>
+      )}
+
+      {/* ─── MARKETING TAB (flag-gated) ─── */}
+      {currentTab === "marketing" && marketingSpendOn && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <KpiCard
+              accent={HORIZON} title="Total Marketing Spend"
+              value={fmtCompactINR(currSpend)}
+              delta={deltaPct(currSpend, prevSpend)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: Math.round(spendByMonthKey.get(m.monthKey) ?? 0) }))}
+              sparkColor={HORIZON}
+            />
+            <KpiCard
+              accent={BLAZE} title="Revenue"
+              value={fmtCompactINR(curr.revenue)}
+              delta={deltaPct(curr.revenue, prev.revenue)}
+              spark={last6.map((m) => ({ x: m.monthLabel, y: m.revenue }))}
+              sparkColor={BLAZE}
+            />
+            <KpiCard
+              accent={BLAZE} title="ROAS"
+              value={currSpend > 0 ? `${(curr.revenue / currSpend).toFixed(1)}x` : "—"}
+              delta={0}
+              spark={last6.map((m) => {
+                const s = spendByMonthKey.get(m.monthKey) ?? 0;
+                return { x: m.monthLabel, y: s > 0 ? m.revenue / s : 0 };
+              })}
+              sparkColor={BLAZE}
+            />
+          </div>
+
+          <div className="bg-white border border-border rounded-xl shadow-sm p-5">
+            <SectionTitle className="mb-3">For the full picture</SectionTitle>
+            <p className="text-sm text-muted-foreground mb-3">
+              Per-platform spend, CPL / CAC / ROAS and the top destinations driving each platform live on the dedicated report.
+            </p>
+            <Link to="/admin/reports/platform-performance" className="inline-flex items-center gap-2 text-sm font-medium text-blaze hover:underline">
+              Platform Performance Report
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }
